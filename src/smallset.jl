@@ -4,47 +4,56 @@
 
 export SmallSet, bitmask, delete!!, pop!!, push!!
 
-import Base: show, ==, hash, convert,
+using Base: hasfastin, top_set_bit
+
+import Base: show, ==, hash, copy, convert,
     isempty, in, first, last, iterate,
     length, issubset, maximum, minimum,
     union, intersect, setdiff, symdiff
 
-const TS = UInt64
-const NS = 8*sizeof(TS)
+bitsize(::Type{U}) where U = 8*sizeof(U)
 
-struct SmallSet <: AbstractSet{Int}
-    mask::TS
-    SmallSet(::Nothing, mask) = new(mask)
+struct SmallSet{U<:Unsigned} <: AbstractSet{Int}
+    mask::U
+    SmallSet(::Nothing, mask::U) where U = new{U}(mask)
 end
 
 _SmallSet(mask) = SmallSet(nothing, mask)
 
 bitmask(s::SmallSet) = s.mask
 
-SmallSet(s::SmallSet) = s
+copy(s::SmallSet) = s
 
-convert(::Type{SmallSet}, mask::Integer) = _SmallSet(mask)
+SmallSet(args...) = SmallSet{UInt}(args...)
 
-@propagate_inbounds function _push(mask::TS, iter)
+SmallSet{U}(s::SmallSet) where U = _SmallSet(s.mask % U)
+
+convert(::Type{SmallSet{U}}, mask::Integer) where U = _SmallSet(U(mask))
+
+@propagate_inbounds function _push(mask::U, iter) where U
     for n in iter
-        @boundscheck (isinteger(n) && n > 0 && n <= NS) || error("SmallSet can only contain integers between 1 and $NS")
-        mask |= one(TS) << (Int(n)-1)
+        @boundscheck if !isinteger(n) || n <= 0 || n > bitsize(U)
+                error("SmallSet can only contain integers between 1 and $(bitsize(U))")
+            end
+        mask |= one(U) << (Int(n)-1)
     end
     _SmallSet(mask)
 end
 
-@propagate_inbounds SmallSet(iter) = _push(zero(TS), iter)
+@propagate_inbounds SmallSet{U}(iter) where U = _push(zero(U), iter)
 
-SmallSet(ns::Integer...) = SmallSet(ns)
+SmallSet{U}(ns::Integer...) where U = SmallSet{U}(ns)
 
-function SmallSet(r::AbstractUnitRange{<:Integer})
+function SmallSet{U}(r::AbstractUnitRange{<:Integer}) where U
     r0, r1 = first(r), last(r)
-    (r0 > 0 && r1 <= NS) || error("SmallSet can only contain integers between 1 and $NS")
+    if r0 <= 0 || r1 > bitsize(U)
+        error("SmallSet{$U} can only contain integers between 1 and $(bitsize(U))")
+    end
     if r1 < r0
-        SmallSet()
+        _SmallSet(zero(U))
     else
-        m = one(TS) << (r1-r0+1)
-        _SmallSet((m-1) << (r0-1))
+        m = one(U) << (r1-r0+1) - one(U)
+        _SmallSet(m << (r0-1))
     end
 end
 
@@ -59,7 +68,7 @@ end
 
 @propagate_inbounds function last(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
-    NS-leading_zeros(bitmask(s))
+    top_set_bit(bitmask(s))
 end
 
 function minimum(s::SmallSet; init = missing)
@@ -82,19 +91,19 @@ function maximum(s::SmallSet; init = missing)
     end
 end
 
-# hasfastin(::Type{SmallSet}) = true
+# hasfastin(::Type{<:SmallSet}) = true
 # this is the default for AbstractSet
 
-in(n::Integer, s::SmallSet) = !iszero(s.mask & one(TS) << (n-1))
+in(n::Integer, s::SmallSet{U}) where U <: Unsigned = !iszero(s.mask & one(U) << (n-1))
 
 in(n, s::SmallSet) = false
 
-function delete!!(s::SmallSet, n::Integer)
-    m = one(TS) << (n-1)
+function delete!!(s::SmallSet{U}, n::Integer) where U
+    m = one(U) << (n-1)
     _SmallSet(s.mask & ~m)
 end
 
-delete!!(s::SmallSet, n) = s
+delete!!(s::SmallSet{U}, n) where U = s
 
 @propagate_inbounds function pop!!(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
@@ -125,9 +134,9 @@ function iterate(s::SmallSet, state = (s.mask, 0))
 end
 
 function show(io::IO, s::SmallSet)
-    print(io, "SmallSet(")
+    print(io, "SmallSet([")
     join(io, s, ',')
-    print(io, ')')
+    print(io, "])")
 end
 
 ==(s::SmallSet, t::SmallSet) = s.mask == t.mask
@@ -139,12 +148,12 @@ union(s::SmallSet, t::SmallSet) = _SmallSet(s.mask | t.mask)
 
 union(s::SmallSet, ts::SmallSet...) = foldl(union, ts; init = s)
 
-intersect(s::SmallSet, t::SmallSet) = _SmallSet(s.mask & t.mask)
+intersect(s::SmallSet{U}, t::SmallSet) where U <: Unsigned = _SmallSet(s.mask & (t.mask % U))
 
-@propagate_inbounds function intersect(s::SmallSet, t::T) where T
-    u = SmallSet()
-    for n in (hasfastin(T) ? s : t)
-        if n in (hasfastin(T) ? t : s)
+@propagate_inbounds function intersect(s::SmallSet{U}, t) where U <: Unsigned
+    u = _SmallSet(zero(U))
+    for n in (hasfastin(t) ? s : t)
+        if n in (hasfastin(t) ? t : s)
             @inbounds u = push!!(u, n)
         end
     end
@@ -153,10 +162,10 @@ end
 
 @propagate_inbounds intersect(s::SmallSet, ts...) = foldl(intersect, ts; init = s)
 
-setdiff(s::SmallSet, t::SmallSet) = _SmallSet(s.mask & ~t.mask)
+setdiff(s::SmallSet{U}, t::SmallSet) where U <: Unsigned = _SmallSet(s.mask & ~(t.mask % U))
 
-@propagate_inbounds function setdiff(s::SmallSet, t::T) where T
-    if hasfastin(T)
+@propagate_inbounds function setdiff(s::SmallSet, t)
+    if hasfastin(t)
         u = s
         for n in s
             if n in t
@@ -172,14 +181,6 @@ end
 @propagate_inbounds setdiff(s::SmallSet, ts...) = foldl(setdiff, ts; init = s)
 
 symdiff(s::SmallSet, t::SmallSet) = _SmallSet(s.mask ⊻ t.mask)
-
-#=
-function symdiff(s::SmallSet, t)
-    foldl(t; init = s) do u, n
-        n isa Integer ? _SmallSet(xor(u.mask, one(TS) << (n-1))) : u
-    end
-end
-=#
 
 symdiff(s::SmallSet, ts::SmallSet...) = foldl(symdiff, ts; init = s)
 
