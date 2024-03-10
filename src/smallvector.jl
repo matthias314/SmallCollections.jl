@@ -26,8 +26,7 @@ end
 
 ==(v::SmallVector, w::SmallVector) = length(v) == length(w) && iszero(v.b-w.b)
 
-# TODO: this does not give the same result as for Vector
-hash(v::SmallVector, h0::UInt) = hash(bits(v.b), h0)
+fasthash(v::SmallVector, h0::UInt) = hash(bits(v.b), hash(length(v), h0))
 
 copy(v::SmallVector) = v
 

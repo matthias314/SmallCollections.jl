@@ -141,8 +141,7 @@ end
 
 ==(s::SmallSet, t::SmallSet) = s.mask == t.mask
 
-# TODO: this does not give the same result as for Set
-hash(s::SmallSet, h0::UInt) = hash(s.mask, h0)
+fasthash(s::SmallSet, h0::UInt) = hash(s.mask, h0)
 
 union(s::SmallSet, t::SmallSet) = _SmallSet(s.mask | t.mask)
 
