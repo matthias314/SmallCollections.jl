@@ -2,3 +2,9 @@ name = "SmallCollections"
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
 authors = ["matthias314"]
 version = "0.1.0"
+
+[deps]
+StaticVectors = "20fadf95-9e3d-483c-97cd-cab2760e7998"
+
+[compat]
+StaticVectors = "1"
