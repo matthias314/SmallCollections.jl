@@ -63,6 +63,14 @@ function popfirst(b::Values{N,T}) where {N, T}
     Values{N,T}(t), b[1]
 end
 
+#
+# bit conversions
+#
+
+vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
+
+unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
+
 @generated function bits(v::TupleVector{N,T}) where {N, T <: BitInteger}
     s = bitsize(T)
     b = N*s
@@ -82,7 +90,7 @@ end
     end
     quote
         $(Expr(:meta, :inline))
-        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{T}}}, map(VecElement, Tuple(v)))
+        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{T}}}, vec(Tuple(v)))
     end
 end
 
@@ -105,11 +113,9 @@ end
     end
     quote
         $(Expr(:meta, :inline))
-        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{Bool}}}, map(VecElement, Tuple(v)))
+        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{Bool}}}, vec(Tuple(v)))
     end
 end
-
-unvec(t::Tuple{Vararg{VecElement}}) = map(x -> x.value, t)
 
 @generated function convert(::Type{Values{N,T}}, x::U) where {N, T <: BitInteger, U <: Unsigned}
     s = bitsize(T)
