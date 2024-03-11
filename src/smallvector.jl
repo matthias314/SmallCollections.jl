@@ -3,7 +3,7 @@
 #
 
 export SmallVector, setindex,
-    push, pop, pushfirst, popfirst, deleteat,
+    push, pop, pushfirst, popfirst, insert, deleteat, popat,
     support, fasthash
 
 import Base: show, ==, copy, empty,
@@ -137,18 +137,17 @@ function popfirst(v::SmallVector)
     SmallVector(c, n-1), x
 end
 
-function deleteat(v::SmallVector{N,T}, i::Integer) where {N,T}
+function insert(v::SmallVector, i::Integer, x)
     n = length(v)
-    t = ntuple(Val(N)) do j
-        if j < i
-            v[j]
-        elseif j == N
-            zero(T)
-        else
-            v[j+1]
-        end
-    end
-    SmallVector{N,T}(t, n-1), v[i]
+    SmallVector(insert(v.b, i, x), n+1)
+end
+
+deleteat(v::SmallVector) = first(popat(v, 1))
+
+function popat(v::SmallVector, i::Integer)
+    n = length(v)
+    c, x = deleteat(v.b, i)
+    SmallVector(c, n-1), x
 end
 
 # TODO: do we want UInt?

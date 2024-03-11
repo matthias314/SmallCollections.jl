@@ -49,18 +49,36 @@ end
 end
 =#
 
-function pushfirst(b::Values{N,T}, x) where {N, T}
-    t = ntuple(Val(N)) do i
-        i == 1 ? T(x) : b[i-1]
+pushfirst(v::Values, x) = insert(v, 1, x)
+
+popfirst(v::Values) = popat(v, 1)
+
+@inline function insert(v::Values{N,T}, i::Integer, x) where {N,T}
+    t = ntuple(Val(N)) do j
+        if j < i
+            v[j]
+        elseif j == i
+            T(x)
+        else
+            v[j-1]
+        end
     end
     Values{N,T}(t)
 end
 
-function popfirst(b::Values{N,T}) where {N, T}
-    t = ntuple(Val(N)) do i
-        i == N ? zero(T) : b[i+1]
+deleteat(v::Values, i::Integer) = first(popat(v, i))
+
+@inline function popat(v::Values{N,T}, i::Integer) where {N,T}
+    t = ntuple(Val(N)) do j
+        if j < i
+            v[j]
+        elseif j == N
+            zero(T)
+        else
+            v[j+1]
+        end
     end
-    Values{N,T}(t), b[1]
+    Values{N,T}(t), v[i]
 end
 
 function padded_add(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
