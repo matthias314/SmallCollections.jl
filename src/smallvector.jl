@@ -2,29 +2,35 @@
 # small vectors
 #
 
-export SmallVector, setindex, small_zeros,
+export SmallVector, setindex,
     push, pop, pushfirst, popfirst, deleteat,
     support, fasthash
 
-import Base: show, ==, copy,
+import Base: show, ==, copy, empty,
     length, size, getindex, setindex,
+    zero, zeros, ones,
     +, -, *, sum, prod, maximum, minimum
 
-const T = Int8
-const N = 16
-
-struct SmallVector <: AbstractVector{T}
+struct SmallVector{N,T} <: AbstractVector{T}
     b::Values{N,T}
     n::Int
 end
 
-function show(io::IO, v::SmallVector)
+function show(io::IO, v::SmallVector{N,T}) where {N,T}
     print(io, "$T[")
     join(io, v, ',')
     print(io, ']')
 end
 
-==(v::SmallVector, w::SmallVector) = length(v) == length(w) && iszero(v.b-w.b)
+function ==(v::SmallVector, w::SmallVector)
+    length(v) == length(w) && iszero(padded_sub(v.b, w.b))
+end
+
+#=
+function ==(v::SmallVector, w::SmallVector)
+    length(v) == length(w) && all(splat(==), zip(v.b, w.b))
+end
+=#
 
 fasthash(v::SmallVector, h0::UInt) = hash(bits(v.b), hash(length(v), h0))
 
@@ -38,11 +44,32 @@ getindex(v::SmallVector, i::Int) = v.b[i]
 
 setindex(v::SmallVector, x, i::Integer) = SmallVector(setindex(v.b, x, i), length(v))
 
-small_zeros(n::Integer) = SmallVector(zero(Values{N,T}), n)
+empty(v::SmallVector) = SmallVector(zero(v.b), 0)
 
-SmallVector(v::SmallVector) = v
+zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
-function SmallVector(iter)
+function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+    SmallVector(zero(Values{N,T}), n)
+end
+
+function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+    b = ones(Values{N,T})
+    SmallVector((@inbounds padtail(b, -one(T), n)), n)
+end
+
+function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
+    t = ntuple(i -> i <= M ? T(v[i]) : zero(T), Val(N))
+    SmallVector{N,T}(t, length(v))
+end
+
+function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
+    n = length(v)
+    i1 = firstindex(v)
+    t = ntuple(i -> i <= n ? T(v[i+i1-1]) : zero(T), Val(N))
+    SmallVector{N,T}(t, n)
+end
+
+function SmallVector{N,T}(iter) where {N,T}
     b = zero(Values{N,T})
     n = 0
     for (i, x) in enumerate(iter)
@@ -52,21 +79,30 @@ function SmallVector(iter)
     SmallVector(b, n)
 end
 
+SmallVector{N}(v::AbstractVector{T}) where {N,T} = SmallVector{N,T}(v)
+
+function SmallVector{N}(v::V) where {N, V <: Tuple}
+    T = promote_type(fieldtypes(V)...)
+    SmallVector{N,T}(v)
+end
+
 +(v::SmallVector) = v
 
-+(v::SmallVector, w::SmallVector) = SmallVector(v.b+w.b, length(v))
++(v::SmallVector, w::SmallVector) = SmallVector(padded_add(v.b, w.b), length(v))
 
 -(v::SmallVector) = SmallVector(-v.b, length(v))
 
--(v::SmallVector, w::SmallVector) = SmallVector(v.b-w.b, length(v))
+-(v::SmallVector, w::SmallVector) = SmallVector(padded_sub(v.b, w.b), length(v))
 
-*(c::Number, v::SmallVector) = SmallVector(T(c)*v.b, length(v))
+*(c::Number, v::SmallVector) = SmallVector(c*v.b, length(v))
 
-sum(v::SmallVector) = sum(Values{N,Int}(v.b))
+*(v::SmallVector, c::Number) = c*v
 
-prod(v::SmallVector) = prod(Values{N,Int}(@inbounds padtail(v.b, T(1), length(v))))
+sum(v::SmallVector{N}) where N = sum(Values{N,Int}(v.b))
 
-function maximum(v::SmallVector)
+prod(v::SmallVector{N,T}) where {N,T} = prod(Values{N,Int}(@inbounds padtail(v.b, T(1), length(v))))
+
+function maximum(v::SmallVector{N,T}) where {N,T}
     if T <: Unsigned
         maximum(v.b)
     else
@@ -74,7 +110,7 @@ function maximum(v::SmallVector)
     end
 end
 
-minimum(v::SmallVector) = minimum(@inbounds padtail(v.b, typemax(T), length(v)))
+minimum(v::SmallVector{N,T}) where {N,T} = minimum(@inbounds padtail(v.b, typemax(T), length(v)))
 
 function push(v::SmallVector, x)
     n = length(v)
@@ -83,7 +119,7 @@ end
 
 push(v::SmallVector, xs...) = foldl(push, xs; init = v)
 
-function pop(v::SmallVector)
+function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
     SmallVector(setindex(v.b, zero(T), n), n-1), v[n]
 end
@@ -101,7 +137,7 @@ function popfirst(v::SmallVector)
     SmallVector(c, n-1), x
 end
 
-function deleteat(v::SmallVector, i::Integer)
+function deleteat(v::SmallVector{N,T}, i::Integer) where {N,T}
     n = length(v)
     t = ntuple(Val(N)) do j
         if j < i
@@ -112,7 +148,7 @@ function deleteat(v::SmallVector, i::Integer)
             v[j+1]
         end
     end
-    SmallVector(Values{N,T}(t), n-1), v[i]
+    SmallVector{N,T}(t, n-1), v[i]
 end
 
 # TODO: do we want UInt?
