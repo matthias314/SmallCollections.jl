@@ -114,9 +114,32 @@ end
 
 *(v::SmallVector, c::Number) = c*v
 
-sum(v::SmallVector{N}) where N = sum(Values{N,Int}(v.b))
+function sum(v::SmallVector{N,T}) where {N,T}
+    if T <: Base.BitSignedSmall
+        sum(Int, v.b)
+    elseif T <: Base.BitUnsignedSmall
+        sum(UInt, v.b)
+    elseif T <: Union{Base.BitInteger,Base.HWReal}
+        sum(v.b)
+    else
+        invoke(sum, Tuple{AbstractVector}, v)
+    end
+end
 
-prod(v::SmallVector{N,T}) where {N,T} = @inbounds prod(Values{N,Int}(padtail(v.b, T(1), length(v))))
+function prod(v::SmallVector{N,T}) where {N,T}
+    if !(T <: Union{Base.BitInteger,Base.HWReal})
+        invoke(prod, Tuple{AbstractVector}, v)
+    else
+        b = padtail(v.b, T(1), length(v))
+        if T <: Base.BitSignedSmall
+            prod(Int, b)
+        elseif T <: Base.BitUnsignedSmall
+            prod(UInt, b)
+        else
+            prod(b)
+        end
+    end
+end
 
 @inline function maximum(v::SmallVector{N,T}) where {N,T}
     @boundscheck iszero(length(v)) && error("vector must not be empty")
