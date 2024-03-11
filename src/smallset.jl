@@ -2,7 +2,7 @@
 # small sets
 #
 
-export SmallSet, bitmask, delete!!, pop!!, push!!
+export SmallSet, bits, delete, pop, push
 
 using Base: hasfastin, top_set_bit
 
@@ -20,7 +20,7 @@ end
 
 _SmallSet(mask) = SmallSet(nothing, mask)
 
-bitmask(s::SmallSet) = s.mask
+bits(s::SmallSet) = s.mask
 
 copy(s::SmallSet) = s
 
@@ -57,18 +57,18 @@ function SmallSet{U}(r::AbstractUnitRange{<:Integer}) where U
     end
 end
 
-isempty(s::SmallSet) = iszero(bitmask(s))
+isempty(s::SmallSet) = iszero(bits(s))
 
-length(s::SmallSet) = count_ones(bitmask(s))
+length(s::SmallSet) = count_ones(bits(s))
 
 @propagate_inbounds function first(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
-    trailing_zeros(bitmask(s))+1
+    trailing_zeros(bits(s))+1
 end
 
 @propagate_inbounds function last(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
-    top_set_bit(bitmask(s))
+    top_set_bit(bits(s))
 end
 
 function minimum(s::SmallSet; init = missing)
@@ -98,29 +98,29 @@ in(n::Integer, s::SmallSet{U}) where U <: Unsigned = !iszero(s.mask & one(U) << 
 
 in(n, s::SmallSet) = false
 
-function delete!!(s::SmallSet{U}, n::Integer) where U
+function delete(s::SmallSet{U}, n::Integer) where U
     m = one(U) << (n-1)
     _SmallSet(s.mask & ~m)
 end
 
-delete!!(s::SmallSet{U}, n) where U = s
+delete(s::SmallSet{U}, n) where U = s
 
-@propagate_inbounds function pop!!(s::SmallSet)
+@propagate_inbounds function pop(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
     n = last(s)
-    n, delete!!(s, n)
+    n, delete(s, n)
 end
 
-@propagate_inbounds function pop!!(s::SmallSet, n::Integer)
+@propagate_inbounds function pop(s::SmallSet, n::Integer)
     @boundscheck n in s || error("element not found")
-    n % Int, delete!!(s, n)
+    n % Int, delete(s, n)
 end
 
-function pop!!(s::SmallSet, n::Integer, default::Integer)
-    n in s ? (n % Int, delete!!(s, n)) : (default % Int, s)
+function pop(s::SmallSet, n::Integer, default::Integer)
+    n in s ? (n % Int, delete(s, n)) : (default % Int, s)
 end
 
-@propagate_inbounds push!!(s::SmallSet, ns...) = _push(s.mask, ns)
+@propagate_inbounds push(s::SmallSet, ns...) = _push(s.mask, ns)
 
 function iterate(s::SmallSet, state = (s.mask, 0))
     mask, n = state
@@ -153,7 +153,7 @@ intersect(s::SmallSet{U}, t::SmallSet) where U <: Unsigned = _SmallSet(s.mask & 
     u = _SmallSet(zero(U))
     for n in (hasfastin(t) ? s : t)
         if n in (hasfastin(t) ? t : s)
-            @inbounds u = push!!(u, n)
+            @inbounds u = push(u, n)
         end
     end
     u
@@ -168,12 +168,12 @@ setdiff(s::SmallSet{U}, t::SmallSet) where U <: Unsigned = _SmallSet(s.mask & ~(
         u = s
         for n in s
             if n in t
-                u = delete!!(u, n)
+                u = delete(u, n)
             end
         end
         return u
     else
-        foldl(delete!!, t; init = s)
+        foldl(delete, t; init = s)
     end
 end
 
