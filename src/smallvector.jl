@@ -16,6 +16,8 @@ struct SmallVector{N,T} <: AbstractVector{T}
     n::Int
 end
 
+capacity(::Type{<:SmallVector{N}}) where N = N
+
 function show(io::IO, v::SmallVector{N,T}) where {N,T}
     print(io, "$T[")
     join(io, v, ',')

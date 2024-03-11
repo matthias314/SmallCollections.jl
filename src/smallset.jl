@@ -22,6 +22,8 @@ _SmallSet(mask) = SmallSet(nothing, mask)
 
 bits(s::SmallSet) = s.mask
 
+capacity(::Type{SmallSet{U}}) where U = bitsize(U)
+
 copy(s::SmallSet) = s
 
 SmallSet(args...) = SmallSet{UInt}(args...)
