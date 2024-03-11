@@ -40,30 +40,40 @@ length(v::SmallVector) = v.n
 
 size(v::SmallVector) = (length(v),)
 
-getindex(v::SmallVector, i::Int) = v.b[i]
+@inline function getindex(v::SmallVector, i::Int)
+    @boundscheck checkbounds(v, i)
+    @inbounds v.b[i]
+end
 
-setindex(v::SmallVector, x, i::Integer) = SmallVector(setindex(v.b, x, i), length(v))
+@inline function setindex(v::SmallVector, x, i::Integer)
+    @boundscheck checkbounds(v, i)
+    SmallVector((@inbounds setindex(v.b, x, i)), length(v))
+end
 
 empty(v::SmallVector) = SmallVector(zero(v.b), 0)
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
 function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+    n <= N || error("vector cannot have more than $N elements")
     SmallVector(zero(Values{N,T}), n)
 end
 
 function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+    n <= N || error("vector cannot have more than $N elements")
     b = ones(Values{N,T})
     SmallVector((@inbounds padtail(b, -one(T), n)), n)
 end
 
 function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
-    t = ntuple(i -> i <= M ? T(v[i]) : zero(T), Val(N))
+    M <= N || length(v) <= N || error("vector cannot have more than $N elements")
+    t = ntuple(i -> i <= M ? T(v.b[i]) : zero(T), Val(N))
     SmallVector{N,T}(t, length(v))
 end
 
 function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
+    n <= N || error("vector cannot have more than $N elements")
     i1 = firstindex(v)
     t = ntuple(i -> i <= n ? T(v[i+i1-1]) : zero(T), Val(N))
     SmallVector{N,T}(t, n)
@@ -73,8 +83,8 @@ function SmallVector{N,T}(iter) where {N,T}
     b = zero(Values{N,T})
     n = 0
     for (i, x) in enumerate(iter)
-        b = setindex(b, x, i)
-        n = i
+        (n = i) <= N || error("vector cannot have more than $N elements")
+        b = @inbounds setindex(b, x, i)
     end
     SmallVector(b, n)
 end
@@ -88,11 +98,17 @@ end
 
 +(v::SmallVector) = v
 
-+(v::SmallVector, w::SmallVector) = SmallVector(padded_add(v.b, w.b), length(v))
+@inline function +(v::SmallVector, w::SmallVector)
+    @boundscheck length(v) == length(w) || error("vectors must have the same length")
+    SmallVector(padded_add(v.b, w.b), length(v))
+end
 
 -(v::SmallVector) = SmallVector(-v.b, length(v))
 
--(v::SmallVector, w::SmallVector) = SmallVector(padded_sub(v.b, w.b), length(v))
+@inline function -(v::SmallVector, w::SmallVector)
+    @boundscheck length(v) == length(w) || error("vectors must have the same length")
+    SmallVector(padded_sub(v.b, w.b), length(v))
+end
 
 *(c::Number, v::SmallVector) = SmallVector(c*v.b, length(v))
 
@@ -100,53 +116,66 @@ end
 
 sum(v::SmallVector{N}) where N = sum(Values{N,Int}(v.b))
 
-prod(v::SmallVector{N,T}) where {N,T} = prod(Values{N,Int}(@inbounds padtail(v.b, T(1), length(v))))
+prod(v::SmallVector{N,T}) where {N,T} = @inbounds prod(Values{N,Int}(padtail(v.b, T(1), length(v))))
 
-function maximum(v::SmallVector{N,T}) where {N,T}
+@inline function maximum(v::SmallVector{N,T}) where {N,T}
+    @boundscheck iszero(length(v)) && error("vector must not be empty")
     if T <: Unsigned
         maximum(v.b)
     else
-        maximum(@inbounds padtail(v.b, typemin(T), length(v)))
+        @inbounds maximum(padtail(v.b, typemin(T), length(v)))
     end
 end
 
-minimum(v::SmallVector{N,T}) where {N,T} = minimum(@inbounds padtail(v.b, typemax(T), length(v)))
-
-function push(v::SmallVector, x)
-    n = length(v)
-    SmallVector(setindex(v.b, x, n+1), n+1)
+@inline function minimum(v::SmallVector{N,T}) where {N,T}
+    @boundscheck iszero(length(v)) && error("vector must not be empty")
+    @inbounds minimum(padtail(v.b, typemax(T), length(v)))
 end
 
-push(v::SmallVector, xs...) = foldl(push, xs; init = v)
-
-function pop(v::SmallVector{N,T}) where {N,T}
+@inline function push(v::SmallVector{N}, x) where N
     n = length(v)
-    SmallVector(setindex(v.b, zero(T), n), n-1), v[n]
+    @boundscheck n < N || error("vector cannot have more than $N elements")
+    @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
 end
 
-function pushfirst(v::SmallVector, x)
+@propagate_inbounds push(v::SmallVector, xs...) = foldl(push, xs; init = v)
+
+@inline function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
+    @boundscheck iszero(n) && error("vector must not be empty")
+    @inbounds SmallVector(setindex(v.b, zero(T), n), n-1), v[n]
+end
+
+@inline function pushfirst(v::SmallVector{N}, x) where N
+    n = length(v)
+    @boundscheck n < N || error("vector cannot have more than $N elements")
     SmallVector(pushfirst(v.b, x), n+1)
 end
 
-pushfirst(v::SmallVector, xs...) = foldr((x, v) -> pushfirst(v, x), xs; init = v)
+@propagate_inbounds pushfirst(v::SmallVector, xs...) = foldr((x, v) -> pushfirst(v, x), xs; init = v)
 
-function popfirst(v::SmallVector)
+@inline function popfirst(v::SmallVector)
     n = length(v)
+    @boundscheck iszero(n) && error("vector must not be empty")
     c, x = popfirst(v.b)
     SmallVector(c, n-1), x
 end
 
-function insert(v::SmallVector, i::Integer, x)
+@inline function insert(v::SmallVector{N}, i::Integer, x) where N
     n = length(v)
-    SmallVector(insert(v.b, i, x), n+1)
+    @boundscheck begin
+        1 <= i <= n+1 || throw(BoundsError(v, i))
+        n < N || error("vector cannot have more than $N elements")
+    end
+    @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
 
-deleteat(v::SmallVector) = first(popat(v, 1))
+@propagate_inbounds deleteat(v::SmallVector, i) = first(popat(v, i))
 
-function popat(v::SmallVector, i::Integer)
+@inline function popat(v::SmallVector, i::Integer)
     n = length(v)
-    c, x = deleteat(v.b, i)
+    @boundscheck checkbounds(v, i)
+    c, x = @inbounds popat(v.b, i)
     SmallVector(c, n-1), x
 end
 

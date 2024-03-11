@@ -54,6 +54,8 @@ pushfirst(v::Values, x) = insert(v, 1, x)
 popfirst(v::Values) = popat(v, 1)
 
 @inline function insert(v::Values{N,T}, i::Integer, x) where {N,T}
+    @boundscheck checkbounds(v, i)
+    v = Tuple(v)
     t = ntuple(Val(N)) do j
         if j < i
             v[j]
@@ -66,16 +68,17 @@ popfirst(v::Values) = popat(v, 1)
     Values{N,T}(t)
 end
 
-deleteat(v::Values, i::Integer) = first(popat(v, i))
+@propagate_inbounds deleteat(v::Values, i::Integer) = first(popat(v, i))
 
 @inline function popat(v::Values{N,T}, i::Integer) where {N,T}
+    @boundscheck checkbounds(v, i)
     t = ntuple(Val(N)) do j
         if j < i
             v[j]
-        elseif j == N
-            zero(T)
-        else
+        elseif j < N
             v[j+1]
+        else
+            zero(T)
         end
     end
     Values{N,T}(t), v[i]
