@@ -6,7 +6,7 @@ export SmallVector, setindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
     support, fasthash
 
-import Base: show, ==, copy, empty,
+import Base: show, ==, copy, Tuple, empty,
     length, size, getindex, setindex,
     zero, zeros, ones,
     +, -, *, sum, prod, maximum, minimum
@@ -76,6 +76,11 @@ false
 fasthash(v::SmallVector, h0::UInt) = hash(bits(v.b), hash(length(v), h0))
 
 copy(v::SmallVector) = v
+
+convert(::Type{V}, v::AbstractVector) where {N, V <: SmallVector{N}} = V(v)
+
+Tuple(v::SmallVector) = ntuple(i -> v[i], length(v))
+# this seems to be fast for length(v) <= 10
 
 length(v::SmallVector) = v.n
 
