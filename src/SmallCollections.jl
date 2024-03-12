@@ -12,6 +12,8 @@ capacity(::T) where T = capacity(T)
 
 fasthash(x) = fasthash(x, UInt(0))
 
+bitsize(::Type{U}) where U = 8*sizeof(U)
+
 include("smallset.jl")
 include("smallvector.jl")
 
