@@ -4,9 +4,16 @@ authors = ["matthias314"]
 version = "0.1.0"
 
 [deps]
-StaticVectors = "20fadf95-9e3d-483c-97cd-cab2760e7998"
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
+StaticVectors = "20fadf95-9e3d-483c-97cd-cab2760e7998"
+
+[weakdeps]
+BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
+
+[extensions]
+BangBangExt = "BangBang"
 
 [compat]
-StaticVectors = "1"
 BitIntegers = "0.3"
+StaticVectors = "1"
+BangBang = "0.4"
