@@ -11,6 +11,18 @@ import Base: show, ==, hash, copy, convert,
     length, issubset, maximum, minimum,
     union, intersect, setdiff, symdiff
 
+"""
+    SmallSet{U<:Unsigned} <: AbstractSet{Int}
+
+    SmallSet{U}([iter])
+    SmallSet([iter])
+
+`SmallSet{U}` is an immutable set that can hold integers between `1` and the bit length of `U`.
+Called without an argument, it returns an empty set. If `U` is omitted, then `UInt` is taken.
+
+All non-mutating functions for sets are supported. The non-mutating analogs [`push`](@ref),
+[`pop`](@ref) and [`delete`](@ref) of the corresponding `!`-functions are also provided.
+"""
 struct SmallSet{U<:Unsigned} <: AbstractSet{Int}
     mask::U
     SmallSet(::Nothing, mask::U) where U = new{U}(mask)
@@ -28,12 +40,71 @@ end
 
 copy(s::SmallSet) = s
 
+"""
+    bits(s::SmallSet{U}) where U -> U
+
+Return the bit mask used internally to store the elements of the set `s`.
+
+See also [`convert(::Type{SmallSet{U}}, ::Integer)`](@ref).
+"""
 bits(s::SmallSet) = s.mask
 
+"""
+    capacity(::Type{SmallSet{U}}) -> Int
+    capacity(s::SmallSet{U}) -> Int
+
+Return the largest number that the given set or `SmallSet` type can store.
+"""
 capacity(::Type{SmallSet{U}}) where U = bitsize(U)
 
+"""
+    fasthash(s::SmallSet [, h0::UInt]) -> UInt
+
+Return a hash for `s` that can be computed fast. This hash is consistent across
+all `SmallSet`s, but it is not compatible with the `hash` used for sets.
+
+See also `Base.hash`.
+
+# Examples
+```jldoctest
+julia> s = SmallSet(1:3);
+
+julia> fasthash(s)
+0x828a4cc485149963
+
+julia> fasthash(s) == hash(s)
+false
+
+julia> t = SmallSet{UInt16}(s);
+
+julia> fasthash(s) == fasthash(t)
+true
+```
+"""
 fasthash(s::SmallSet, h0::UInt) = hash(bits(s), h0)
 
+"""
+    convert(::Type{SmallSet{U}}, mask::Integer) where U -> SmallSet{U}
+    convert(::Type{SmallSet, mask::Integer) where U -> SmallSet{UInt}
+
+Convert a bit mask to a `SmallSet` of the given type. This is the inverse operation to `bits`.
+
+See also [`bits`](@ref)
+
+# Examples
+```jldoctest
+julia> s = SmallSet{UInt16}([1, 5, 6]);
+
+julia> u = bits(s)
+0x0031
+
+julia> convert(SmallSet, u)
+SmallSet{UInt64} with 3 elements:
+  1
+  5
+  6
+```
+"""
 convert(::Type{SmallSet{U}}, mask::Integer) where U = _SmallSet(U(mask))
 
 convert(::Type{SmallSet}, mask::Integer) = convert(SmallSet{UInt}, mask)
@@ -130,21 +201,53 @@ issubset(s::SmallSet, t::SmallSet) = isempty(setdiff(s, t))
 
 @propagate_inbounds push(s::SmallSet, ns...) = _push(s.mask, ns)
 
+"""
+    pop(s::SmallSet) -> Tuple{SmallSet, Int}
+
+Return the pair `(t, x)` where `x` is the smallest element from `s` and
+`t` is the set `s` with `x` deleted. The set `s` must be non-empty.
+
+See also `Base.pop!`.
+"""
 @inline function pop(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
     n = last(s)
     delete(s, n), n
 end
 
+"""
+    pop(s::SmallSet, x) -> Tuple{SmallSet, Int}
+
+Return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
+The set `s` must be non-empty.
+
+See also `Base.pop!`.
+"""
 @inline function pop(s::SmallSet, n)
     @boundscheck n in s || error("set does not contain the element")
     delete(s, n), Int(n)
 end
 
+"""
+    pop(s::SmallSet, x, default::T) -> Tuple{SmallSet, Union{Int,T}}
+
+If `s` contains `x`, return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
+Otherwise return `(s, default)`
+
+See also `Base.pop!`.
+"""
 function pop(s::SmallSet, n, default)
     n in s ? (delete(s, n), Int(n)) : (s, default)
 end
 
+"""
+    delete(s::SmallSet{U}, x) where U -> SmallSet{U}
+
+If `s` contains `x`, return the set obtained by deleting that element.
+Otherwise return `s`.
+
+See also `Base.delete!`.
+"""
 function delete(s::SmallSet{U}, n) where U
     if isinteger(n)
         m = one(U) << (Int(n)-1)

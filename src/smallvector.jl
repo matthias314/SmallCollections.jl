@@ -11,11 +11,24 @@ import Base: show, ==, copy, empty,
     zero, zeros, ones,
     +, -, *, sum, prod, maximum, minimum
 
+"""
+    SmallVector{N,T} <: AbstractVector{T}
+
+An immutable vector type that can hold up to `N` elements of type `T`.
+Here `N` can be any (small) positive integer. However, at least for bit integer
+and hardware float types, one usually takes `N` to be a power of `2`.
+"""
 struct SmallVector{N,T} <: AbstractVector{T}
     b::Values{N,T}
     n::Int
 end
 
+"""
+    capacity(::Type{SmallVector{N}}) -> N
+    capacity(v::SmallVector{N}) -> N
+
+Return `N`, which is the largest number of elements this vector type can hold.
+"""
 capacity(::Type{<:SmallVector{N}}) where N = N
 
 function show(io::IO, v::SmallVector{N,T}) where {N,T}
@@ -34,6 +47,32 @@ function ==(v::SmallVector, w::SmallVector)
 end
 =#
 
+"""
+    fasthash(v::SmallVector [, h0::UInt]) -> UInt
+
+Return a hash for `v` that can be computed fast. This hash is consistent across
+all `SmallVectors`s of the same element type, but it is not compatible with the `hash`
+used for vectors or the `fasthash` for a `SmallVector` with a different element type.
+
+See also `Base.hash`.
+
+# Examples
+```jldoctest
+julia> v = SmallVector{8,Int8}([1, 5, 6]);
+
+julia> fasthash(v)
+0xa5aafc3dcb3541d5
+
+julia> fasthash(v) == hash(v)
+false
+
+julia> w = SmallVector{16,Int8}(v); fasthash(v) == fasthash(w)
+true
+
+julia> w = SmallVector{8,Int16}(v); fasthash(v) == fasthash(w)
+false
+```
+"""
 fasthash(v::SmallVector, h0::UInt) = hash(bits(v.b), hash(length(v), h0))
 
 copy(v::SmallVector) = v
@@ -204,5 +243,22 @@ end
     SmallVector(c, n-1), x
 end
 
-# TODO: do we want UInt?
+"""
+    support(v::SmallVector) -> SmallSet
+
+Return the `SmallSet` with the indices of the non-zero elements of `v`.
+
+See also [`SmallSet`](@ref).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}([1, 0, 2, 0, 0, 3]);
+
+julia> support(v)
+SmallSet{UInt64} with 3 elements:
+  1
+  3
+  6
+```
+"""
 support(v::SmallVector) = convert(SmallSet{UInt}, bits(map(!iszero, v.b)))
