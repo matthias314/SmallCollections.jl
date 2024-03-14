@@ -199,10 +199,15 @@ end
 
 issubset(s::SmallSet, t::SmallSet) = isempty(setdiff(s, t))
 
+"""
+    push(s::S, xs...) where S <: SmallSet -> S
+
+Return the `SmallSet` obtained from `s` by adding the other arguments `xs`.
+"""
 @propagate_inbounds push(s::SmallSet, ns...) = _push(s.mask, ns)
 
 """
-    pop(s::SmallSet) -> Tuple{SmallSet, Int}
+    pop(s::S) where S <: SmallSet -> Tuple{S, Int}
 
 Return the pair `(t, x)` where `x` is the smallest element from `s` and
 `t` is the set `s` with `x` deleted. The set `s` must be non-empty.
@@ -216,7 +221,7 @@ See also `Base.pop!`.
 end
 
 """
-    pop(s::SmallSet, x) -> Tuple{SmallSet, Int}
+    pop(s::S, x) where S <: SmallSet -> Tuple{S, Int}
 
 Return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
 The set `s` must be non-empty.
@@ -229,7 +234,7 @@ See also `Base.pop!`.
 end
 
 """
-    pop(s::SmallSet, x, default::T) -> Tuple{SmallSet, Union{Int,T}}
+    pop(s::S, x, default::T) where S <: SmallSet -> Tuple{S, Union{Int,T}}
 
 If `s` contains `x`, return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
 Otherwise return `(s, default)`
@@ -241,7 +246,7 @@ function pop(s::SmallSet, n, default)
 end
 
 """
-    delete(s::SmallSet{U}, x) where U -> SmallSet{U}
+    delete(s::S, x) where S <: SmallSet -> S
 
 If `s` contains `x`, return the set obtained by deleting that element.
 Otherwise return `s`.

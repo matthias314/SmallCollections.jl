@@ -14,9 +14,18 @@ import Base: show, ==, copy, Tuple, empty,
 """
     SmallVector{N,T} <: AbstractVector{T}
 
-An immutable vector type that can hold up to `N` elements of type `T`.
+    SmallVector{N,T}(iter)
+    SmallVector{N}(v::AbstractVector{T})
+    SmallVector{N}(t::Tuple)
+
+`SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
 and hardware float types, one usually takes `N` to be a power of `2`.
+
+The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
+or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
+
+See also [`capacity`](@ref), `promote_type`.
 """
 struct SmallVector{N,T} <: AbstractVector{T}
     b::Values{N,T}
@@ -96,15 +105,30 @@ end
     SmallVector((@inbounds setindex(v.b, x, i)), length(v))
 end
 
+"""
+    empty(v::V) where V <: SmallVector -> V
+
+Return an empty `SmallVector` of the same type as `v`.
+"""
 empty(v::SmallVector) = SmallVector(zero(v.b), 0)
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
+"""
+    zeros(::Type{V}, n::Integer) where V <: SmallVector -> V
+
+Return a `SmallVector` of type `V` containing `n` zeros.
+"""
 function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
     SmallVector(zero(Values{N,T}), n)
 end
 
+"""
+    ones(::Type{V}, n::Integer) where V <: SmallVector -> V
+
+Return a `SmallVector` of type `V` containing `n` ones.
+"""
 function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
     b = ones(Values{N,T})
@@ -207,8 +231,25 @@ end
     @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
 end
 
+"""
+    push(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by appending the other arguments `xs`.
+The length of `v` must be less than `N`.
+
+This is the non-mutating analog of `Base.push!`.
+"""
 @propagate_inbounds push(v::SmallVector, xs...) = foldl(push, xs; init = v)
 
+"""
+    pop(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}
+
+Return the tuple `(w, x)` where `x` is the last element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+This is the non-mutating analog of `Base.pop!`.
+"""
 @inline function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
@@ -221,8 +262,25 @@ end
     SmallVector(pushfirst(v.b, x), n+1)
 end
 
+"""
+    pushfirst(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by prepending the other arguments `xs`.
+The length of `v` must be less than `N`.
+
+This is the non-mutating analog of `Base.pushfirst!`.
+"""
 @propagate_inbounds pushfirst(v::SmallVector, xs...) = foldr((x, v) -> pushfirst(v, x), xs; init = v)
 
+"""
+    popfirst(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}
+
+Return the tuple `(w, x)` where `x` is the first element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+This is the non-mutating analog of `Base.popfirst!`.
+"""
 @inline function popfirst(v::SmallVector)
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
@@ -230,6 +288,14 @@ end
     SmallVector(c, n-1), x
 end
 
+"""
+    insert(v::SmallVector{N,T}, i::Integer, x) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by inserting `x` at position `i`.
+The position `i` must be between `1` and `length(v)+1`, and `length(v)` must be less than `N`.
+
+This is the non-mutating analog of `Base.insert!`.
+"""
 @inline function insert(v::SmallVector{N}, i::Integer, x) where N
     n = length(v)
     @boundscheck begin
@@ -239,8 +305,24 @@ end
     @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
 
-@propagate_inbounds deleteat(v::SmallVector, i) = first(popat(v, i))
+"""
+    deleteat(v::V, i::Integer) where V <: SmallVector -> V
 
+Return the `SmallVector` obtained from `v` by deleting the element at position `i`.
+The position `i` must be between `1` and `length(v)`.
+
+This is the non-mutating analog of `Base.deleteat!`.
+"""
+@propagate_inbounds deleteat(v::SmallVector, i::Integer) = first(popat(v, i))
+
+"""
+    popat(v::SmallVector{N,T}, i::Integer) where {N,T} -> Tuple{SmallVector{N,T},T}
+
+Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
+at position `i`. The latter must be between `1` and `length(v)`.
+
+This is the non-mutating analog of `Base.popat!`.
+"""
 @inline function popat(v::SmallVector, i::Integer)
     n = length(v)
     @boundscheck checkbounds(v, i)
