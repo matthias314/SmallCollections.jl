@@ -134,7 +134,7 @@ unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 end
 
 @generated function bits(v::TupleVector{N,Bool}) where N
-    c = nextpow(2, N)
+    c = max(nextpow(2, N), 8)
     U = Symbol(:UInt, c)
     if N == c
         ir = """
