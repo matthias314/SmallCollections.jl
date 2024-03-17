@@ -211,18 +211,34 @@ function prod(v::SmallVector{N,T}) where {N,T}
     end
 end
 
-@inline function maximum(v::SmallVector{N,T}) where {N,T}
-    @boundscheck iszero(length(v)) && error("vector must not be empty")
-    if T <: Unsigned
+function maximum(v::SmallVector{N,T}; init = missing) where {N,T}
+    if isempty(v)
+        if init === missing
+            error("collection must be non-empty unless `init` is given")
+        else
+            return init
+        end
+    elseif T <: Unsigned && T <: Base.HWReal
         maximum(v.b)
-    else
+    elseif T <: Integer && T <: Base.HWReal
         @inbounds maximum(padtail(v.b, typemin(T), length(v)))
+    else
+        invoke(maximum, Tuple{AbstractVector}, v)
     end
 end
 
-@inline function minimum(v::SmallVector{N,T}) where {N,T}
-    @boundscheck iszero(length(v)) && error("vector must not be empty")
-    @inbounds minimum(padtail(v.b, typemax(T), length(v)))
+function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
+    if isempty(v)
+        if init === missing
+            error("collection must be non-empty unless `init` is given")
+        else
+            return init
+        end
+    elseif T <: Integer && T <: Base.HWReal
+        @inbounds minimum(padtail(v.b, typemax(T), length(v)))
+    else
+        invoke(minimum, Tuple{AbstractVector}, v)
+    end
 end
 
 @inline function push(v::SmallVector{N}, x) where N
