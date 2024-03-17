@@ -24,7 +24,13 @@ function basis(::Val{N}) where N
     end
 end
 
-@propagate_inbounds function setindex(b::Values{N,T}, x, i::Integer) where {N, T}
+@inline function setindex(v::Values{N,T}, x, i::Integer) where {N,T}
+    @boundscheck checkbounds(v, i)
+    t = ntuple(j -> j == i ? T(x) : v[j], Val(N))
+    Values{N,T}(t)
+end
+
+@propagate_inbounds function setindex(b::Values{N,T}, x, i::Integer) where {N, T <: Base.HWReal}
     b + (T(x)-b[i])*basis(Val(N))[i]
 end
 
