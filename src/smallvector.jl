@@ -180,7 +180,15 @@ end
     SmallVector(padded_sub(v.b, w.b), length(v))
 end
 
-*(c::Number, v::SmallVector) = SmallVector(c*v.b, length(v))
+*(c::Integer, v::SmallVector{N}) where N = SmallVector(c*v.b, length(v))
+
+function *(c::Number, v::SmallVector{N}) where N
+# multiplication by Inf and NaN does not preserve zero padding
+    c0 = zero(c)
+    n = length(v)
+    t = ntuple(i -> (i <= n ? c : c0) * v.b[i], Val(N))
+    SmallVector(Values{N}(t), n)
+end
 
 *(v::SmallVector, c::Number) = c*v
 
