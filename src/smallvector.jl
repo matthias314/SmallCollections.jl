@@ -8,7 +8,7 @@ export SmallVector, setindex,
 
 import Base: show, ==, copy, Tuple, empty,
     length, size, getindex, setindex,
-    zero, zeros, ones,
+    zero, zeros, ones, map,
     +, -, *, sum, prod, maximum, minimum
 
 """
@@ -373,3 +373,16 @@ SmallSet{UInt64} with 3 elements:
 ```
 """
 support(v::SmallVector) = convert(SmallSet{UInt}, bits(map(!iszero, v.b)))
+
+Base.@assume_effects :total _return_type(f, args) = typeof(f(args...))
+
+function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
+    N = minimum(map(capacity, vs))
+    n = minimum(map(length, vs))
+    tt = ntuple(Val(N)) do i
+        ntuple(j -> @inbounds(vs[j].b[i]), Val(M))
+    end
+    T = _return_type(f, tt[1])
+    t = ntuple(i -> i <= n ? f(tt[i]...) : zero(T), Val(N))
+    SmallVector(Values{N,T}(t), n)
+end
