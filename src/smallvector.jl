@@ -33,11 +33,14 @@ struct SmallVector{N,T} <: AbstractVector{T}
 end
 
 """
-    capacity(::Type{SmallVector{N}}) -> N
-    capacity(v::SmallVector{N}) -> N
+    capacity(::Type{<:SmallVector{N}}) where N -> N
+    capacity(v::SmallVector{N}) where N -> N
 
 Return `N`, which is the largest number of elements this vector type can hold.
 """
+capacity(::Type{<:SmallVector{N}}) where N,
+capacity(::SmallVector)
+
 capacity(::Type{<:SmallVector{N}}) where N = N
 
 function show(io::IO, v::SmallVector{N,T}) where {N,T}
@@ -118,7 +121,11 @@ zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
     zeros(::Type{V}, n::Integer) where V <: SmallVector -> V
 
 Return a `SmallVector` of type `V` containing `n` zeros.
+
+See also [`ones(::Type{<:SmallVector}, ::Integer)`](@ref).
 """
+zeros(::Type{<:SmallVector}, ::Integer)
+
 function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
     SmallVector(zero(Values{N,T}), n)
@@ -128,7 +135,11 @@ end
     ones(::Type{V}, n::Integer) where V <: SmallVector -> V
 
 Return a `SmallVector` of type `V` containing `n` ones.
+
+See also [`zeros(::Type{<:SmallVector}, ::Integer)`](@ref).
 """
+ones(::Type{<:SmallVector}, ::Integer)
+
 function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
     b = ones(Values{N,T})
@@ -274,6 +285,8 @@ The vector `v` must not be empty.
 
 This is the non-mutating analog of `Base.pop!`.
 """
+pop(v::SmallVector)
+
 @inline function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")

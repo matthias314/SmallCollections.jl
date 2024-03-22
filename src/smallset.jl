@@ -45,17 +45,21 @@ copy(s::SmallSet) = s
 
 Return the bit mask used internally to store the elements of the set `s`.
 
-See also [`convert(::Type{SmallSet{U}}, ::Integer)`](@ref).
+See also [`convert(::Type{SmallSet}, ::Integer)`](@ref).
 """
 bits(s::SmallSet) = s.mask
 
 """
-    capacity(::Type{SmallSet{U}}) -> Int
-    capacity(s::SmallSet{U}) -> Int
+    capacity(::Type{<:SmallSet}) -> Int
+    capacity(s::SmallSet) -> Int
 
 Return the largest number that the given set or `SmallSet` type can store.
 """
+capacity(::Type{<:SmallSet}),
+capacity(::SmallSet)
+
 capacity(::Type{SmallSet{U}}) where U = bitsize(U)
+capacity(::Type{SmallSet}) = capacity(SmallSet{UInt})
 
 """
     fasthash(s::SmallSet [, h0::UInt]) -> UInt
@@ -85,11 +89,11 @@ fasthash(s::SmallSet, h0::UInt) = hash(bits(s), h0)
 
 """
     convert(::Type{SmallSet{U}}, mask::Integer) where U -> SmallSet{U}
-    convert(::Type{SmallSet, mask::Integer) where U -> SmallSet{UInt}
+    convert(::Type{SmallSet}, mask::Integer) -> SmallSet{UInt}
 
 Convert a bit mask to a `SmallSet` of the given type. This is the inverse operation to `bits`.
 
-See also [`bits`](@ref)
+See also [`bits`](@ref).
 
 # Examples
 ```jldoctest
@@ -105,6 +109,9 @@ SmallSet{UInt64} with 3 elements:
   6
 ```
 """
+convert(::Type{SmallSet{U}}, ::Integer) where U <: Unsigned,
+convert(::Type{SmallSet}, ::Integer)
+
 convert(::Type{SmallSet{U}}, mask::Integer) where U = _SmallSet(U(mask))
 
 convert(::Type{SmallSet}, mask::Integer) = convert(SmallSet{UInt}, mask)
