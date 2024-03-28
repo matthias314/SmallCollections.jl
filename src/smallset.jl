@@ -237,7 +237,7 @@ See also `Base.pop!`.
 """
 @inline function pop(s::SmallSet, n)
     @boundscheck n in s || error("set does not contain the element")
-    delete(s, n), Int(n)
+    delete(s, n), n
 end
 
 """
