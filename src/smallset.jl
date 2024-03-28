@@ -4,7 +4,7 @@
 
 export SmallSet, bits, delete, pop, push
 
-using Base: hasfastin, top_set_bit
+using Base: hasfastin
 
 import Base: show, ==, hash, copy, convert,
     isempty, in, first, last, iterate,

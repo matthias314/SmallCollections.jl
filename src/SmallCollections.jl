@@ -37,15 +37,7 @@ capacity(::T) where T = capacity(T)
 
 fasthash(x) = fasthash(x, UInt(0))
 
-"""
-    $(@__MODULE__).bitsize(T::Type) -> Int
-
-Return the size of the internal binary representation of `T` in bits.
-
-See also `Base.sizeof`.
-"""
-bitsize(::Type{U}) where U = 8*sizeof(U)
-
+include("bits.jl")
 include("smallset.jl")
 include("smallvector.jl")
 
