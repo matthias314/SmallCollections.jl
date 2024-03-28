@@ -49,15 +49,21 @@ function show(io::IO, v::SmallVector{N,T}) where {N,T}
     print(io, ']')
 end
 
-function ==(v::SmallVector, w::SmallVector)
+function Base.FastMath.eq_fast(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where
+        {N1, T1<:Union{FastInteger,FastFloat}, N2, T2<:Union{FastInteger,FastFloat}}
     length(v) == length(w) && iszero(padded_sub(v.b, w.b))
 end
 
-#=
-function ==(v::SmallVector, w::SmallVector)
-    length(v) == length(w) && all(splat(==), zip(v.b, w.b))
+function ==(v::SmallVector{N1}, w::SmallVector{N2}) where {N1,N2}
+    N = min(N1, N2)
+    length(v) == length(w) && all(ntuple(i -> v.b[i] == w.b[i], Val(N)))
 end
-=#
+
+==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastInteger} = @fastmath v == w
+
+==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastFloat} = @fastmath v == w
+
+==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastFloat,N2,T2<:FastInteger} = @fastmath v == w
 
 """
     fasthash(v::SmallVector [, h0::UInt]) -> UInt

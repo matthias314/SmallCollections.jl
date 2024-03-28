@@ -22,9 +22,12 @@ See [`SmallSet`](@ref), [`SmallVector`](@ref).
 """
 module SmallCollections
 
-using Base: @propagate_inbounds
+using Base: @propagate_inbounds, BitInteger
 
 using BitIntegers: UInt256, UInt512, UInt1024
+
+const FastInteger = Union{BitInteger,Complex{<:BitInteger}}
+const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
 
 include("staticvectors.jl")
 
