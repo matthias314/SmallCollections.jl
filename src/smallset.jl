@@ -11,6 +11,8 @@ import Base: show, ==, hash, copy, convert,
     length, issubset, maximum, minimum,
     union, intersect, setdiff, symdiff
 
+isinteger(x) = x isa Number && Base.isinteger(x)
+
 """
     SmallSet{U<:Unsigned} <: AbstractSet{Int}
 
