@@ -201,7 +201,9 @@ end
     SmallVector(padded_sub(v.b, w.b), length(v))
 end
 
-*(c::Integer, v::SmallVector{N}) where N = SmallVector(c*v.b, length(v))
+Base.FastMath.mul_fast(c, v::SmallVector) = SmallVector(c*v.b, length(v))
+
+*(c::Integer, v::SmallVector{N}) where N = @fastmath c*v
 
 function *(c::Number, v::SmallVector{N}) where N
 # multiplication by Inf and NaN does not preserve zero padding
