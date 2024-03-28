@@ -25,7 +25,11 @@ and hardware float types, one usually takes `N` to be a power of `2`.
 The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 
-See also [`capacity`](@ref), `promote_type`.
+The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`. This is
+pre-defined for number types, `Char`, `String` and `Symbol`. For other types it must be set
+explicitly.
+
+See also [`capacity`](@ref), [`$(@__MODULE__).default`](@ref), `promote_type`.
 """
 struct SmallVector{N,T} <: AbstractVector{T}
     b::Values{N,T}
@@ -119,7 +123,7 @@ end
 
 Return an empty `SmallVector` of the same type as `v`.
 """
-empty(v::SmallVector) = SmallVector(zero(v.b), 0)
+empty(v::SmallVector{N,T}) where {N,T} = SmallVector(default(Values{N,T}), 0)
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
@@ -154,7 +158,7 @@ end
 
 function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
     M <= N || length(v) <= N || error("vector cannot have more than $N elements")
-    t = ntuple(i -> i <= M ? T(v.b[i]) : zero(T), Val(N))
+    t = ntuple(i -> i <= M ? T(v.b[i]) : default(T), Val(N))
     SmallVector{N,T}(t, length(v))
 end
 
@@ -162,12 +166,12 @@ function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     n <= N || error("vector cannot have more than $N elements")
     i1 = firstindex(v)
-    t = ntuple(i -> i <= n ? T(v[i+i1-1]) : zero(T), Val(N))
+    t = ntuple(i -> i <= n ? T(v[i+i1-1]) : default(T), Val(N))
     SmallVector{N,T}(t, n)
 end
 
 function SmallVector{N,T}(iter) where {N,T}
-    b = zero(Values{N,T})
+    b = default(Values{N,T})
     n = 0
     for (i, x) in enumerate(iter)
         (n = i) <= N || error("vector cannot have more than $N elements")
@@ -296,7 +300,7 @@ pop(v::SmallVector)
 @inline function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
-    @inbounds SmallVector(setindex(v.b, zero(T), n), n-1), v[n]
+    @inbounds SmallVector(setindex(v.b, default(T), n), n-1), v[n]
 end
 
 @inline function pushfirst(v::SmallVector{N}, x) where N
@@ -402,6 +406,6 @@ function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
         ntuple(j -> @inbounds(vs[j].b[i]), Val(M))
     end
     T = _return_type(f, tt[1])
-    t = ntuple(i -> i <= n ? f(tt[i]...) : zero(T), Val(N))
+    t = ntuple(i -> i <= n ? f(tt[i]...) : default(T), Val(N))
     SmallVector(Values{N,T}(t), n)
 end

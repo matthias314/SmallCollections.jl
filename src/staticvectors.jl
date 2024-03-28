@@ -84,11 +84,27 @@ end
         elseif j < N
             v[j+1]
         else
-            zero(T)
+            default(T)
         end
     end
     Values{N,T}(t), v[i]
 end
+
+"""
+    $(@__MODULE__).default(::Type{T}) -> T
+
+Return the default value of type `T` used for filling unused elements of a `SmallVector`.
+This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
+be any value of type `T`.
+"""
+default(T::Type) = error("no default value defined for type $T")
+
+default(::Type{T}) where T <: Number = zero(T)
+default(::Type{Char}) = Char(0)
+default(::Type{String}) = ""
+default(::Type{Symbol}) = Symbol()
+
+default(::Type{Values{N,T}}) where {N,T} = Values(ntuple(Returns(default(T)), Val(N)))
 
 function padded_add(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
     T = promote_type(T1, T2)
