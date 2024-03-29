@@ -243,7 +243,7 @@ function prod(v::SmallVector{N,T}) where {N,T}
     if !(T <: Union{Base.BitInteger,Base.HWReal})
         invoke(prod, Tuple{AbstractVector}, v)
     else
-        b = padtail(v.b, T(1), length(v))
+        b = padtail(v.b, one(T), length(v))
         if T <: Base.BitSignedSmall
             prod(Int, b)
         elseif T <: Base.BitUnsignedSmall
