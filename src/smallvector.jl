@@ -423,3 +423,9 @@ function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
     t = ntuple(i -> i <= n ? f(tt[i]...) : default(T), Val(N))
     SmallVector(Values{N,T}(t), n)
 end
+
+map_fast(f::F, v::SmallVector) where F = SmallVector(map(f, v.b), length(v))
+
+for f in (abs, abs2, sign, signbit, sqrt)
+    @eval map(::$(typeof(f)), v::SmallVector) = map_fast($f, v)
+end
