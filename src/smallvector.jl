@@ -170,7 +170,7 @@ end
 
 function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
     M <= N || length(v) <= N || error("vector cannot have more than $N elements")
-    t = ntuple(i -> i <= M ? T(v.b[i]) : default(T), Val(N))
+    t = ntuple(i -> i <= M ? convert(T, v.b[i]) : default(T), Val(N))
     SmallVector{N,T}(t, length(v))
 end
 
@@ -178,7 +178,7 @@ function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     n <= N || error("vector cannot have more than $N elements")
     i1 = firstindex(v)
-    t = ntuple(i -> i <= n ? T(v[i+i1-1]) : default(T), Val(N))
+    t = ntuple(i -> i <= n ? convert(T, v[i+i1-1]) : default(T), Val(N))
     SmallVector{N,T}(t, n)
 end
 
