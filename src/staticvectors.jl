@@ -108,20 +108,14 @@ default(::Type{Values{N,T}}) where {N,T} = Values(ntuple(Returns(default(T)), Va
 
 function padded_add(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
     T = promote_type(T1, T2)
-    if N1 <= N2
-        Values{N2,T}(ntuple(i -> i <= N1 ? v[i]+w[i] : w[i], Val(N2)))
-    else
-        Values{N2,T}(ntuple(i -> i <= N2 ? v[i]+w[i] : v[i], Val(N1)))
-    end
+    N = min(N1, N2)
+    Values{N,T}(ntuple(i -> v[i]+w[i], Val(N)))
 end
 
 function padded_sub(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
     T = promote_type(T1, T2)
-    if N1 <= N2
-        Values{N2,T}(ntuple(i -> i <= N1 ? v[i]-w[i] : -w[i], Val(N2)))
-    else
-        Values{N1,T}(ntuple(i -> i <= N2 ? v[i]-w[i] : v[i], Val(N1)))
-    end
+    N = min(N1, N2)
+    Values{N,T}(ntuple(i -> v[i]-w[i], Val(N)))
 end
 
 #
