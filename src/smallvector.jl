@@ -72,9 +72,13 @@ end
 """
     fasthash(v::SmallVector [, h0::UInt]) -> UInt
 
-Return a hash for `v` that can be computed fast. This hash is consistent across
-all `SmallVectors`s of the same element type, but it is not compatible with the `hash`
-used for vectors or the `fasthash` for a `SmallVector` with a different element type.
+Return a hash for `v` that may be computed faster than the standard `hash`
+for vectors. This new hash is consistent across all `SmallVectors`s
+of the same element type, but it may not be compatible with `hash` or
+with `fasthash` for a `SmallVector` having a different element type.
+
+Currently, `fasthash` differs from `hash` only if the element type of `v`
+is a bit integer type with at most 32 bits, `Bool` or `Char`.
 
 See also `Base.hash`.
 
@@ -83,7 +87,7 @@ See also `Base.hash`.
 julia> v = SmallVector{8,Int8}([1, 5, 6]);
 
 julia> fasthash(v)
-0xa5aafc3dcb3541d5
+0x6466067ab41d0916
 
 julia> fasthash(v) == hash(v)
 false
@@ -95,7 +99,15 @@ julia> w = SmallVector{8,Int16}(v); fasthash(v) == fasthash(w)
 false
 ```
 """
-fasthash(v::SmallVector, h0::UInt) = hash(bits(v.b), hash(length(v), h0))
+fasthash(v::SmallVector, h0::UInt)
+
+function fasthash(v::SmallVector{N,T}, h0::UInt) where {N,T}
+    if (T <: BitInteger && bitsize(T) <= 32) || T == Bool || T == Char
+        Base.hash_integer(bits(v.b), hash(length(v), h0))
+    else
+        hash(v, h0)
+    end
+end
 
 copy(v::SmallVector) = v
 

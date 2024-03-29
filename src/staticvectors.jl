@@ -132,7 +132,7 @@ vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
 
 unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 
-@generated function bits(v::TupleVector{N,T}) where {N, T <: BitInteger}
+@generated function bits(v::TupleVector{N,T}) where {N, T <: Union{BitInteger,Char}}
     s = bitsize(T)
     b = N*s
     c = nextpow(2, b)
