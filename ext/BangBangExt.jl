@@ -16,4 +16,7 @@ for f in (:push, :pop, :pushfirst, :popfirst, :deleteat)
     @eval NoBang.$f(v::SmallVector, args...) = $f(v, args...)
 end
 
+BangBang.NoBang._setindex(v::SmallVector, args...) = setindex(v, args...)
+BangBang.add!!(v::SmallVector, w::SmallVector) = v+w
+
 end # module
