@@ -3,20 +3,12 @@
 
 This packages provides several immutable collections that don't allocate
 and are therefore faster than the usual types. The number of elements
-that these collections can hold is necessarily limited.
+that these collections can hold is necessarily limited. At present
+`SmallSet` and `SmallVector` are defined.
 
-If the package [`BangBang.jl`](https://github.com/JuliaFolds2/BangBang.jl)
-is loaded, then the functions `push`, `pop`, `pushfirst`, `popfirst`,
-`delete`, `deleteat` and `setindex` are also available as
-[`push!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.push!!),
-[`pop!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.pop!!),
-[`pushfirst!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.pushfirst!!),
-[`popfirst!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.popfirst!!),
-[`delete!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.delete!!),
-[`deleteat!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.deleteat!!)
-and
-[`setindex!!`](https://juliafolds2.github.io/BangBang.jl/stable/#BangBang.setindex!!).
-
+If the package `BangBang.jl` is loaded, then many functions defined by
+this package are also available in `!!`-form. For example, `setindex!!`
+with a `SmallVector` as first argument calls [`setindex`](@ref).
 
 See [`SmallSet`](@ref), [`SmallVector`](@ref).
 """

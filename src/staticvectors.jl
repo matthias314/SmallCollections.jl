@@ -96,6 +96,9 @@ end
 Return the default value of type `T` used for filling unused elements of a `SmallVector`.
 This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
 be any value of type `T`.
+
+This function has methods for number types, `Char`, `String` and `Symbol`.
+Methods for other types must be defined explicitly.
 """
 default(T::Type) = error("no default value defined for type $T")
 

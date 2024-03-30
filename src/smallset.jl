@@ -22,8 +22,9 @@ isinteger(x) = x isa Number && Base.isinteger(x)
 `SmallSet{U}` is an immutable set that can hold integers between `1` and the bit length of `U`.
 Called without an argument, it returns an empty set. If `U` is omitted, then `UInt` is taken.
 
-All non-mutating functions for sets are supported. The non-mutating analogs [`push`](@ref),
-[`pop`](@ref) and [`delete`](@ref) of the corresponding `!`-functions are also provided.
+All non-mutating functions for sets are supported. The non-mutating analogs
+[`push`](@ref push(::SmallSet, ::Vararg{Any})), [`pop`](@ref pop(::SmallSet)) and
+[`delete`](@ref) of the corresponding `!`-functions are also provided.
 """
 struct SmallSet{U<:Unsigned} <: AbstractSet{Int}
     mask::U
@@ -212,6 +213,8 @@ issubset(s::SmallSet, t::SmallSet) = isempty(setdiff(s, t))
     push(s::S, xs...) where S <: SmallSet -> S
 
 Return the `SmallSet` obtained from `s` by adding the other arguments `xs`.
+
+See also `Base.push!`, `BangBang.push!!`.
 """
 @propagate_inbounds push(s::SmallSet, ns...) = _push(s.mask, ns)
 
@@ -221,7 +224,7 @@ Return the `SmallSet` obtained from `s` by adding the other arguments `xs`.
 Return the pair `(t, x)` where `x` is the smallest element from `s` and
 `t` is the set `s` with `x` deleted. The set `s` must be non-empty.
 
-See also `Base.pop!`.
+See also `Base.pop!`, `BangBang.pop!!`.
 """
 @inline function pop(s::SmallSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
@@ -235,7 +238,7 @@ end
 Return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
 The set `s` must be non-empty.
 
-See also `Base.pop!`.
+See also `Base.pop!`, `BangBang.pop!!`.
 """
 @inline function pop(s::SmallSet, n)
     @boundscheck n in s || error("set does not contain the element")
@@ -248,7 +251,7 @@ end
 If `s` contains `x`, return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
 Otherwise return `(s, default)`
 
-See also `Base.pop!`.
+See also `Base.pop!`, `BangBang.pop!!`.
 """
 function pop(s::SmallSet, n, default)
     n in s ? (delete(s, n), Int(n)) : (s, default)
@@ -260,7 +263,7 @@ end
 If `s` contains `x`, return the set obtained by deleting that element.
 Otherwise return `s`.
 
-See also `Base.delete!`.
+See also `Base.delete!`, `BangBang.delete!!`.
 """
 function delete(s::SmallSet{U}, n) where U
     if isinteger(n)

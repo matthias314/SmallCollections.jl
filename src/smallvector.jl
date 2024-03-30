@@ -29,7 +29,32 @@ The unused elements of a `SmallVector{N,T}` are filled with the value `default(T
 pre-defined for number types, `Char`, `String` and `Symbol`. For other types it must be set
 explicitly.
 
+Addition and subtraction of two `SmallVector`s is possible even if the vectors have different
+capacity. (Of course, their lengths must agree.) The capacity of the result is the smaller
+of the arguments' capacities in this case.
+
 See also [`capacity`](@ref), [`$(@__MODULE__).default`](@ref), `promote_type`.
+
+# Examples
+```jldoctest
+julia> v = SmallVector{8,Int8}(2*x for x in 1:3)
+3-element SmallVector{8, Int8}:
+ 2
+ 4
+ 6
+
+julia> w = SmallVector{9}((1, 2.5, 4))
+3-element SmallVector{9, Float64}:
+ 1.0
+ 2.5
+ 4.0
+
+julia> v+w
+3-element SmallVector{8, Float64}:
+  3.0
+  6.5
+ 10.0
+```
 """
 struct SmallVector{N,T} <: AbstractVector{T}
     b::Values{N,T}
@@ -125,6 +150,14 @@ size(v::SmallVector) = (length(v),)
     @inbounds v.b[i]
 end
 
+"""
+    setindex(v::V, x, i::Integer) where V <: SmallVector -> V
+
+Return a vector that agrees with `v` except possibly for the `i`-th entry
+that is set to `x`.
+
+See also `Base.setindex`.
+"""
 @inline function setindex(v::SmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds setindex(v.b, x, i)), length(v))
@@ -296,7 +329,7 @@ end
 Return the `SmallVector` obtained from `v` by appending the other arguments `xs`.
 The length of `v` must be less than `N`.
 
-This is the non-mutating analog of `Base.push!`.
+See also `Base.push!`, `BangBang.push!!`.
 """
 @propagate_inbounds push(v::SmallVector, xs...) = foldl(push, xs; init = v)
 
@@ -307,7 +340,7 @@ Return the tuple `(w, x)` where `x` is the last element of `v`
 and `w` obtained from `v` by dropping this element.
 The vector `v` must not be empty.
 
-This is the non-mutating analog of `Base.pop!`.
+See also `Base.pop!`, `BangBang.pop!!`.
 """
 pop(v::SmallVector)
 
@@ -329,7 +362,7 @@ end
 Return the `SmallVector` obtained from `v` by prepending the other arguments `xs`.
 The length of `v` must be less than `N`.
 
-This is the non-mutating analog of `Base.pushfirst!`.
+See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
 """
 @propagate_inbounds pushfirst(v::SmallVector, xs...) = foldr((x, v) -> pushfirst(v, x), xs; init = v)
 
@@ -340,7 +373,7 @@ Return the tuple `(w, x)` where `x` is the first element of `v`
 and `w` obtained from `v` by dropping this element.
 The vector `v` must not be empty.
 
-This is the non-mutating analog of `Base.popfirst!`.
+See also `Base.popfirst!`, `BangBang.popfirst!!`.
 """
 @inline function popfirst(v::SmallVector)
     n = length(v)
@@ -372,7 +405,7 @@ end
 Return the `SmallVector` obtained from `v` by deleting the element at position `i`.
 The position `i` must be between `1` and `length(v)`.
 
-This is the non-mutating analog of `Base.deleteat!`.
+See also `Base.deleteat!`, `BangBang.deleteat!!`.
 """
 @propagate_inbounds deleteat(v::SmallVector, i::Integer) = first(popat(v, i))
 
@@ -382,7 +415,7 @@ This is the non-mutating analog of `Base.deleteat!`.
 Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
 at position `i`. The latter must be between `1` and `length(v)`.
 
-This is the non-mutating analog of `Base.popat!`.
+See also `Base.popat!`, `BangBang.popat!!`.
 """
 @inline function popat(v::SmallVector, i::Integer)
     n = length(v)
