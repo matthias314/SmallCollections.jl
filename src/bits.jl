@@ -20,21 +20,4 @@ See also `Base.top_set_bit`.
 """
 top_set_bit(x::Unsigned)
 
-top_set_bit(x::Base.BitUnsigned) = Base.top_set_bit(x)
-# avoid unneccesary generation of methods
-
-@generated function top_set_bit(x::T) where T <: Unsigned
-    b = bitsize(T)
-    ir = """
-        declare i$b @llvm.ctlz.i$b (i$b, i1)
-        define i$b @ctlz(i$b) #0 {
-            %a = call i$b @llvm.ctlz.i$b (i$b %0, i1 0)
-            ret i$b %a
-        }
-        attributes #0 = { alwaysinline }
-    """
-    quote
-        lz = Base.llvmcall(($ir, "ctlz"), T, Tuple{T}, x)
-        $b-(lz % Int)
-    end
-end
+top_set_bit(x::T) where T <: Unsigned = bitsize(T) - leading_zeros(x)
