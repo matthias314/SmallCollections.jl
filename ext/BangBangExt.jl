@@ -4,10 +4,10 @@ using SmallCollections
 
 using BangBang: BangBang, NoBang, Mutator
 
-BangBang.implements(::Mutator, ::Type{<:SmallSet}) = false
+BangBang.implements(::Mutator, ::Type{<:SmallBitSet}) = false
 
 for f in (:push, :pop, :delete)
-    @eval NoBang.$f(v::SmallSet, args...) = $f(v, args...)
+    @eval NoBang.$f(v::SmallBitSet, args...) = $f(v, args...)
 end
 
 BangBang.implements(::Mutator, ::Type{<:SmallVector}) = false

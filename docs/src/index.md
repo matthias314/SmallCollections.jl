@@ -11,22 +11,22 @@ DocTestSetup = quote
 SmallCollections
 ```
 
-## [`SmallSet`](@id sec-smallset)
+## [`SmallBitSet`](@id sec-smallbitset)
 
 ```@docs
-SmallSet
+SmallBitSet
 bits
-convert(::Type{SmallSet}, ::Integer)
-capacity(::Type{<:SmallSet})
-fasthash(::SmallSet, ::UInt)
-push(::SmallSet, ::Vararg{Any})
-pop(::SmallSet)
-pop(::SmallSet, ::Any)
-pop(::SmallSet, ::Any, ::Any)
+convert(::Type{SmallBitSet}, ::Integer)
+capacity(::Type{<:SmallBitSet})
+fasthash(::SmallBitSet, ::UInt)
+push(::SmallBitSet, ::Vararg{Any})
+pop(::SmallBitSet)
+pop(::SmallBitSet, ::Any)
+pop(::SmallBitSet, ::Any, ::Any)
 delete
 ```
 
-## [`SmallVector`](@id sec-smallset)
+## [`SmallVector`](@id sec-smallvector)
 
 ```@docs
 SmallVector
@@ -50,14 +50,14 @@ support
 
 If the package [`BangBang.jl`](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then the functions
-[`push`](@ref push(::SmallSet, ::Vararg{Any})),
-[`pop`](@ref pop(::SmallSet)),
+[`push`](@ref push(::SmallBitSet, ::Vararg{Any})),
+[`pop`](@ref pop(::SmallBitSet)),
 [`delete`](@ref),
 `union`,
 `intersect`,
 `setdiff` and
 `symdiff`
-for `SmallSet` as well as
+for `SmallBitSet` as well as
 [`setindex`](@ref),
 [`push`](@ref push(::SmallVector, ::Vararg{Any})),
 [`pushfirst`](@ref),
