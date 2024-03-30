@@ -30,7 +30,7 @@ capacity(::T) where T = capacity(T)
 fasthash(x) = fasthash(x, UInt(0))
 
 include("bits.jl")
-include("smallset.jl")
+include("smallbitset.jl")
 include("smallvector.jl")
 
 end
