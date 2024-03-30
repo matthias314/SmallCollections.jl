@@ -1,0 +1,3 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+SmallCollections = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
