@@ -14,6 +14,7 @@ import Base: show, ==, copy, Tuple, empty,
 """
     SmallVector{N,T} <: AbstractVector{T}
 
+    SmallVector{N,T}()
     SmallVector{N,T}(iter)
     SmallVector{N}(v::AbstractVector{T})
     SmallVector{N}(t::Tuple)
@@ -24,6 +25,7 @@ and hardware float types, one usually takes `N` to be a power of `2`.
 
 The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
+If no argument is given, then an empty vector is returned.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`. This is
 pre-defined for number types, `Char`, `String` and `Symbol`. For other types it must be set
@@ -165,10 +167,16 @@ end
 
 """
     empty(v::V) where V <: SmallVector -> V
+    empty(v::SmallVector{N}, U::Type) where {N,U} -> SmallVector{N,U}
 
-Return an empty `SmallVector` of the same type as `v`.
+Called with one argument, return an empty `SmallVector` of the same type as `v`.
+Called with two arguments, return an empty `SmallVector` with the same capacity as `v`
+and element type `U`.
 """
-empty(v::SmallVector{N,T}) where {N,T} = SmallVector(default(Values{N,T}), 0)
+empty(v::SmallVector),
+empty(v::SmallVector, ::Type)
+
+empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
@@ -200,6 +208,8 @@ function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     b = ones(Values{N,T})
     SmallVector((@inbounds padtail(b, -one(T), n)), n)
 end
+
+SmallVector{N,T}() where {N,T} = SmallVector{N,T}(default(Values{N,T}), 0)
 
 function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
     M <= N || length(v) <= N || error("vector cannot have more than $N elements")

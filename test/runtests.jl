@@ -60,6 +60,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
     for U in unsigned_types
         s = SmallBitSet{U}()
         @test_inferred isempty(s) true
+        @test_inferred empty(s) SmallBitSet{U}()
         m = bitsize(U)
         @test_throws Exception SmallBitSet{U}([1, 2, 'x'])
         @test_throws Exception SmallBitSet{U}([1, 2, m+1])
@@ -225,6 +226,9 @@ Base.rand(::Type{T}, n::Integer) where T <: Union{String,Symbol} = T[rand(T) for
         v8 = SmallVector{2*N,T}(u)
         @test_inferred fasthash(v) fasthash(v8) UInt
         @test_inferred length(v) length(u) Int
+        @test_inferred SmallVector{N,T}() SmallVector{N,T}(())
+        @test_inferred empty(v) SmallVector{N,T}()
+        @test_inferred empty(v, Char) SmallVector{N,Char}()
     end
 end
 

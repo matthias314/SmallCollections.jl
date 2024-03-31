@@ -7,7 +7,7 @@ export SmallBitSet, bits, delete, pop, push
 using Base: hasfastin
 
 import Base: show, ==, hash, copy, convert,
-    isempty, in, first, last, iterate,
+    empty, isempty, in, first, last, iterate,
     length, issubset, maximum, minimum,
     union, intersect, setdiff, symdiff
 
@@ -149,6 +149,15 @@ function SmallBitSet{U}(r::AbstractUnitRange{<:Integer}) where U
 end
 
 isempty(s::SmallBitSet) = iszero(bits(s))
+
+"""
+    empty(s::S) where S <: SmallBitSet -> S
+
+Return an empty `SmallBitSet` of the same type as `s`.
+"""
+empty(s::SmallBitSet)
+
+empty(s::S) where S <: SmallBitSet = S()
 
 length(s::SmallBitSet) = count_ones(bits(s))
 

@@ -17,7 +17,7 @@ SmallCollections
 SmallVector
 capacity(::Type{<:SmallVector{N}}) where N
 fasthash(::SmallVector, ::UInt)
-empty
+empty(::SmallVector)
 zeros(::Type{<:SmallVector}, ::Integer)
 ones(::Type{<:SmallVector}, ::Integer)
 setindex
@@ -39,6 +39,7 @@ bits
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
 fasthash(::SmallBitSet, ::UInt)
+empty(::SmallBitSet)
 push(::SmallBitSet, ::Vararg{Any})
 pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)
