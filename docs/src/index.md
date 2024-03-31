@@ -11,21 +11,6 @@ DocTestSetup = quote
 SmallCollections
 ```
 
-## [`SmallBitSet`](@id sec-smallbitset)
-
-```@docs
-SmallBitSet
-bits
-convert(::Type{SmallBitSet}, ::Integer)
-capacity(::Type{<:SmallBitSet})
-fasthash(::SmallBitSet, ::UInt)
-push(::SmallBitSet, ::Vararg{Any})
-pop(::SmallBitSet)
-pop(::SmallBitSet, ::Any)
-pop(::SmallBitSet, ::Any, ::Any)
-delete
-```
-
 ## [`SmallVector`](@id sec-smallvector)
 
 ```@docs
@@ -44,6 +29,21 @@ insert
 deleteat
 popat
 support
+```
+
+## [`SmallBitSet`](@id sec-smallbitset)
+
+```@docs
+SmallBitSet
+bits
+convert(::Type{SmallBitSet}, ::Integer)
+capacity(::Type{<:SmallBitSet})
+fasthash(::SmallBitSet, ::UInt)
+push(::SmallBitSet, ::Vararg{Any})
+pop(::SmallBitSet)
+pop(::SmallBitSet, ::Any)
+pop(::SmallBitSet, ::Any, ::Any)
+delete
 ```
 
 ## BangBang support
