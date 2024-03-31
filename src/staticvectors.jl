@@ -5,18 +5,6 @@
 using StaticVectors
 
 using Base: BitInteger, @assume_effects
-import Base: setindex, convert
-
-#=
-@propagate_inbounds @generated function setindex(b::Values{N,T}, x, i::Integer) where {N,T}
-    basis = ntuple(N) do j
-        Values{N,T}(ntuple(==(j), N))
-    end
-    quote
-        b + (T(x)-b[i])*$basis[i]
-    end
-end
-=#
 
 function basis(::Val{N}) where N
     ntuple(Val(N)) do j
@@ -24,13 +12,13 @@ function basis(::Val{N}) where N
     end
 end
 
-@inline function setindex(v::Values{N,T}, x, i::Integer) where {N,T}
+@inline function _setindex(v::Values{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
     t = ntuple(j -> j == i ? T(x) : v[j], Val(N))
     Values{N,T}(t)
 end
 
-@propagate_inbounds function setindex(b::Values{N,T}, x, i::Integer) where {N, T <: Base.HWReal}
+@propagate_inbounds function _setindex(b::Values{N,T}, x, i::Integer) where {N, T <: Base.HWReal}
     b + (T(x)-b[i])*basis(Val(N))[i]
 end
 
@@ -42,18 +30,6 @@ end
         b + T(x)*$pads[i+1]
     end
 end
-
-#=
-@assume_effects :total function pads(::Val{N}) where N
-    ntuple(Val(N+1)) do j
-        Values{N,Int8}(ntuple(>=(j), Val(N)))
-    end
-end
-
-@propagate_inbounds function padtail(b::V, x, i::Integer) where {N, T, V <: Values{N,T}}
-    b .| x*pads(Val(N))[i+1]
-end
-=#
 
 pushfirst(v::Values, x) = insert(v, 1, x)
 
@@ -185,6 +161,7 @@ end
     end
 end
 
+#=
 @generated function convert(::Type{Values{N,T}}, x::U) where {N, T <: BitInteger, U <: Unsigned}
     s = bitsize(T)
     b = N*s
@@ -244,12 +221,5 @@ end
         v = ntuple(Base.Fix1(getindex, v2), Val(N))
         Values{N,Bool}(unvec(v))
     end
-end
-
-#=
-function convert2(::Type{Values{N,Bool}}, x::U) where {N, U <: Unsigned}
-    c = bitsize(U)
-    t = ntuple(i -> i <= c && !iszero(x & 1 << (i-1)), Val(N))
-    Values{N,Bool}(t)
 end
 =#
