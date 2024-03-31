@@ -2,7 +2,7 @@
 
 julia_version = "1.10.0"
 manifest_format = "2.0"
-project_hash = "805c22cb817455c50c2abd7876caf18ddb6a0427"
+project_hash = "50883939200693423567831629bf957640a62a9a"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -85,6 +85,12 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
+
+[[deps.SIMD]]
+deps = ["PrecompileTools"]
+git-tree-sha1 = "d8911cc125da009051fb35322415641d02d9e37f"
+uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
+version = "3.4.6"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"

@@ -2,14 +2,14 @@ using BenchmarkTools
 
 prettytime(t) = BenchmarkTools.prettytime(t*10e9)
 
-using SmallCollections, StaticArrays, StaticVectors, BitIntegers
+using SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers
 
 const n = 1000
 s = """
 ### `SmallVector`
 
-| `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` |
-| ---: | ---: | ---: | ---: | ---: |
+| `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
 """
 for (N, T) in [(8, Float64), (8, Int64), (16, Int32), (32, Int16)]
     # @show N T
@@ -21,14 +21,17 @@ for (N, T) in [(8, Float64), (8, Int64), (16, Int32), (32, Int16)]
     w3 = [Values{N,T}(rand(T, N)) for _ in 1:n]
     v4 = map(SVector{N,T}, v3)
     w4 = map(SVector{N,T}, w3)
+    v5 = map(x -> Vec{N,T}(Tuple(x)), v3)
+    w5 = map(x -> Vec{N,T}(Tuple(x)), w3)
 
-    # @show typeof(v1) typeof(v2) typeof(v3) typeof(v4)
+    # @show typeof(v1) typeof(v2) typeof(v3) typeof(v4) typeof(v5)
 
     t1 = prettytime(@belapsed map(+, $v1, $w1))
     t2 = prettytime(@belapsed map(+, $v2, $w2))
     t3 = prettytime(@belapsed map(+, $v3, $w3))
     t4 = prettytime(@belapsed map(+, $v4, $w4))
-    s0 = "| ($N, $T) | $t1 | $t2 | $t3 | $t4 |\n"
+    t5 = prettytime(@belapsed map(+, $v5, $w5))
+    s0 = "| ($N, $T) | $t1 | $t2 | $t3 | $t4 | $t5 |\n"
 
     print(stderr, s0)
     global s *= s0

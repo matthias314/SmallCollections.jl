@@ -1,6 +1,7 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
+SIMD = "fdea26ae-647d-5447-a871-4b548cad5224"
 SmallCollections = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StaticVectors = "20fadf95-9e3d-483c-97cd-cab2760e7998"
