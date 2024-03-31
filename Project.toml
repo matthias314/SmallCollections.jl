@@ -14,6 +14,7 @@ BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
 BangBangExt = "BangBang"
 
 [compat]
+julia = "1.6"
 BitIntegers = "0.3"
 StaticVectors = "1"
 BangBang = "0.4"
