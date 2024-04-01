@@ -28,10 +28,8 @@ All non-mutating functions for sets are supported. The non-mutating analogs
 """
 struct SmallBitSet{U<:Unsigned} <: AbstractSet{Int}
     mask::U
-    SmallBitSet(::Nothing, mask::U) where U = new{U}(mask)
+    global _SmallBitSet(mask::U) where U = new{U}(mask)
 end
-
-_SmallBitSet(mask) = SmallBitSet(nothing, mask)
 
 function show(io::IO, s::SmallBitSet)
     print(io, "SmallBitSet([")
