@@ -12,7 +12,7 @@ end
 
 BangBang.implements(::Mutator, ::Type{<:SmallVector}) = false
 
-for f in (:push, :pop, :pushfirst, :popfirst, :deleteat)
+for f in (:push, :pop, :pushfirst, :popfirst, :deleteat, :append)
     @eval NoBang.$f(v::SmallVector, args...) = $f(v, args...)
 end
 

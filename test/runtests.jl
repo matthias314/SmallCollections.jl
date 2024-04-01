@@ -320,6 +320,17 @@ end
                 @test_throws Exception deleteat(v, i)
             end
         end
+        @test_inferred append(v) v
+        xy = [x, y]
+        if length(u) <= N-2
+            w = @test_inferred append(v, SmallVector{4}(xy)) push(v, x, y)
+            w = @test_inferred append(v, xy[i] for i in 1:2) push(v, x, y)
+            w = @test_inferred append(v, (x,), [y]) push(v, x, y)
+        else
+            @test_throws Exception append(v, SmallVector{4}(xy))
+            @test_throws Exception append(v, xy[i] for i in 1:2)
+            @test_throws Exception append(v, (x,), [y])
+        end
     end
 end
 
@@ -460,5 +471,6 @@ end
     @test_inferred popfirst!!(v) popfirst(v)
     @test_broken insert!!(v, i, x) == insert(v, i, x)
     @test_inferred deleteat!!(v, i) deleteat(v, i)
+    @test_inferred append!!(v, (x,)) append(v, (x,))
     @test_inferred add!!(v, w) v+w
 end

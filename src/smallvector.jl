@@ -4,7 +4,7 @@
 
 export SmallVector, setindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
-    support, fasthash
+    append, support, fasthash
 
 import Base: show, ==, copy, Tuple, empty,
     length, size, getindex, setindex,
@@ -335,22 +335,12 @@ The length of `v` must be less than `N`.
 
 See also `Base.push!`, `BangBang.push!!`.
 """
-push(v::SmallVector, xs...)
+@propagate_inbounds push(v::SmallVector, xs...) = append(v, xs)
 
 @inline function push(v::SmallVector{N}, x) where N
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
     @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
-end
-
-@inline function push(v::SmallVector{N,T}, xs...) where {N,T}
-    n = length(v)
-    m = n+length(xs)
-    @boundscheck m <= N || error("vector cannot have more than $N elements")
-    t = ntuple(Val(N)) do i
-        n < i <= m ? convert(T, xs[i-n]) : v.b[i]
-    end
-    SmallVector{N,T}(Values{N,T}(t), m)
 end
 
 """
@@ -440,6 +430,28 @@ See also `Base.popat!`, `BangBang.popat!!`.
     @boundscheck checkbounds(v, i)
     c, x = @inbounds popat(v.b, i)
     SmallVector(c, n-1), x
+end
+
+"""
+    append(v::V, ws...) where V <: SmallVector -> V
+
+Append all elements of the collections `ws` to `v` and return the new vector.
+Note that the capacity of `v` is not changed.
+
+See also `Base.append!`, `BangBang.append!!`.
+"""
+@propagate_inbounds append(v::SmallVector, ws...) = foldl(append, ws; init = v)
+
+@propagate_inbounds append(v::SmallVector, w) = foldl(push, w; init = v)
+
+@inline function append(v::SmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+    n = length(v)
+    m = n+length(w)
+    @boundscheck m <= N || error("vector cannot have more than $N elements")
+    t = ntuple(Val(N)) do i
+        @inbounds n < i <= m ? convert(T, w[i-n]) : v.b[i]
+    end
+    SmallVector{N,T}(Values{N,T}(t), m)
 end
 
 """

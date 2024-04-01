@@ -28,6 +28,7 @@ popfirst
 insert
 deleteat
 popat
+append
 support
 ```
 
@@ -63,8 +64,9 @@ for `SmallBitSet` as well as
 [`push`](@ref push(::SmallVector, ::Vararg{Any})),
 [`pushfirst`](@ref),
 [ `pop`](@ref pop(::SmallVector)),
-[`popfirst`](@ref) and
-[`deleteat`](@ref)
+[`popfirst`](@ref),
+[`deleteat`](@ref) and
+[`append`](@ref)
 for `SmallVector`
 are also available in `!!`-form.
 For example, `setindex!!` with a `SmallVector` as first argument calls `setindex`.
