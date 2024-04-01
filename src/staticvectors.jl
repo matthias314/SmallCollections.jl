@@ -31,10 +31,12 @@ end
     end
 end
 
-function pushfirst(v::Values{N,T}, xs...) where {N,T}
-    n = length(xs)
+pushfirst(v::Values, xs...) = prepend(v, xs)
+
+function prepend(v::Values{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+    n = length(w)
     t = ntuple(Val(N)) do i
-        i <= n ? convert(T, xs[i]) : v[i-n]
+        @inbounds i <= n ? convert(T, w[i]) : v[i-n]
     end
     Values{N,T}(t)
 end

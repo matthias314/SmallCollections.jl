@@ -29,6 +29,7 @@ insert
 deleteat
 popat
 append
+prepend
 support
 ```
 
@@ -70,7 +71,7 @@ for `SmallBitSet` as well as
 for `SmallVector`
 are also available in `!!`-form.
 For example, `setindex!!` with a `SmallVector` as first argument calls `setindex`.
-(For some reason, `BangBang.jl` does not implement `insert!!`.)
+(For some reason, `BangBang.jl` does not implement `insert!!` and `prepend!!`.)
 Moreover, `add!!(v::SmallVector, w::SmallVector)` is a synonym for `v+w`.
 
 This allows to write efficient code that works for both mutable and immutable arguments.

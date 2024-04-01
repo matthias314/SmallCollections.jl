@@ -4,7 +4,7 @@
 
 export SmallVector, setindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
-    append, support, fasthash
+    append, prepend, support, fasthash
 
 import Base: show, ==, copy, Tuple, empty,
     length, size, getindex, setindex,
@@ -453,6 +453,27 @@ See also `Base.append!`, `BangBang.append!!`.
     end
     SmallVector{N,T}(Values{N,T}(t), m)
 end
+
+"""
+    prepend(v::V, ws...) where V <: SmallVector -> V
+
+Prepend all elements of the collections `ws` to `v` and return the new vector.
+Note that the capacity of `v` is not changed.
+
+See also `Base.prepend!`.
+"""
+@propagate_inbounds function prepend(v::SmallVector, ws...)
+    foldr((w, v) -> prepend(v, w), ws; init = v)
+end
+
+@inline function prepend(v::SmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+    n = length(v)
+    m = n+length(w)
+    @boundscheck m <= N || error("vector cannot have more than $N elements")
+    SmallVector{N,T}(prepend(v.b, w), m)
+end
+
+prepend(v::SmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
 """
     support(v::SmallVector) -> SmallBitSet
