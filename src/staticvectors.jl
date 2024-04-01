@@ -31,7 +31,13 @@ end
     end
 end
 
-pushfirst(v::Values, x) = insert(v, 1, x)
+function pushfirst(v::Values{N,T}, xs...) where {N,T}
+    n = length(xs)
+    t = ntuple(Val(N)) do i
+        i <= n ? convert(T, xs[i]) : v[i-n]
+    end
+    Values{N,T}(t)
+end
 
 popfirst(v::Values) = popat(v, 1)
 

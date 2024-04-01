@@ -327,12 +327,6 @@ function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
     end
 end
 
-@inline function push(v::SmallVector{N}, x) where N
-    n = length(v)
-    @boundscheck n < N || error("vector cannot have more than $N elements")
-    @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
-end
-
 """
     push(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
 
@@ -341,7 +335,23 @@ The length of `v` must be less than `N`.
 
 See also `Base.push!`, `BangBang.push!!`.
 """
-@propagate_inbounds push(v::SmallVector, xs...) = foldl(push, xs; init = v)
+push(v::SmallVector, xs...)
+
+@inline function push(v::SmallVector{N}, x) where N
+    n = length(v)
+    @boundscheck n < N || error("vector cannot have more than $N elements")
+    @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
+end
+
+@inline function push(v::SmallVector{N,T}, xs...) where {N,T}
+    n = length(v)
+    m = n+length(xs)
+    @boundscheck m <= N || error("vector cannot have more than $N elements")
+    t = ntuple(Val(N)) do i
+        n < i <= m ? convert(T, xs[i-n]) : v.b[i]
+    end
+    SmallVector{N,T}(Values{N,T}(t), m)
+end
 
 """
     pop(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}
@@ -360,12 +370,6 @@ pop(v::SmallVector)
     @inbounds SmallVector(_setindex(v.b, default(T), n), n-1), v[n]
 end
 
-@inline function pushfirst(v::SmallVector{N}, x) where N
-    n = length(v)
-    @boundscheck n < N || error("vector cannot have more than $N elements")
-    SmallVector(pushfirst(v.b, x), n+1)
-end
-
 """
     pushfirst(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
 
@@ -374,7 +378,11 @@ The length of `v` must be less than `N`.
 
 See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
 """
-@propagate_inbounds pushfirst(v::SmallVector, xs...) = foldr((x, v) -> pushfirst(v, x), xs; init = v)
+@inline function pushfirst(v::SmallVector{N}, xs...) where N
+    n = length(xs)+length(v)
+    @boundscheck n <= N || error("vector cannot have more $N elements")
+    SmallVector(pushfirst(v.b, xs...), n)
+end
 
 """
     popfirst(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}

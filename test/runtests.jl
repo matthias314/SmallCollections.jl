@@ -277,14 +277,25 @@ end
         u = rand(T, m)
         v = @inferred SmallVector{N,T}(u)
         x = rand(T)
+        y = rand(T)
+        @test_inferred push(v) v
+        @test_inferred pushfirst(v) v
         if length(u) == N
             @test_throws Exception push(v, x)
+            @test_throws Exception push(v, x, y)
             @test_throws Exception pushfirst(v, x)
+            @test_throws Exception pushfirst(v, x, y)
         else
             w = @test_inferred push(v, x) push!(copy(u), x) v
             @test isvalid(w)
             w = @test_inferred pushfirst(v, x) pushfirst!(copy(u), x) v
             @test isvalid(w)
+            if length(u) <= N-2
+                w = @test_inferred push(v, x, y) push(push(v, x), y)
+                @test isvalid(w)
+                w = @test_inferred pushfirst(v, x, y) pushfirst(pushfirst(v, y), x)
+                @test isvalid(w)
+            end
         end
         if isempty(u)
             @test_throws Exception pop(v)
