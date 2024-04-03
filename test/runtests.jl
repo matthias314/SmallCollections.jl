@@ -444,6 +444,36 @@ end
     end
 end
 
+@testset failfast = true "SmallVector map" begin
+    f(x) = Int32(2)*x
+    f(x, y) = 2*x + y
+    g(x) = iszero(x) ? 1 : 1.0
+    for N in (1, 2, 9, 16), T1 in test_types, m in (0, 1, round(Int, 0.7*N), N-1)
+        T1 <: Number || continue
+        u1 = rand(T1, m)
+        v1 = SmallVector{N}(u1)
+        u3 = map(f, u1)
+        w = @test_inferred map(f, v1) u3 SmallVector{N,eltype(u3)}
+        @test isvalid(w)
+        for T2 in test_types
+            T2 <: Number || continue
+            u2 = rand(T2, m+1)
+            v2 = SmallVector{N+2}(u2)
+            u4 = map(f, u1, u2)
+            w = @test_inferred map(f, v1, v2) u4 SmallVector{N,eltype(u4)}
+            @test isvalid(w)
+        end
+    end
+    for m in (0, 1, 3)
+        v = SmallVector{8}(1:m)
+        u = collect(v)
+        u5 = map(g, u)
+        w = map(g, v)
+        @test w == u5
+        @test eltype(w) == eltype(u5)
+    end
+end
+
 @testset failfast = true "SmallVector support" begin
     for N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
@@ -486,5 +516,6 @@ end
     @test_inferred deleteat!!(v, i) deleteat(v, i)
     @test_inferred append!!(v, (x,)) append(v, (x,))
     @test_broken prepend!!(v, (x,)) == prepend(v, (x,))
+    @test_broken isdefined(BangBang, :map!!)
     @test_inferred add!!(v, w) v+w
 end

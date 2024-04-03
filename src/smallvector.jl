@@ -495,21 +495,37 @@ SmallBitSet{UInt64} with 3 elements:
 """
 support(v::SmallVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v.b)))
 
-Base.@assume_effects :total _return_type(f, args) = typeof(f(args...))
+"""
+    map(f, v::SmallVector...) -> SmallVector
 
+Apply `f` to the argument vectors elementwise and stop when one of them is exhausted.
+Note that the capacity of the resulting `SmallVector` is the minimum of the argument
+vectors' capacities.
+
+See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`.
+"""
 function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
     N = minimum(map(capacity, vs))
-    n = minimum(map(length, vs))
-    tt = ntuple(Val(N)) do i
-        ntuple(j -> @inbounds(vs[j].b[i]), Val(M))
+    TT = map(eltype, vs)
+    U = Core.Compiler.return_type(f, Tuple{TT...})
+    if isconcretetype(U)
+        n = minimum(map(length, vs))
+        tt = ntuple(Val(N)) do i
+            ntuple(j -> vs[j].b[i], Val(M))
+        end
+        t = ntuple(Val(N)) do i
+            i <= n ? f(tt[i]...) : default(U)
+        end
+        SmallVector{N,U}(t, n)
+    else
+        VT = map(T -> AbstractVector{T}, TT)
+        w = invoke(map, Tuple{F,VT...}, f, vs...)
+        SmallVector{N}(w)
     end
-    T = _return_type(f, tt[1])
-    t = ntuple(i -> i <= n ? f(tt[i]...) : default(T), Val(N))
-    SmallVector(Values{N,T}(t), n)
 end
 
 map_fast(f::F, v::SmallVector) where F = SmallVector(map(f, v.b), length(v))
 
-for f in (abs, abs2, sign, signbit, sqrt)
+for f in (round, floor, ceil, trunc, abs, abs2, sign, signbit, sqrt)
     @eval map(::$(typeof(f)), v::SmallVector) = map_fast($f, v)
 end
