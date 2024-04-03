@@ -205,8 +205,10 @@ ones(::Type{<:SmallVector}, ::Integer)
 
 function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
-    b = ones(Values{N,T})
-    SmallVector((@inbounds padtail(b, -one(T), n)), n)
+    t = ntuple(Val(N)) do i
+        i <= n ? one(T) : zero(T)
+    end
+    SmallVector{N,T}(Values{N,T}(t), n)
 end
 
 SmallVector{N,T}() where {N,T} = SmallVector{N,T}(default(Values{N,T}), 0)
