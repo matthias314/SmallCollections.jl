@@ -417,17 +417,17 @@ end
         end
         @test_inferred sum(v) sum(u)
         @test_inferred prod(v) prod(u)
+        T <: AbstractFloat || continue
+        u = fill(-T(0), m)
+        v = SmallVector{N}(u)
+        @test_inferred sum(v) sum(u)
     end
     for N in (5, 16), T in (Float32, Float64), x in (Inf, -Inf, NaN)
         u = T[x, -1, 0, 1]
         v = SmallVector{N}(u)
         @test_inferred maximum(v) maximum(u)
         @test_inferred minimum(v) minimum(u)
-        if isnan(sum(u))
-            @test_inferred isnan(sum(v)) true
-        else
-            @test_inferred sum(v) sum(u)
-        end
+        @test_inferred sum(v) sum(u)
         if isnan(prod(u))
             @test_inferred isnan(prod(v)) true
         else

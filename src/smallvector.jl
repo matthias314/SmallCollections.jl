@@ -277,10 +277,16 @@ function sum(v::SmallVector{N,T}) where {N,T}
         sum(Int, v.b)
     elseif T <: Base.BitUnsignedSmall
         sum(UInt, v.b)
-    elseif T <: Union{Base.BitInteger,Base.HWReal}
+    elseif T <: Base.BitInteger
         sum(v.b)
     else
-        invoke(sum, Tuple{AbstractVector}, v)
+        n = length(v)
+        n == 0 && return zero(T)
+        @inbounds s = v[1]
+        for i in 2:n
+            @inbounds s += v[i]
+        end
+        s
     end
 end
 
