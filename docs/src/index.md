@@ -30,6 +30,7 @@ deleteat
 popat
 append
 prepend
+sum_fast
 map
 support
 ```

@@ -416,6 +416,8 @@ end
             end
         end
         @test_inferred sum(v) sum(u)
+        s = @inferred sum_fast(v)
+        @test abs(s-sum(u)) < 1e-5
         @test_inferred prod(v) prod(u)
         T <: AbstractFloat || continue
         u = fill(-T(0), m)

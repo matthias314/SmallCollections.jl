@@ -4,7 +4,7 @@
 
 export SmallVector, setindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
-    append, prepend, support, fasthash
+    append, prepend, support, fasthash, sum_fast
 
 import Base: show, ==, copy, Tuple, empty,
     length, size, getindex, setindex,
@@ -289,6 +289,28 @@ function sum(v::SmallVector{N,T}) where {N,T}
         s
     end
 end
+
+"""
+    sum_fast(v::SmallVector{N,T}) where {N,T}
+
+Return the sum of the elements of `v` using `@fastmath` arithmetic
+if `T` is `Float32` or `Float64`. Otherwise return `sum(v)`.
+
+See also `Base.@fastmath`.
+
+# Example
+```jldoctest
+julia> v = SmallVector{4}([-0.0, -0.0])
+2-element SmallVector{4, Float64}:
+ -0.0
+ -0.0
+
+julia> sum(v), sum_fast(v)
+(-0.0, 0.0)
+```
+"""
+sum_fast(v::SmallVector) = sum(v)
+sum_fast(v::SmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b)
 
 function prod(v::SmallVector{N,T}) where {N,T}
     if !(T <: Union{Base.BitInteger,Base.HWReal})
