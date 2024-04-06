@@ -159,6 +159,8 @@ empty(s::SmallBitSet)
 
 empty(s::S) where S <: SmallBitSet = S()
 
+default(::Type{S}) where S <: SmallBitSet = S()
+
 length(s::SmallBitSet) = count_ones(bits(s))
 
 function iterate(s::SmallBitSet, state = (s.mask, 0))

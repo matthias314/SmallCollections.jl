@@ -81,10 +81,28 @@ Return the default value of type `T` used for filling unused elements of a `Smal
 This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
 be any value of type `T`.
 
-This function has methods for number types, `Char`, `String` and `Symbol`.
-Methods for other types must be defined explicitly.
+This function has methods for number types, bits types (including `Char`, `SmallVector`
+and `SmallBitSet` types), `String` and `Symbol`. Methods for other types must be defined
+explicitly.
+
+See also `Base.isbitstype`.
 """
-default(T::Type) = error("no default value defined for type $T")
+function default(::Type{T}) where T
+    if isbitstype(T)
+        default_bitstype(T)
+    elseif Int <: T
+        0
+    else
+        error("no default value defined for type $T")
+    end
+end
+
+Base.@assume_effects :total function default_bitstype(::Type{T}) where T
+    m8, m1 = divrem(Base.packedsize(T), 8)
+    t8 = ntuple(Returns(UInt64(0)), Val(m8))
+    t1 = ntuple(Returns(UInt8(0)), Val(m1))
+    reinterpret(T, (t8, t1))
+end
 
 default(::Type{T}) where T <: Number = zero(T)
 default(::Type{Char}) = Char(0)

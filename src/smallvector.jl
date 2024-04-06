@@ -27,8 +27,8 @@ The element type `T` can be omitted when creating the `SmallVector` from an `Abs
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
 
-The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`. This is
-pre-defined for number types, `Char`, `String` and `Symbol`. For other types it must be set
+The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
+predefined for several types including `Number`. Default values for other types must be defined
 explicitly.
 
 Addition and subtraction of two `SmallVector`s is possible even if the vectors have different
@@ -177,6 +177,8 @@ empty(v::SmallVector),
 empty(v::SmallVector, ::Type)
 
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
+
+default(::Type{SmallVector{N,T}}) where {N,T} = SmallVector{N,T}()
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 

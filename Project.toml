@@ -21,6 +21,7 @@ BangBang = "0.4"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+StructEqualHash = "8bd03d06-bfef-4aaf-8250-1a26cbb401bf"
 
 [targets]
-test = ["Test", "BangBang"]
+test = ["Test", "BangBang", "StructEqualHash"]
