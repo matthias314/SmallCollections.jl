@@ -14,7 +14,7 @@ end
 
 @inline function _setindex(v::Values{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    t = ntuple(j -> j == i ? T(x) : v[j], Val(N))
+    t = ntuple(j -> j == i ? convert(T, x) : v[j], Val(N))
     Values{N,T}(t)
 end
 
@@ -27,7 +27,7 @@ end
         Values{N,Int8}(ntuple(>=(j), N))
     end
     quote
-        b + T(x)*$pads[i+1]
+        b + convert(T, x) * $pads[i+1]
     end
 end
 
@@ -50,7 +50,7 @@ popfirst(v::Values) = popat(v, 1)
         if j < i
             v[j]
         elseif j == i
-            T(x)
+            convert(T, x)
         else
             v[j-1]
         end
