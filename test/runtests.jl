@@ -423,6 +423,7 @@ end
         u = fill(-T(0), m)
         v = SmallVector{N}(u)
         @test_inferred sum(v) sum(u)
+        @test_inferred prod(-v) prod(-u)
     end
     for N in (5, 16), T in (Float32, Float64), x in (Inf, -Inf, NaN)
         u = T[x, -1, 0, 1]

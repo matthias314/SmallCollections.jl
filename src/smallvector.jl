@@ -313,9 +313,7 @@ sum_fast(v::SmallVector) = sum(v)
 sum_fast(v::SmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b)
 
 function prod(v::SmallVector{N,T}) where {N,T}
-    if !(T <: Union{Base.BitInteger,Base.HWReal})
-        invoke(prod, Tuple{AbstractVector}, v)
-    else
+    if T <: Base.BitInteger
         b = padtail(v.b, one(T), length(v))
         if T <: Base.BitSignedSmall
             prod(Int, b)
@@ -324,6 +322,14 @@ function prod(v::SmallVector{N,T}) where {N,T}
         else
             prod(b)
         end
+    else
+        n = length(v)
+        n == 0 && return one(T)
+        @inbounds s = v[1]
+        for i in 2:n
+            @inbounds s *= v[i]
+        end
+        s
     end
 end
 
