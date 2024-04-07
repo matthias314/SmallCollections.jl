@@ -131,7 +131,7 @@ SmallBitSet(args...) = SmallBitSet{UInt}(args...)
 
 SmallBitSet{U}(s::SmallBitSet) where U = _SmallBitSet(s.mask % U)
 
-SmallBitSet{U}(ns::Real...) where U = SmallBitSet{U}(ns)
+SmallBitSet{U}() where U = _SmallBitSet(zero(U))
 
 @propagate_inbounds SmallBitSet{U}(iter) where U = _push(zero(U), iter)
 
