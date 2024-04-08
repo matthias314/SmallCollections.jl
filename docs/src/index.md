@@ -83,10 +83,17 @@ f!!(v, ws...) = foldl(add!!, ws; init = v)
 ```
 adds up its arguments, mutating the first argument `v` if possible.
 
-## Internal functions
+## Non-exported functions
+
+### Public functions
+
+```@docs
+SmallCollections.default
+```
+
+### Internal functions
 
 ```@docs
 SmallCollections.bitsize
-SmallCollections.default
 SmallCollections.top_set_bit
 ```

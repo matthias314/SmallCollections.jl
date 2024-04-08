@@ -33,4 +33,8 @@ include("bits.jl")
 include("smallbitset.jl")
 include("smallvector.jl")
 
+if VERSION > v"1.11-alpha"
+    eval(Expr(:public, :default))
+end
+
 end
