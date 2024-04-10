@@ -225,7 +225,16 @@ function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     n <= N || error("vector cannot have more than $N elements")
     i1 = firstindex(v)
-    t = ntuple(i -> i <= n ? convert(T, v[i+i1-1]) : default(T), Val(N))
+    t = ntuple(i -> i <= n ? convert(T, @inbounds(v[i+i1-1])) : default(T), Val(N))
+    SmallVector{N,T}(t, n)
+end
+
+function SmallVector{N,T}(g::Base.Generator{<:Union{AbstractVector,Tuple}}) where {N,T}
+    v = g.iter
+    n = length(v)
+    n <= N || error("vector cannot have more than $N elements")
+    i1 = firstindex(v)
+    t = ntuple(i -> i <= n ? convert(T, g.f(@inbounds(v[i+i1-1]))) : default(T), Val(N))
     SmallVector{N,T}(t, n)
 end
 
