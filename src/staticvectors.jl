@@ -6,29 +6,19 @@ using StaticVectors
 
 using Base: BitInteger, @assume_effects
 
-function basis(::Val{N}) where N
-    ntuple(Val(N)) do j
-        Values{N,Int8}(ntuple(==(j), Val(N)))
-    end
-end
-
 @inline function _setindex(v::Values{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    t = ntuple(j -> j == i ? convert(T, x) : v[j], Val(N))
+    t = ntuple(Val(N)) do j
+        ifelse(j == i, convert(T, x), v[j])
+    end
     Values{N,T}(t)
 end
 
-@propagate_inbounds function _setindex(b::Values{N,T}, x, i::Integer) where {N, T <: Base.HWReal}
-    b + (T(x)-b[i])*basis(Val(N))[i]
-end
-
-@propagate_inbounds @generated function padtail(b::Values{N,T}, x, i::Integer) where {N,T}
-    pads = ntuple(N+1) do j
-        Values{N,Int8}(ntuple(>=(j), N))
+function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
+    t = ntuple(Val(N)) do j
+        ifelse(j <= i, v[j], convert(T, x))
     end
-    quote
-        b + convert(T, x) * $pads[i+1]
-    end
+    Values{N,T}(t)
 end
 
 pushfirst(v::Values, xs...) = prepend(v, xs)

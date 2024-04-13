@@ -325,7 +325,7 @@ sum_fast(v::SmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b
 
 function prod(v::SmallVector{N,T}) where {N,T}
     if T <: Base.BitInteger
-        b = padtail(v.b, one(T), length(v))
+        b = padtail(v.b, length(v), one(T))
         if T <: Base.BitSignedSmall
             prod(Int, b)
         elseif T <: Base.BitUnsignedSmall
@@ -354,7 +354,7 @@ function maximum(v::SmallVector{N,T}; init = missing) where {N,T}
     elseif T <: Unsigned && T <: Base.HWReal
         maximum(v.b)
     elseif T <: Integer && T <: Base.HWReal
-        @inbounds maximum(padtail(v.b, typemin(T), length(v)))
+        @inbounds maximum(padtail(v.b, length(v), typemin(T)))
     else
         invoke(maximum, Tuple{AbstractVector}, v)
     end
@@ -368,7 +368,7 @@ function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
             return init
         end
     elseif T <: Integer && T <: Base.HWReal
-        @inbounds minimum(padtail(v.b, typemax(T), length(v)))
+        @inbounds minimum(padtail(v.b, length(v), typemax(T)))
     else
         invoke(minimum, Tuple{AbstractVector}, v)
     end
