@@ -1,27 +1,27 @@
 # SmallCollections.jl
 
-This package provides the two immutable collections `SmallVector` and
-`SmallBitSet` that don't allocate and are therefore faster than their
-allocating counterparts `BitSet` and `Vector`. Unlike the static vectors
-provided by [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl)
-and [StaticVectors.jl](https://github.com/chakravala/StaticVectors.jl),
-the types defined by SmallCollections.jl have a variable size with a
-user-defined limit.
+This Julia package defines two immutable collections types, `SmallVector` and
+`SmallBitSet`. They don't allocate and are much faster than their
+allocating counterparts `Vector` and `BitSet`. Unlike the static vectors
+provided by [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl),
+[StaticVectors.jl](https://github.com/chakravala/StaticVectors.jl) and
+[SIMD.jl](https://github.com/eschnett/SIMD.jl),
+the length of a `SmallVector` is variable with a user-defined limit.
 
 If the package [BangBang.jl](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then many functions defined by this package are also available
 in a `!!`-form. For example, both `push` and `push!!` add an element
 to a `SmallVector` or `SmallBitSet`.
 
-Below are [examples](#examples) and [benchmarks](#benchmarks). Also see
-the [documentation](https://matthias314.github.io/SmallCollections.jl/stable/) for details.
+Below are [examples](#examples) and [benchmarks](#benchmarks). For details see
+the [documentation](https://matthias314.github.io/SmallCollections.jl/stable/).
 
 ## Examples
 
 ### `SmallVector`
 
 A vector of type `SmallVector{N,T}` can hold up to `N` elements of type `T`.
-Both `N` and `T` can be arbitrary. (However, if `T` is not a concrete type,
+Both `N` and `T` can be arbitrary. (If `T` is not a concrete type, however,
 then creating a small vector does allocate.)
 ```julia
 julia> v = SmallVector{8,Int8}(2*x for x in 1:3)
@@ -125,15 +125,16 @@ SmallBitSet{UInt256} with 8 elements:
 The timings are for pairwise adding the elements of two `Vector`s,
 each containing 1000 vectors with element type `T`.
 For `Vector` and `SmallVector` the length of each pair of elements is **variable** and
-chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl) and
-`Values{N,T}` (from StaticVectors.jl) the vectors have **fixed** length `N`.
+chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
+`Values{N,T}` (from StaticVectors.jl) and `Vec{N,T}` (from SIMD.jl) the vectors have
+**fixed** length `N`.
 
-| `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` |
-| ---: | ---: | ---: | ---: | ---: |
-| (8, Float64) | 459.420 μs | 46.263 μs | 43.499 μs | 43.180 μs |
-| (8, Int64) | 466.080 μs | 43.108 μs | 44.244 μs | 42.930 μs |
-| (16, Int32) | 473.810 μs | 45.963 μs | 36.244 μs | 34.851 μs |
-| (32, Int16) | 515.400 μs | 40.662 μs | 42.906 μs | 43.820 μs |
+| `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| (8, Float64) | 455.530 μs | 40.682 μs | 39.750 μs | 39.371 μs | 30.801 μs |
+| (8, Int64) | 469.030 μs | 38.203 μs | 41.150 μs | 40.511 μs | 30.697 μs |
+| (16, Int32) | 473.250 μs | 37.240 μs | 41.281 μs | 42.200 μs | 32.883 μs |
+| (32, Int16) | 522.150 μs | 44.418 μs | 33.390 μs | 32.934 μs | 36.219 μs |
 
 ### `SmallBitSet`
 
@@ -143,17 +144,19 @@ Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
 
 | `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
 | ---: | ---: | ---: | ---: |
-| UInt8 | 3.123 ms | 700.450 μs | 1.069 μs |
-| UInt16 | 7.677 ms | 700.280 μs | 3.112 μs |
-| UInt32 | 15.395 ms | 704.350 μs | 4.223 μs |
-| UInt64 | 28.707 ms | 708.350 μs | 6.946 μs |
-| UInt128 | 57.626 ms | 694.000 μs | 15.243 μs |
-| UInt256 | 115.954 ms | 717.110 μs | 25.693 μs |
-| UInt512 | 239.506 ms | 940.300 μs | 49.812 μs |
+| UInt8 | 3.047 ms | 684.980 μs | 975.095 ns |
+| UInt16 | 7.484 ms | 685.170 μs | 3.147 μs |
+| UInt32 | 14.712 ms | 681.080 μs | 4.208 μs |
+| UInt64 | 27.161 ms | 682.310 μs | 7.116 μs |
+| UInt128 | 55.051 ms | 682.950 μs | 15.583 μs |
+| UInt256 | 112.145 ms | 693.970 μs | 25.316 μs |
+| UInt512 | 224.086 ms | 923.660 μs | 50.205 μs |
 
-Package versions:
+Versions:
+Julia v1.10.0,
 StaticArrays v1.9.3,
 StaticVectors v1.0.3,
+SIMD 3.4.6,
 BitIntegers v0.3.1
 
 Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
