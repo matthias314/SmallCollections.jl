@@ -496,6 +496,90 @@ end
     end
 end
 
+@testset "broadcast" begin
+    N = 8
+    for T in (Int, Float64), m in (0, 1, 3, 8)
+        u = collect(T, 1:m)
+        v = SmallVector{N}(u)
+        t = Tuple(u)
+        c = T(2)
+        uu = m < N ? push!(copy(u), c) : copy(u)
+        vv = SmallVector{N}(uu)
+        w = @test_inferred v .+ v u .+ u SmallVector{N,T}
+        @test isvalid(w)
+        w = @test_inferred v .- v u .- u SmallVector{N,T}
+        @test isvalid(w)
+        w = @test_inferred v .* v u .* u SmallVector{N,T}
+        @test isvalid(w)
+        w = @test_inferred (c .* v) (c .* u) SmallVector{N,T}
+        @test isvalid(w)
+
+        w = abs.(-v)
+        @test w == v && w isa SmallVector{N,T} && isvalid(w)
+
+        f(x, y) = x + 2*y
+        # @test_inferred map(f, v, v) map(f, u, u) SmallVector{N,T}
+        # @test_inferred map(f, vv, v) map(f, uu, u) SmallVector{N,T}
+        w = f.(v, v)
+        @test w == f.(u, u) && w isa SmallVector{N,T}
+        w = f.(v, c)
+        @test w == f.(u, c) && w isa SmallVector{N,T}
+        if m > 0
+            w = f.(v, t)
+            @test w == f.(u, t) && w isa SmallVector{N,T}
+        end
+    end
+
+    for T in (Int16, Float32)
+        if T <: Integer
+            u1 = T[2, -1, 4, -3, 7]
+            u2 = T[-3, 9, 4, -1, -5, 6]
+        else
+            u1 = 10 .* rand(T, 5) .- 5
+            u2 = 10 .* rand(T, 6) .- 5
+        end
+        v1 = SmallVector{8,T}(u1)
+        v2 = SmallVector{8,T}(u2)
+        for f in (+, -, *, /, ==, !=, <, >, <=, >=, ===, isequal)
+            ww = map(f, u1, u2)
+            w = @test_inferred map(f, v1, v2) ww SmallVector{8,eltype(ww)}
+            @test isvalid(w)
+        end
+        for f in (round, floor, ceil, trunc, abs, abs2, sign, sqrt, signbit)
+            if f === sqrt
+                uu = map(abs, u1)
+                vv = map(abs, v1)
+                ww = map(f, uu)
+                w = @test_inferred map(f, vv) ww SmallVector{8,eltype(ww)}
+                @test isvalid(w)
+            else
+                ww = map(f, u1)
+                w = @test_inferred map(f, v1) ww SmallVector{8,eltype(ww)}
+                @test isvalid(w)
+            end
+        end
+        T <: Integer || continue
+        for f in (&, |, xor, nand, nor)
+            w = @test_inferred map(f, v1, v2) map(f, u1, u2) SmallVector{8,T}
+            @test isvalid(w)
+        end
+        for f in (~,)
+            w = @test_inferred map(f, v1) map(f, u1) SmallVector{8,T}
+            @test isvalid(w)
+        end
+    end
+
+    u = [7, 8]
+    v = SmallVector{3}(u)
+    a = [1 2; 3 4]
+    @test a .+ v == a .+ u
+
+    u = ['a', 'b', 'c']
+    v = SmallVector{5}(u)
+    w = v .* 'x'
+    @test w == u .* 'x' && w isa SmallVector{5,String}
+end
+
 #
 # BangBang
 #

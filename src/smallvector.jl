@@ -549,30 +549,96 @@ Apply `f` to the argument vectors elementwise and stop when one of them is exhau
 Note that the capacity of the resulting `SmallVector` is the minimum of the argument
 vectors' capacities.
 
-See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`.
+See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`,
+[Section "Broadcasting"](@ref sec-broadcasting).
 """
 function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
-    N = minimum(map(capacity, vs))
-    TT = map(eltype, vs)
+    n = minimum(length, vs)
+    _map(f, n, vs...)
+end
+
+function map_fast(f::F, n, vs::Vararg{SmallVector{N},M}) where {F,N,M}
+    bs = map(v -> v.b, vs)
+    SmallVector(map(f, bs...), n)
+end
+
+function map_fast_pad(f::F, n, vs::Vararg{SmallVector{N},M}) where {F,N,M}
+    bs = map(v -> v.b, vs)
+    b = map(f, bs...)
+    SmallVector(padtail(b, n), n)
+end
+
+#
+# broadcast
+#
+
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, flatten
+import Base.Broadcast: BroadcastStyle
+
+"""
+    $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
+
+The broadcasting style used for `SmallVector`.
+
+See also `Broadcast.AbstractArrayStyle`.
+"""
+struct SmallVectorStyle <: AbstractArrayStyle{1} end
+
+BroadcastStyle(::Type{<:SmallVector}) = SmallVectorStyle()
+BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
+BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
+
+function copy(bc::Broadcasted{SmallVectorStyle})
+    bcflat = flatten(bc)
+    i = findfirst(x -> x isa SmallVector, bcflat.args)
+    n = length(bcflat.args[i])
+    _map(bcflat.f, n, bcflat.args...)
+end
+
+_eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
+_eltype(x::T) where T = T
+
+_capacity(v::SmallVector) = capacity(v)
+_capacity(_) = typemax(Int)
+
+_getindex(v::SmallVector, i) = @inbounds v.b[i]
+_getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
+_getindex(x, i) = x
+
+function _map(f::F, n, vs::Vararg{Any,M}) where {F,M}
+    N = minimum(_capacity, vs)
+    TT = map(_eltype, vs)
     U = Core.Compiler.return_type(f, Tuple{TT...})
     if isconcretetype(U)
-        n = minimum(map(length, vs))
         tt = ntuple(Val(N)) do i
-            ntuple(j -> vs[j].b[i], Val(M))
+            ntuple(j -> _getindex(vs[j], i), Val(M))
         end
         t = ntuple(Val(N)) do i
             i <= n ? f(tt[i]...) : default(U)
         end
-        SmallVector{N,U}(t, n)
+        SmallVector(Values{N,U}(t), n)
     else
-        VT = map(T -> AbstractVector{T}, TT)
+        VT = map(vs) do v
+            T = typeof(v)
+            T <: SmallVector ? AbstractVector{eltype(T)} : T
+        end
         w = invoke(map, Tuple{F,VT...}, f, vs...)
         SmallVector{N}(w)
     end
 end
 
-map_fast(f::F, v::SmallVector) where F = SmallVector(map(f, v.b), length(v))
+_map(f::Union{typeof.(
+        (&, round, floor, ceil, trunc, abs, abs2, sign, sqrt)
+    )...}, n, vs::SmallVector{N}...) where N = map_fast(f, n, vs...)
 
-for f in (round, floor, ceil, trunc, abs, abs2, sign, signbit, sqrt)
-    @eval map(::$(typeof(f)), v::SmallVector) = map_fast($f, v)
-end
+_map(::typeof(*), n, vs::SmallVector{N,<:Integer}...) where N = map_fast(*, n, vs...)
+_map(::typeof(signbit), n, v::SmallVector{N,<:Integer}) where N = map_fast(signbit, n, v)
+
+_map(f::Union{typeof.(
+        (+, -, *, ~, |, xor, nand, nor, ==, !=, <, >, <=, >=, ===, isequal, signbit)
+    )...}, n, vs::SmallVector{N}...) where N = map_fast_pad(f, n, vs...)
+
+_map(::typeof(/), n,
+        v::SmallVector{N,<:Union{Integer,AbstractFloat}},
+        w::SmallVector{N,<:Union{Integer,AbstractFloat}}) where N =
+    map_fast_pad(/, n, v, w)

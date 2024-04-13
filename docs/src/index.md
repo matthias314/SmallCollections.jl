@@ -35,6 +35,38 @@ map
 support
 ```
 
+### [Broadcasting](@id sec-broadcasting)
+
+Broadcasting is supported for `SmallVector`. The result is again a `SmallVector`
+if at least one argument is a `SmallVector` and all other arguments (if any) are
+`Tuple`s or scalars. The capacity of the result is the minimum of the capacities
+of the `SmallVector` arguments. Broadcasted assignments to a `SmallVector` are
+of course not possible.
+
+See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:SmallVector{N}}) where N),
+[`SmallCollections.SmallVectorStyle`](@ref).
+
+#### Examples
+```jldoctest
+julia> v = SmallVector{8}(1:3); w = SmallVector{6}(2:4); v .* w .- 1.0
+3-element SmallVector{6, Float64}:
+  1.0
+  5.0
+ 11.0
+
+julia> v = SmallVector{8}(1:3); w = [2, 3, 4]; v .* w
+3-element Vector{Int64}:
+  2
+  6
+ 12
+
+julia> v = SmallVector{8}('a':'c'); t = ('p', 'q', 'r'); uppercase.(v .* t .* 'x')
+3-element SmallVector{8, String}:
+ "APX"
+ "BQX"
+ "CRX"
+```
+
 ## [`SmallBitSet`](@id sec-smallbitset)
 
 ```@docs
@@ -89,6 +121,7 @@ adds up its arguments, mutating the first argument `v` if possible.
 
 ```@docs
 SmallCollections.default
+SmallCollections.SmallVectorStyle
 ```
 
 ### Internal functions
