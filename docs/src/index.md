@@ -18,10 +18,10 @@ SmallVector
 capacity(::Type{<:SmallVector{N}}) where N
 fasthash(::SmallVector, ::UInt)
 empty(::SmallVector)
-zeros(::Type{<:SmallVector}, ::Integer)
-ones(::Type{<:SmallVector}, ::Integer)
+zeros
+ones
 setindex
-push(::SmallVector, ::Vararg{Any})
+push(::SmallVector, ::Vararg)
 pop(::SmallVector)
 pushfirst
 popfirst
@@ -76,18 +76,18 @@ convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
 fasthash(::SmallBitSet, ::UInt)
 empty(::SmallBitSet)
-push(::SmallBitSet, ::Vararg{Any})
+push(::SmallBitSet, ::Vararg)
 pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)
 pop(::SmallBitSet, ::Any, ::Any)
 delete
 ```
 
-## BangBang support
+## [BangBang support](@id sec-bangbang)
 
 If the package [`BangBang.jl`](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then the functions
-[`push`](@ref push(::SmallBitSet, ::Vararg{Any})),
+[`push`](@ref push(::SmallBitSet, ::Vararg)),
 [`pop`](@ref pop(::SmallBitSet)),
 [`delete`](@ref),
 `union`,
@@ -96,7 +96,7 @@ is loaded, then the functions
 `symdiff`
 for `SmallBitSet` as well as
 [`setindex`](@ref),
-[`push`](@ref push(::SmallVector, ::Vararg{Any})),
+[`push`](@ref push(::SmallVector, ::Vararg)),
 [`pushfirst`](@ref),
 [ `pop`](@ref pop(::SmallVector)),
 [`popfirst`](@ref),
@@ -105,7 +105,7 @@ for `SmallBitSet` as well as
 for `SmallVector`
 are also available in `!!`-form.
 For example, `setindex!!` with a `SmallVector` as first argument calls `setindex`.
-(For some reason, `BangBang.jl` does not implement `insert!!` and `prepend!!`.)
+(`BangBang.jl` does not define `insert!!`, `prepend!!` and `map!!`.)
 Moreover, `add!!(v::SmallVector, w::SmallVector)` is a synonym for `v+w`.
 
 This allows to write efficient code that works for both mutable and immutable arguments.

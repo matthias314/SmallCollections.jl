@@ -187,7 +187,7 @@ zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
 Return a `SmallVector` of type `V` containing `n` zeros.
 
-See also [`ones(::Type{<:SmallVector}, ::Integer)`](@ref).
+See also [`ones`](@ref).
 """
 zeros(::Type{<:SmallVector}, ::Integer)
 
@@ -201,7 +201,7 @@ end
 
 Return a `SmallVector` of type `V` containing `n` ones.
 
-See also [`zeros(::Type{<:SmallVector}, ::Integer)`](@ref).
+See also [`zeros`](@ref).
 """
 ones(::Type{<:SmallVector}, ::Integer)
 
@@ -483,7 +483,7 @@ end
     append(v::V, ws...) where V <: SmallVector -> V
 
 Append all elements of the collections `ws` to `v` and return the new vector.
-Note that the capacity of `v` is not changed.
+Note that the resulting `SmallVector` has the same capacity as `v`.
 
 See also `Base.append!`, `BangBang.append!!`.
 """
@@ -505,7 +505,7 @@ end
     prepend(v::V, ws...) where V <: SmallVector -> V
 
 Prepend all elements of the collections `ws` to `v` and return the new vector.
-Note that the capacity of `v` is not changed.
+Note that the resulting `SmallVector` has the same capacity as `v`.
 
 See also `Base.prepend!`.
 """
@@ -551,6 +551,21 @@ vectors' capacities.
 
 See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`,
 [Section "Broadcasting"](@ref sec-broadcasting).
+
+# Examples
+```jldoctest
+julia> v = SmallVector{8}(1:3); w = SmallVector{4}(2.0:4.0); map(*, v, w)
+3-element SmallVector{4, Float64}:
+  2.0
+  6.0
+ 12.0
+
+julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
+3-element SmallVector{4, String}:
+ "ax"
+ "by"
+ "cz"
+```
 """
 function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
     n = minimum(length, vs)

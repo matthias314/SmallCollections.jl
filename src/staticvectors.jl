@@ -65,8 +65,8 @@ end
 end
 
 """
-    $(@__MODULE__).default(::Type{T}) -> T
-    $(@__MODULE__).default(::T) -> T
+    $(@__MODULE__).default(::Type{T}) where T -> T
+    $(@__MODULE__).default(::T) where T -> T
 
 Return the default value of type `T` used for filling unused elements of a `SmallVector`.
 This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
@@ -78,6 +78,8 @@ explicitly.
 
 See also `Base.isbitstype`.
 """
+default(::T) where T = default(T)
+
 function default(::Type{T}) where T
     if isbitstype(T)
         default_bitstype(T)
@@ -86,10 +88,6 @@ function default(::Type{T}) where T
     else
         error("no default value defined for type $T")
     end
-end,
-
-function default(::T) where T
-    default(T)
 end
 
 Base.@assume_effects :total function default_bitstype(::Type{T}) where T

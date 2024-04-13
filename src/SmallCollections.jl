@@ -10,7 +10,8 @@ If the package `BangBang.jl` is loaded, then many functions defined by
 this package are also available in `!!`-form. For example, `setindex!!`
 with a `SmallVector` as first argument calls [`setindex`](@ref).
 
-See [`SmallBitSet`](@ref), [`SmallVector`](@ref).
+See [`SmallBitSet`](@ref), [`SmallVector`](@ref),
+[Section "BangBang support"](@ref sec-bangbang).
 """
 module SmallCollections
 
