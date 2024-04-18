@@ -36,6 +36,7 @@ fasthash(x) = fasthash(x, UInt(0))
 include("bits.jl")
 include("smallbitset.jl")
 include("smallvector.jl")
+include("packedvector.jl")
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :SmallVectorStyle))

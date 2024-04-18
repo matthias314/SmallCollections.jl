@@ -410,6 +410,7 @@ See also `Base.push!`, `BangBang.push!!`.
 """
 @propagate_inbounds push(v::SmallVector, xs...) = append(v, xs)
 
+# TODO: needed?
 @inline function push(v::SmallVector{N}, x) where N
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
