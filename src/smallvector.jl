@@ -7,7 +7,7 @@ export SmallVector, setindex,
     append, prepend, support, fasthash, sum_fast
 
 import Base: show, ==, copy, Tuple, empty,
-    length, size, getindex, setindex,
+    length, size, getindex, setindex, rest,
     zero, zeros, ones, map,
     +, -, *, sum, prod, maximum, minimum
 
@@ -147,9 +147,28 @@ length(v::SmallVector) = v.n
 
 size(v::SmallVector) = (length(v),)
 
+rest(v::SmallVector, (r, i)) = @inbounds v[i+1:last(r)]
+
 @inline function getindex(v::SmallVector, i::Int)
     @boundscheck checkbounds(v, i)
     @inbounds v.b[i]
+end
+
+#=
+@propagate_inbounds getindex(v::V, ii::AbstractVector{<:Integer}) where V <: SmallVector =
+    V(v[i] for i in ii)
+=#
+
+@inline function getindex(v::SmallVector{N,T}, ii::AbstractVector{<:Integer}) where {N,T}
+    n = length(ii)
+    @boundscheck begin
+        n <= N || error("vector cannot have more than $N elements")
+        checkbounds(v, ii)
+    end
+    t = ntuple(Val(N)) do i
+        @inbounds i <= n ? v[ii[i]] : default(T)
+    end
+    SmallVector(Values{N,T}(t), n)
 end
 
 """
