@@ -264,6 +264,14 @@ end
                 @test_throws Exception setindex(v, x, i)
             end
         end
+        for i in 0:m, j in i-1:m+1
+            if checkbounds(Bool, u, i:j)
+                w = @test_inferred v[i:j] u[i:j] v
+                @test isvalid(w)
+            else
+                @test_throws Exception v[i:j]
+            end
+        end
     end
 end
 
@@ -485,6 +493,15 @@ end
         @test w == u5
         @test eltype(w) == eltype(u5)
     end
+end
+
+@testset "SmallVector rest" begin
+    v = SmallVector{8}([1,2])
+    x1, w... = v
+    @test w == v[2:2] && typeof(w) == typeof(v) && isvalid(w)
+    x1, x2, w... = v
+    @test w == v[3:2] && typeof(w) == typeof(v) && isvalid(w)
+    @test_throws Exception x1, x2, x3, w... = v
 end
 
 @testset failfast = true "SmallVector support" begin
