@@ -17,7 +17,10 @@ module SmallCollections
 
 using Base: @propagate_inbounds, BitInteger
 
-using BitIntegers: UInt256, UInt512, UInt1024
+using BitIntegers: AbstractBitSigned, AbstractBitUnsigned,
+    UInt256, UInt512, UInt1024
+
+const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigned}
 
 const FastInteger = Union{BitInteger,Complex{<:BitInteger}}
 const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
