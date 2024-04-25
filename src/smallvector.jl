@@ -2,7 +2,7 @@
 # small vectors
 #
 
-export SmallVector, setindex,
+export SmallVector, setindex, addindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
     append, prepend, support, fasthash, sum_fast
 
@@ -177,11 +177,23 @@ end
 Return a vector that agrees with `v` except possibly for the `i`-th entry
 that is set to `x`.
 
-See also `Base.setindex`.
+See also `Base.setindex`,  [`addindex`](@ref).
 """
 @inline function setindex(v::SmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds _setindex(v.b, x, i)), length(v))
+end
+
+"""
+    addindex(v::V, x, i::Integer) where V <: SmallVector -> V
+
+Add `x` to the `i`-th component of `v` and return the new vector.
+
+See also [`setindex`](@ref).
+"""
+@inline function addindex(v::SmallVector, x, i::Integer)
+    @boundscheck checkbounds(v, i)
+    @inbounds v += setindex(zero(v), x, i)
 end
 
 """

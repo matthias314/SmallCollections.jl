@@ -21,6 +21,7 @@ empty(::SmallVector)
 zeros
 ones
 setindex
+addindex
 push(::SmallVector, ::Vararg)
 pop(::SmallVector)
 pushfirst

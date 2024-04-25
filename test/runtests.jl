@@ -290,9 +290,14 @@ end
                 @test_inferred v[i] u[i] T
                 w = @test_inferred setindex(v, x, i) setindex!(copy(u), x, i) v
                 @test isvalid(w)
+                if T <: Number
+                    w = @test_inferred addindex(v, x, i) setindex!(copy(u), u[i]+x, i) v
+                    @test isvalid(w)
+                end
             else
                 @test_throws Exception v[i]
                 @test_throws Exception setindex(v, x, i)
+                T <: Number && @test_throws Exception addindex(v, x, i)
             end
         end
         for i in 0:m, j in i-1:m+1
