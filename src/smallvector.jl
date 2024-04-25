@@ -174,8 +174,7 @@ end
 """
     setindex(v::V, x, i::Integer) where V <: SmallVector -> V
 
-Return a vector that agrees with `v` except possibly for the `i`-th entry
-that is set to `x`.
+Substitute `x` for the `i`-th component of `v` and return the new vector.
 
 See also `Base.setindex`,  [`addindex`](@ref).
 """
@@ -408,8 +407,7 @@ end
 """
     push(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
 
-Return the `SmallVector` obtained from `v` by appending the other arguments `xs`.
-The length of `v` must be less than `N`.
+Return the `SmallVector` obtained from `v` by appending the arguments `xs`.
 
 See also `Base.push!`, `BangBang.push!!`.
 """
