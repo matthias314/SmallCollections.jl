@@ -162,6 +162,37 @@ end
     end
 end
 
+@testset "Subsets" begin
+    for n in [-1, 0, 1, 2, 10], k in [-1, 0, 1, n-1, n, n+1]
+        ss = Subsets(n, k)
+        if 0 <= k <= n
+            @test_inferred length(ss) binomial(n, k)
+        else
+            @test_inferred length(ss) 0
+        end
+        @test eltype(ss) == SmallBitSet{UInt}
+        ssv = @inferred collect(ss)
+        @test length(ssv) == length(ss) == length(unique(ssv))
+        length(ss) == 0 && continue
+        @test unique(map(length, ssv)) == [k]
+    end
+end
+
+
+@testset "AllSubsets" begin
+    for n in [-1, 0, 1, 2, 10]
+        ss = AllSubsets(n)
+        if n >= 0
+            @test_inferred length(ss) 2^n
+        else
+            @test_inferred length(ss) 0
+        end
+        @test eltype(ss) == SmallBitSet{UInt}
+        ssv = @inferred collect(ss)
+        @test length(ssv) == length(ss) == length(unique(ssv))
+    end
+end
+
 #
 # SmallVector
 #

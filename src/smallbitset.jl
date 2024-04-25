@@ -322,3 +322,100 @@ setdiff(s::SmallBitSet, ts...) = foldl(setdiff, ts; init = s)
 symdiff(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask ⊻ t.mask)
 
 symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
+
+#
+# subset iterators
+#
+
+export Subsets, AllSubsets
+
+import Base: eltype, length, iterate
+
+"""
+    Subsets(n, k)
+
+Iterating over `Subsets(n, k)` gives all `k`-element subsets of the set of integers from `1` to `n`.
+The element type is `SmallBitSet`.
+
+See also [`AllSubsets`](@ref).
+
+# Example
+```jldoctest
+julia> collect(Subsets(3, 2))
+3-element Vector{SmallBitSet{UInt64}}:
+ SmallBitSet([2,3])
+ SmallBitSet([1,3])
+ SmallBitSet([1,2])
+```
+"""
+struct Subsets
+    n::Int
+    k::Int
+end
+
+eltype(::Subsets) = SmallBitSet{UInt}
+
+length(ss::Subsets) = 0 <= ss.k <= ss.n ? binomial(ss.n, ss.k) : 0
+
+function iterate(ss::Subsets)
+    0 <= ss.k <= ss.n || return nothing
+    m = (UInt(1) << ss.k - UInt(1)) << (ss.n-ss.k)
+    _SmallBitSet(m), m
+end
+
+function iterate(ss::Subsets, m)
+    l1 = trailing_ones(m)
+    l1 == ss.k && return nothing
+    m0 = m - unsafe_shl(UInt(1), l1) + UInt(1)
+    l0 = trailing_zeros(m0)
+    m1 = m0 - unsafe_shl(UInt(1), l0-l1-1)
+    _SmallBitSet(m1), m1
+end
+
+"""
+    AllSubsets(n)
+    Subsets(n)
+
+Iterating over `AllSubsets(n)` gives all subsets of the set of integers from `1` to `n`.
+The element type is `SmallBitSet`. `Subsets(n)` is a shorthand notation for `AllSubsets(n)`.
+
+See also [`Subsets`](@ref).
+
+# Example
+```jldoctest
+julia> collect(AllSubsets(2))
+4-element Vector{SmallBitSet{UInt64}}:
+ SmallBitSet([1,2])
+ SmallBitSet([2])
+ SmallBitSet([1])
+ SmallBitSet([])
+```
+"""
+struct AllSubsets
+    n::Int
+end
+
+"""
+    Subsets(n)
+
+`Subsets(n)` is a shorthand notation for `AllSubsets(n)`.
+
+See also [`Subsets`](@ref), [`AllSubsets`](@ref).
+"""
+Subsets(n::Integer) = AllSubsets(n)
+
+eltype(::AllSubsets) = SmallBitSet{UInt}
+
+length(ss::AllSubsets) = ss.n >= 0 ? 1 << ss.n : 0
+
+function iterate(ss::AllSubsets)
+    ss.n >= 0 || return nothing
+    m = UInt(1) << ss.n - UInt(1)
+    _SmallBitSet(m), m
+end
+
+function iterate(ss::AllSubsets, m)
+    iszero(m) && return nothing
+    m = m - one(m)
+    _SmallBitSet(m), m
+end

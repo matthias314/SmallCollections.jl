@@ -71,6 +71,9 @@ julia> v = SmallVector{8}('a':'c'); t = ('p', 'q', 'r'); uppercase.(v .* t .* 'x
 
 ```@docs
 SmallBitSet
+AllSubsets
+Subsets
+Subsets(::Integer)
 bits
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
