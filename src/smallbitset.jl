@@ -329,7 +329,7 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 
 export Subsets, AllSubsets
 
-import Base: eltype, length, iterate
+import Base: eltype, length, size, getindex
 
 """
     Subsets(n, k)
@@ -373,25 +373,28 @@ function iterate(ss::Subsets, m)
 end
 
 """
+    AllSubsets <: AbstractVector{SmallBitSet{UInt}}
+
     AllSubsets(n)
     Subsets(n)
 
-Iterating over `AllSubsets(n)` gives all subsets of the set of integers from `1` to `n`.
-The element type is `SmallBitSet`. `Subsets(n)` is a shorthand notation for `AllSubsets(n)`.
+`AllSubsets(n)` is a vector whose `2^n` elements of type `SmallBitSet` are the
+subsets of the set of integers from `1` to `n`. `Subsets(n)` is a shorthand notation
+for `AllSubsets(n)`.
 
 See also [`Subsets`](@ref).
 
 # Example
 ```jldoctest
-julia> collect(AllSubsets(2))
+julia> collect(Subsets(2))
 4-element Vector{SmallBitSet{UInt64}}:
- SmallBitSet([1,2])
- SmallBitSet([2])
- SmallBitSet([1])
  SmallBitSet([])
+ SmallBitSet([1])
+ SmallBitSet([2])
+ SmallBitSet([1,2])
 ```
 """
-struct AllSubsets
+struct AllSubsets <: AbstractVector{SmallBitSet{UInt}}
     n::Int
 end
 
@@ -404,18 +407,9 @@ See also [`Subsets`](@ref), [`AllSubsets`](@ref).
 """
 Subsets(n::Integer) = AllSubsets(n)
 
-eltype(::AllSubsets) = SmallBitSet{UInt}
+show(io::IO, ss::AllSubsets) = print(io, "AllSubsets(", ss.n, ')')
+show(io::IO, ::MIME"text/plain", ss::AllSubsets) = print(io, "AllSubsets(", ss.n, ')')
 
-length(ss::AllSubsets) = ss.n >= 0 ? 1 << ss.n : 0
+size(ss::AllSubsets) = (ss.n >= 0 ? 1 << ss.n : 0,)
 
-function iterate(ss::AllSubsets)
-    ss.n >= 0 || return nothing
-    m = UInt(1) << ss.n - UInt(1)
-    _SmallBitSet(m), m
-end
-
-function iterate(ss::AllSubsets, m)
-    iszero(m) && return nothing
-    m = m - one(m)
-    _SmallBitSet(m), m
-end
+getindex(ss::AllSubsets, i::Int) = _SmallBitSet((i-1) % UInt)
