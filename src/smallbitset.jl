@@ -163,16 +163,9 @@ default(::Type{S}) where S <: SmallBitSet = S()
 
 length(s::SmallBitSet) = count_ones(bits(s))
 
-function iterate(s::SmallBitSet, state = (s.mask, 0))
-    mask, n = state
-    if iszero(mask)
-        return nothing
-    else
-        t = trailing_zeros(mask)+1
-        n += t
-        return (n, (mask >> t, n))
-    end
-end
+# from https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
+iterate(s::SmallBitSet, m = bits(s)) =
+    iszero(m) ? nothing : (trailing_zeros(m)+1, blsr(m))
 
 @inline function first(s::SmallBitSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
@@ -343,9 +336,9 @@ See also [`AllSubsets`](@ref).
 ```jldoctest
 julia> collect(Subsets(3, 2))
 3-element Vector{SmallBitSet{UInt64}}:
- SmallBitSet([2,3])
- SmallBitSet([1,3])
  SmallBitSet([1,2])
+ SmallBitSet([1,3])
+ SmallBitSet([2,3])
 ```
 """
 struct Subsets
@@ -359,17 +352,18 @@ length(ss::Subsets) = 0 <= ss.k <= ss.n ? binomial(ss.n, ss.k) : 0
 
 function iterate(ss::Subsets)
     0 <= ss.k <= ss.n || return nothing
-    m = (UInt(1) << ss.k - UInt(1)) << (ss.n-ss.k)
-    _SmallBitSet(m), m
+    m = UInt(1) << ss.k - UInt(1)
+    last = m << (ss.n-ss.k)
+    _SmallBitSet(m), (m, last)
 end
 
-function iterate(ss::Subsets, m)
-    l1 = trailing_ones(m)
-    l1 == ss.k && return nothing
-    m0 = m - unsafe_shl(UInt(1), l1) + UInt(1)
-    l0 = trailing_zeros(m0)
-    m1 = m0 - unsafe_shl(UInt(1), l0-l1-1)
-    _SmallBitSet(m1), m1
+# from https://graphics.stanford.edu/~seander/bithacks.html#NextBitPermutation
+# via https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
+function iterate(ss::Subsets, (m, last))
+    m == last && return nothing
+    t = m | (m-one(m))
+    m = (t+one(t)) | unsafe_lshr((~t & -~t) - one(t), trailing_zeros(m)+1)
+    return _SmallBitSet(m), (m, last)
 end
 
 """

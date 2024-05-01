@@ -49,3 +49,6 @@ end
         Base.llvmcall($ir, U, Tuple{U, U}, x, i % U)
     end
 end
+
+blsr(x::Integer) = x & (x-one(x))
+# reset lowest set bit, compiles to single blsr instruction
