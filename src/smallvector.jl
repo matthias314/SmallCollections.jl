@@ -6,7 +6,7 @@ export SmallVector, setindex, addindex,
     push, pop, pushfirst, popfirst, insert, deleteat, popat,
     append, prepend, support, fasthash, sum_fast
 
-import Base: show, ==, copy, Tuple, empty,
+import Base: ==, copy, Tuple, empty,
     length, size, getindex, setindex, rest,
     zero, zeros, ones, map,
     +, -, *, sum, prod, maximum, minimum
@@ -73,12 +73,6 @@ capacity(::Type{<:SmallVector{N}}) where N,
 capacity(::SmallVector)
 
 capacity(::Type{<:SmallVector{N}}) where N = N
-
-function show(io::IO, v::SmallVector{N,T}) where {N,T}
-    print(io, "$T[")
-    join(io, v, ',')
-    print(io, ']')
-end
 
 function Base.FastMath.eq_fast(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where
         {N1, T1<:Union{FastInteger,FastFloat}, N2, T2<:Union{FastInteger,FastFloat}}

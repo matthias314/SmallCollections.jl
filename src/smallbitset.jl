@@ -33,7 +33,7 @@ end
 
 function show(io::IO, s::SmallBitSet)
     print(io, "SmallBitSet([")
-    join(io, s, ',')
+    join(io, s, ", ")
     print(io, "])")
 end
 
@@ -336,9 +336,9 @@ See also [`AllSubsets`](@ref).
 ```jldoctest
 julia> collect(Subsets(3, 2))
 3-element Vector{SmallBitSet{UInt64}}:
- SmallBitSet([1,2])
- SmallBitSet([1,3])
- SmallBitSet([2,3])
+ SmallBitSet([1, 2])
+ SmallBitSet([1, 3])
+ SmallBitSet([2, 3])
 ```
 """
 struct Subsets
@@ -385,7 +385,7 @@ julia> collect(Subsets(2))
  SmallBitSet([])
  SmallBitSet([1])
  SmallBitSet([2])
- SmallBitSet([1,2])
+ SmallBitSet([1, 2])
 ```
 """
 struct AllSubsets <: AbstractVector{SmallBitSet{UInt}}
