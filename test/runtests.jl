@@ -88,11 +88,19 @@ end
         m = bitsize(U)
         t = Set{Int}(rand(1:m, rand(1:m)))
         s = @inferred SmallBitSet{U}(t)
-        if !isempty(t)
+        if isempty(t)
+            @test_throws Exception minimum(s)
+            @test_inferred minimum(s; init = m+1) minimum(t; init = m+1)
+            @test_throws Exception maximum(s)
+            @test_inferred maximum(s; init = 0) maximum(t; init = 0)
+            @test_throws Exception extrema(s)
+            @test_inferred extrema(s; init = (m+1, 0)) extrema(t; init = (m+1, 0))
+        else
             @test_inferred first(s) minimum(t)
             @test_inferred minimum(s) minimum(t)
             @test_inferred last(s) maximum(t)
             @test_inferred maximum(s) maximum(t)
+            @test_inferred extrema(s) extrema(t)
         end
     end
 end
@@ -475,6 +483,12 @@ end
             else
                 @test_inferred f(v) f(u)
             end
+        end
+        if isempty(u)
+            @test_throws Exception extrema(v)
+            @test_inferred extrema(v; init = (one(T), zero(T))) extrema(u; init = (one(T), zero(T)))
+        else
+            @test_inferred extrema(v) extrema(u)
         end
         @test_inferred sum(v) sum(u)
         s = @inferred sum_fast(v)

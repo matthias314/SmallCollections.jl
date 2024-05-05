@@ -8,7 +8,7 @@ using Base: hasfastin
 
 import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
-    length, issubset, maximum, minimum,
+    length, issubset, maximum, minimum, extrema,
     union, intersect, setdiff, symdiff
 
 isinteger(x) = x isa Number && Base.isinteger(x)
@@ -196,6 +196,9 @@ function maximum(s::SmallBitSet; init = missing)
         error("collection must be non-empty unless `init` is given")
     end
 end
+
+extrema(v::SmallBitSet; init::Tuple{Any,Any} = (missing, missing)) =
+    (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
 # hasfastin(::Type{<:SmallBitSet}) = true
 # this is the default for AbstractSet

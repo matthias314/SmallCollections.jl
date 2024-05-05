@@ -9,7 +9,7 @@ export SmallVector, setindex, addindex,
 import Base: ==, copy, Tuple, empty,
     length, size, getindex, setindex, rest,
     zero, zeros, ones, map,
-    +, -, *, sum, prod, maximum, minimum
+    +, -, *, sum, prod, maximum, minimum, extrema
 
 """
     SmallVector{N,T} <: AbstractVector{T}
@@ -397,6 +397,9 @@ function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
         invoke(minimum, Tuple{AbstractVector}, v)
     end
 end
+
+extrema(v::SmallVector; init::Tuple{Any,Any} = (missing, missing)) =
+    (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
 """
     push(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
