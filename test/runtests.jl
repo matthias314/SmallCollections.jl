@@ -364,8 +364,15 @@ end
             if 1 <= i <= length(u)+1 && length(u) < N
                 w = @test_inferred insert(v, i, x) insert!(copy(u), i, x) v
                 @test isvalid(w)
+                if i <= length(u)
+                    w = @test_inferred duplicate(v, i) insert(v, i, v[i])
+                    @test isvalid(w)
+                else
+                    @test_throws Exception duplicate(v, i)
+                end
             else
                 @test_throws Exception insert(v, i, x)
+                @test_throws Exception duplicate(v, i)
             end
             if 1 <= i <= length(u)
                 w = @test_inferred deleteat(v, i) deleteat!(copy(u), i) v

@@ -3,7 +3,7 @@
 #
 
 export SmallVector, setindex, addindex,
-    push, pop, pushfirst, popfirst, insert, deleteat, popat,
+    push, pop, pushfirst, popfirst, insert, duplicate, deleteat, popat,
     append, prepend, support, fasthash, sum_fast
 
 import Base: ==, copy, Tuple, empty,
@@ -467,6 +467,8 @@ Return the `SmallVector` obtained from `v` by inserting `x` at position `i`.
 The position `i` must be between `1` and `length(v)+1`, and `length(v)` must be less than `N`.
 
 This is the non-mutating analog of `Base.insert!`.
+
+See also [`duplicate`](@ref).
 """
 @inline function insert(v::SmallVector{N}, i::Integer, x) where N
     n = length(v)
@@ -475,6 +477,40 @@ This is the non-mutating analog of `Base.insert!`.
         n < N || error("vector cannot have more than $N elements")
     end
     @inbounds SmallVector(insert(v.b, i, x), n+1)
+end
+
+"""
+    duplicate(v::SmallVector{N,T}, i::Integer) where {N,T} -> SmallVector{N,T}
+
+Duplicate the `i`-th entry of `v` by inserting it at position `i+1` and return the new vector.
+
+See also [`insert`](@ref).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}(1:3)
+3-element SmallVector{8, Int8}:
+ 1
+ 2
+ 3
+
+julia> duplicate(v, 2)
+4-element SmallVector{8, Int8}:
+ 1
+ 2
+ 2
+ 3
+```
+"""
+@inline function duplicate(v::SmallVector{N,T}, i::Integer) where {N,T}
+    @boundscheck begin
+        checkbounds(v, i)
+        length(v) < N || error("vector cannot have more than $N elements")
+    end
+    t = ntuple(Val(N)) do j
+        j <= i ? v.b[j] : v.b[j-1]
+    end
+    SmallVector(Values{N,T}(t), length(v)+1)
 end
 
 """

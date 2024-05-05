@@ -27,6 +27,7 @@ pop(::SmallVector)
 pushfirst
 popfirst
 insert
+duplicate
 deleteat
 popat
 append
