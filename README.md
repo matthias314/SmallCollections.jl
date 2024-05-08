@@ -59,7 +59,7 @@ julia> u = SmallVector{6}(['a', 'b', 'c'])
  'c': ASCII/Unicode U+0063 (category Ll: Letter, lowercase)
 
 julia> popfirst(u)
-(Char[b,c], 'a')
+(['b', 'c'], 'a')
 
 julia> map(uppercase, u)
 3-element SmallVector{6, Char}:
