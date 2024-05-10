@@ -16,6 +16,7 @@ import Base: ==, copy, Tuple, empty,
     SmallVector{N,T}(iter)
     SmallVector{N}(v::AbstractVector{T})
     SmallVector{N}(t::Tuple)
+    SmallVector(v::PackedVector{T})
 
 `SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
@@ -24,6 +25,8 @@ and hardware float types, one usually takes `N` to be a power of `2`.
 The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
+If the `SmallVector` is created from a `PackedVector` `v` and the parameter `N` is omitted,
+then it is set to capacity of `v`.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
 predefined for several types including `Number`. Default values for other types must be defined

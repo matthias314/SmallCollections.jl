@@ -14,6 +14,7 @@ SmallCollections
 ## [`AbstractSmallVector`](@id sec-abstractsmallvector)
 
 ```@docs
+AbstractSmallVector
 capacity(::Type{<:AbstractSmallVector})
 zeros
 ones
@@ -44,9 +45,11 @@ map
 
 ### [`PackedVector`](@id sec-packedvector)
 
-TODO
-
 ```@docs
+PackedVector
+bits(::PackedVector)
+SmallCollections.unsafe_add
+SmallCollections.unsafe_sub
 ```
 
 ### [Broadcasting](@id sec-broadcasting)
@@ -88,7 +91,7 @@ SmallBitSet
 AllSubsets
 Subsets
 Subsets(::Integer)
-bits
+bits(::SmallBitSet)
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
 fasthash(::SmallBitSet, ::UInt)

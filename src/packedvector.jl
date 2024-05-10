@@ -5,8 +5,75 @@
 import Base: ==, getindex, setindex, length, size, empty, iterate, rest,
     iszero, zero, +, -, *, convert
 
-export PackedVector
+export PackedVector, bits
 
+"""
+    PackedVector{U<:Unsigned,N,T<:Union{Base.BitInteger,Bool}} <: AbstractSmallVector{T}
+
+    PackedVector{U,N,T}()
+    PackedVector{U,N,T}(iter)
+    PackedVector{U,N}(v::AbstractVector{T})
+    PackedVector{U,N}(t::Tuple)
+    PackedVector(v::SmallVector{N,T})
+
+This type of immutable vector stores the elements in a common bit mask of type `U`
+with `N` bits for each entry. The range of allowed values is `-2^(N-1):2^(N-1)-1`
+if `T <: Signed`, `0:2^N-1` if `T <: Unsigned` and `false:true` if `T == Bool`.
+Apart from that, the official element type `T` is only used when retrieving an entry.
+ The capacity, that is, the number of elements that can be stored, is given
+by `bitsize(U)÷N`.
+
+The element type `T` can be omitted when creating the `PackedVector` from an `AbstractVector`
+or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
+If no argument is given, then an empty vector is returned.
+If the `PackedVector` is created from a `SmallVector` `v` and the parameters `U` and `N`
+are omitted, then `N` is set to `bitsize(T)` and `U` is chosen such that the capacity
+of the resulting vector is at least the capacity of `v`.
+
+Overflow or underflow during addition or subtraction of vectors do not throw an error.
+The same applies to multiplication by a scalar of type `T`. Scalar multiplication by
+other types returns a `Vector`.
+
+Compared to `SmallVector`, a `PackedVector` often has faster `push` and `pop` operations,
+with `pushfirst` and `popfirst` being particularly fast. Arithmetic operations are usually
+slower unless `N` is the size of a hardware integer.
+
+See also [`capacity`](@ref capacity(::Type{<:PackedVector})), [`$(@__MODULE__).bitsize`](@ref).
+
+# Examples
+```jldoctest
+julia> v = PackedVector{UInt64,5,Int8}(-5:5:10)
+4-element PackedVector{UInt64, 5, Int8}:
+ -5
+  0
+  5
+ 10
+
+julia> capacity(v)
+12
+
+julia> w = PackedVector{UInt64,5,Int8}([1, 2, 3, 4])
+4-element PackedVector{UInt64, 5, Int8}:
+ 1
+ 2
+ 3
+ 4
+
+julia> v+w
+4-element PackedVector{UInt64, 5, Int8}:
+ -4
+  2
+  8
+ 14
+
+julia> Int8(2)*v
+4-element PackedVector{UInt64, 5, Int8}:
+ -10
+   0
+  10
+ -12
+```
+"""
 struct PackedVector{U<:Unsigned,N,T<:Union{BitInteger,Bool}} <: AbstractSmallVector{T}
     m::U
     n::Int
@@ -64,6 +131,11 @@ end
 
 (::Type{V})() where V <: PackedVector = zeros(V, 0)
 
+"""
+    bits(v::PackedVector{U}) where U -> U
+
+Return the bit mask used internally to store the elements of the vector `v`.
+"""
 bits(v::PackedVector) = v.m
 
 length(v::PackedVector) = v.n
@@ -404,13 +476,29 @@ end
 
 *(v::PackedVector{U,N,T}, c::T) where {U, N, T <: BitInteger} = c*v
 
-function unsafe_add(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T}
-    PackedVector{U,N,T}(v.m+w.m, v.n)
-end
+"""
+    $(@__MODULE__).unsafe_add(v::V, w::V) where V <: PackedVector -> V
 
-function unsafe_sub(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T}
-    PackedVector{U,N,T}(v.m-w.m, v.n)
-end
+Add `v` and `w` and return the result. It is not checked that `v` and `w` have the same length.
+No overflow or underflow is allowed in any component, nor are sign changes in the case of signed integers.
+
+This function is much faster than regular addition.
+
+See also [`unsafe_sub`](@ref).
+"""
+unsafe_add(v::V, w::V) where V <: PackedVector = V(v.m+w.m, v.n)
+
+"""
+    $(@__MODULE__).unsafe_sub(v::V, w::V) where V <: PackedVector -> V
+
+Subtract `w` from `v` and return the result. It is not checked that `v` and `w` have the same length.
+No overflow or underflow  is allowed in any component, nor are sign changes in the case of signed integers.
+
+This function is much faster than regular addition.
+
+See also [`unsafe_add`](@ref).
+"""
+unsafe_sub(v::V, w::V) where V <: PackedVector = V(v.m-w.m, v.n)
 
 @generated function sum_split(v::PackedVector{U,N,T}) where {U,N,T}
     @assert N > 1
