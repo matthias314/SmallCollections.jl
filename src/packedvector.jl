@@ -3,13 +3,11 @@
 #
 
 import Base: ==, getindex, setindex, length, size, empty, iterate, rest,
-    iszero, zero, zeros, ones, +, -, *, convert
+    iszero, zero, +, -, *, convert
 
-export PackedVector, setindex,
-    push, pop, pushfirst, popfirst, insert, deleteat, popat,
-    append, prepend, duplicate, support
+export PackedVector
 
-struct PackedVector{U<:Unsigned,N,T<:Union{BitInteger,Bool}} <: AbstractVector{T}
+struct PackedVector{U<:Unsigned,N,T<:Union{BitInteger,Bool}} <: AbstractSmallVector{T}
     m::U
     n::Int
 end
@@ -73,7 +71,6 @@ length(v::PackedVector) = v.n
 size(v::PackedVector) = (length(v),)
 
 capacity(::Type{<:PackedVector{U,N}}) where {U,N} = bitsize(U) ÷ N
-capacity(::V) where V <: PackedVector = capacity(V)
 
 ==(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T} =
     v.n == w.n && v.m == w.m

@@ -11,19 +11,16 @@ DocTestSetup = quote
 SmallCollections
 ```
 
-## [`SmallVector`](@id sec-smallvector)
+## [`AbstractSmallVector`](@id sec-abstractsmallvector)
 
 ```@docs
-SmallVector
-capacity(::Type{<:SmallVector{N}}) where N
-fasthash(::SmallVector, ::UInt)
-empty(::SmallVector)
+capacity(::Type{<:AbstractSmallVector})
 zeros
 ones
 setindex
 addindex
-push(::SmallVector, ::Vararg)
-pop(::SmallVector)
+push(::AbstractSmallVector, ::Vararg)
+pop(::AbstractSmallVector)
 pushfirst
 popfirst
 insert
@@ -32,9 +29,24 @@ deleteat
 popat
 append
 prepend
+support
+```
+
+### [`SmallVector`](@id sec-smallvector)
+
+```@docs
+SmallVector
+empty(::SmallVector)
+fasthash(::SmallVector, ::UInt)
 sum_fast
 map
-support
+```
+
+### [`PackedVector`](@id sec-packedvector)
+
+TODO
+
+```@docs
 ```
 
 ### [Broadcasting](@id sec-broadcasting)
@@ -45,7 +57,7 @@ if at least one argument is a `SmallVector` and all other arguments (if any) are
 of the `SmallVector` arguments. Broadcasted assignments to a `SmallVector` are
 of course not possible.
 
-See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:SmallVector{N}}) where N),
+See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractSmallVector})),
 [`SmallCollections.SmallVectorStyle`](@ref).
 
 #### Examples
@@ -107,11 +119,11 @@ for `SmallBitSet` as well as
 [`popfirst`](@ref),
 [`deleteat`](@ref) and
 [`append`](@ref)
-for `SmallVector`
+for `AbstractSmallVector`
 are also available in `!!`-form.
-For example, `setindex!!` with a `SmallVector` as first argument calls `setindex`.
+For example, `setindex!!` with an `AbstractSmallVector` as first argument calls `setindex`.
 (`BangBang.jl` does not define `insert!!`, `prepend!!` and `map!!`.)
-Moreover, `add!!(v::SmallVector, w::SmallVector)` is a synonym for `v+w`.
+Moreover, `add!!(v::AbstractSmallVector, w::AbstractSmallVector)` is a synonym for `v+w`.
 
 This allows to write efficient code that works for both mutable and immutable arguments.
 For example, the function

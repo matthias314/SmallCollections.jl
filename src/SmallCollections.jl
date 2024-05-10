@@ -35,6 +35,7 @@ fasthash(x) = fasthash(x, UInt(0))
 
 include("bits.jl")
 include("smallbitset.jl")
+include("abstractsmallvector.jl")
 include("smallvector.jl")
 include("packedvector.jl")
 
