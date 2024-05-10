@@ -36,7 +36,8 @@ Add `x` to the `i`-th component of `v` and return the new vector.
 
 See also [`setindex`](@ref).
 """
-addindex(::AbstractSmallVector, ::Any, ::Integer)
+@propagate_inbounds addindex(v::AbstractSmallVector, x, i::Integer) =
+    setindex(v, v[i]+x, i)
 
 """
     zeros(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V

@@ -1,5 +1,16 @@
 using SmallCollections: bitsize
 
+function checkvalue(::Type{Bool}, N, x::T) where T
+    @assert bitsize(T) >= N
+    if bitsize(T) == N
+        true
+    elseif T <: Signed
+        -one(T) << (N-1) <= x < one(T) << (N-1)
+    else
+        x < one(T) << N
+    end
+end
+
 function isvalid(v::PackedVector{U,N,T}) where {U,N,T}
     n = length(v)
     mask = one(U) << (n*N) - one(U)
@@ -238,6 +249,15 @@ end
             cc = packed_rand(N, T)
             w = @test_inferred cc*v1 red_mod(N, cc*u1) v1
             @test isvalid(w)
+            for i in -1:length(u1)+1
+                x = packed_rand(N, T)
+                if checkbounds(Bool, u1, i) && checkvalue(Bool, N, u1[i]+x)
+                    w = @test_inferred addindex(v1, x, i) setindex!(copy(u1), u1[i]+x, i) v1
+                    @test isvalid(w)
+                else
+                    @test_throws Exception addindex(v1, x, i)
+                end
+            end
         end
     end
 end
