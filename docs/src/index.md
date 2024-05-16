@@ -75,7 +75,6 @@ julia> v = SmallVector{8}('a':'c'); t = ('p', 'q', 'r'); uppercase.(v .* t .* 'x
 SmallBitSet
 AllSubsets
 Subsets
-Subsets(::Integer)
 Shuffles
 bits
 convert(::Type{SmallBitSet}, ::Integer)
