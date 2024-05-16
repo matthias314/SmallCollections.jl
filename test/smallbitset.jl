@@ -119,12 +119,12 @@ end
 
 @testset "Subsets" begin
     for n in [-1, 0, 1, 2, 10], k in [-1, 0, 1, n-1, n, n+1]
-        ss = Subsets(n, k)
-        if 0 <= k <= n
-            @test_inferred length(ss) binomial(n, k)
-        else
-            @test_inferred length(ss) 0
+        if !(0 <= k <= n)
+            @test_throws Exception Subsets(n, k)
+            continue
         end
+        ss = @inferred Subsets(n, k)
+        @test_inferred length(ss) binomial(n, k)
         @test eltype(ss) == SmallBitSet{UInt}
         ssv = @inferred collect(ss)
         @test length(ssv) == length(ss) == length(unique(ssv))
@@ -133,17 +133,38 @@ end
     end
 end
 
-
 @testset "AllSubsets" begin
     for n in [-1, 0, 1, 2, 10]
-        ss = AllSubsets(n)
-        if n >= 0
-            @test_inferred length(ss) 2^n
-        else
-            @test_inferred length(ss) 0
+        if n < 0
+            @test_throws Exception Subsets(n)
+            continue
         end
+        ss = Subsets(n)
+        @test_inferred length(ss) 2^n
         @test eltype(ss) == SmallBitSet{UInt}
         ssv = @inferred collect(ss)
         @test length(ssv) == length(ss) == length(unique(ssv))
+    end
+end
+
+@testset "Shuffles" begin
+    for k in [-1, 0, 1, 2, 4], l in [-1, 0, 1, 2, 4]
+        if !(k >= 0 && l >= 0)
+            @test_throws Exception Shuffles(k, l)
+            continue
+        end
+        sh = @inferred Shuffles(k, l)
+        @test_inferred length(sh) binomial(k+l, l)
+        @test eltype(sh) == Tuple{SmallBitSet{UInt},SmallBitSet{UInt},Bool}
+        @test allunique(sh)
+        for (a, b, s) in sh
+            @test a isa SmallBitSet{UInt} && b isa SmallBitSet{UInt} && s isa Bool
+            @test length(a) == k && length(b) == l && union(a, b) == SmallBitSet(1:k+l)
+            s2 = false
+            for i in a, j in b
+                s2 ⊻= i > j
+            end
+            @test s == s2
+        end
     end
 end

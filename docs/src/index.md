@@ -76,6 +76,7 @@ SmallBitSet
 AllSubsets
 Subsets
 Subsets(::Integer)
+Shuffles
 bits
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})

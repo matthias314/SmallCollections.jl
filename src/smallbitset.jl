@@ -323,17 +323,20 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 # subset iterators
 #
 
-export Subsets, AllSubsets
+export Subsets, AllSubsets, Shuffles
 
 import Base: eltype, length, size, getindex
 
 """
-    Subsets(n, k)
+    Subsets(n::Integer, k::Integer)
+    Subsets(sh::Shuffles)
 
 Iterating over `Subsets(n, k)` gives all `k`-element subsets of the set of integers from `1` to `n`.
 The element type is `SmallBitSet`.
 
-See also [`AllSubsets`](@ref).
+The call `Subsets(Shuffles(k, l))` returns `Subsets(k+l, k)`.
+
+See also [`AllSubsets`](@ref), [`Shuffles`](@ref).
 
 # Example
 ```jldoctest
@@ -342,15 +345,23 @@ julia> collect(Subsets(3, 2))
  SmallBitSet([1, 2])
  SmallBitSet([1, 3])
  SmallBitSet([2, 3])
+
+julia> Subsets(Shuffles(2, 3))
+Subsets(5, 2)
 ```
 """
 struct Subsets
     n::Int
     k::Int
+    function Subsets(n::Integer, k::Integer)
+        0 <= k <= n || error("illegal arguments")
+        new(n, k)
+    end
 end
 
 eltype(::Subsets) = SmallBitSet{UInt}
 
+#=
 length(ss::Subsets) = 0 <= ss.k <= ss.n ? binomial(ss.n, ss.k) : 0
 
 function iterate(ss::Subsets)
@@ -368,12 +379,25 @@ function iterate(ss::Subsets, (m, last))
     m = (t+one(t)) | unsafe_lshr((~t & -~t) - one(t), trailing_zeros(m)+1)
     return _SmallBitSet(m), (m, last)
 end
+=#
+
+length(ss::Subsets) = binomial(ss.n, ss.k)
+
+function iterate(ss::Subsets, state...)
+    xs = iterate(Shuffles(ss), state...)
+    if xs === nothing
+        nothing
+    else
+        x, state = xs
+        first(x), state
+    end
+end
 
 """
     AllSubsets <: AbstractVector{SmallBitSet{UInt}}
 
-    AllSubsets(n)
-    Subsets(n)
+    AllSubsets(n::Integer)
+    Subsets(n::Integer)
 
 `AllSubsets(n)` is a vector whose `2^n` elements of type `SmallBitSet` are the
 subsets of the set of integers from `1` to `n`. `Subsets(n)` is a shorthand notation
@@ -393,10 +417,14 @@ julia> collect(Subsets(2))
 """
 struct AllSubsets <: AbstractVector{SmallBitSet{UInt}}
     n::Int
+    function AllSubsets(n::Integer)
+        n >= 0 || error("illegal argument")
+        new(n)
+    end
 end
 
 """
-    Subsets(n)
+    Subsets(n::Integer)
 
 `Subsets(n)` is a shorthand notation for `AllSubsets(n)`.
 
@@ -410,3 +438,75 @@ show(io::IO, ::MIME"text/plain", ss::AllSubsets) = print(io, "AllSubsets(", ss.n
 size(ss::AllSubsets) = (ss.n >= 0 ? 1 << ss.n : 0,)
 
 getindex(ss::AllSubsets, i::Int) = _SmallBitSet((i-1) % UInt)
+
+"""
+    Shuffles(k::Integer, l::Integer)
+    Shuffles(ss::Subsets)
+
+Iterating over `Shuffles(k, l)` gives all `(k, l)`-shuffles, that is, all partitions
+of the integers from `1` to `k+l` into two sets of size `k` and `l`, respectively.
+The sets are of type `SmallBitSet`. The sign of the shuffle is returned as a `Bool`
+where `false` means `+1` and `true` means `-1`. The two sets and the sign are returned
+as a triple.
+
+The call `Shuffles(Subsets(n, k))` returns `Shuffles(k, n-k)`.
+
+See also [`Subsets`](@ref).
+
+# Examples
+```jldoctest
+julia> collect(Shuffles(2, 1))
+3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, Bool}}:
+ (SmallBitSet([1, 2]), SmallBitSet([3]), 0)
+ (SmallBitSet([1, 3]), SmallBitSet([2]), 1)
+ (SmallBitSet([2, 3]), SmallBitSet([1]), 0)
+
+julia> eltype(Shuffles(2, 1))
+Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, Bool}
+
+julia> [(-1)^s * maximum(a) for (a, _, s) in Shuffles(2, 1)]
+3-element Vector{Int64}:
+  2
+ -3
+  3
+
+julia> Shuffles(Subsets(5, 2))
+Shuffles(2, 3)
+```
+"""
+struct Shuffles
+    k::Int
+    l::Int
+    function Shuffles(k::Integer, l::Integer)
+        (k >= 0 && l >= 0) || error("arguments must be non-negative")
+        k+l <= bitsize(UInt) || error("arguments too large")
+        new(k, l)
+    end
+end
+
+Shuffles(ss::Subsets) = Shuffles(ss.k, ss.n-ss.k)
+Subsets(sh::Shuffles) = Subsets(sh.k+sh.l, sh.k)
+
+eltype(::Shuffles) = Tuple{SmallBitSet{UInt}, SmallBitSet{UInt}, Bool}
+
+length(sh::Shuffles) = length(Subsets(sh))
+
+function iterate(sh::Shuffles)
+    m = UInt(1) << sh.k - UInt(1)
+    last = m << sh.l
+    mc = one(m) << (sh.k+sh.l) - one(m)
+    (_SmallBitSet(m), _SmallBitSet(mc ⊻ m), false), (m, last, mc, zero(m))
+end
+
+# adapted from https://graphics.stanford.edu/~seander/bithacks.html#NextBitPermutation
+# via https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
+function iterate(sh::Shuffles, (m, last, mc, s))
+    m == last && return nothing
+    t = m | (m-one(m))
+    t1 = t+one(t)
+    zm = trailing_zeros(m)
+    zt = trailing_zeros(t1)
+    m = t1 | unsafe_lshr((~t & -~t) - one(t), zm+1)
+    s ⊻= ~(zm & zt)
+    return (_SmallBitSet(m), _SmallBitSet(mc ⊻ m), isodd(s)), (m, last, mc, s)
+end
