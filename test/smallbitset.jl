@@ -117,14 +117,18 @@ end
     end
 end
 
-@testset "Subsets" begin
+@testset "subsets(n,k)" begin
     for n in [-1, 0, 1, 2, 10], k in [-1, 0, 1, n-1, n, n+1]
-        if !(0 <= k <= n)
-            @test_throws Exception Subsets(n, k)
+        if n < 0
+            @test_throws Exception subsets(n, k)
             continue
         end
-        ss = @inferred Subsets(n, k)
-        @test_inferred length(ss) binomial(n, k)
+        ss = @inferred subsets(n, k)
+        if 0 <= k <= n
+            @test_inferred length(ss) binomial(n, k)
+        else
+            @test_inferred length(ss) 0
+        end
         @test eltype(ss) == SmallBitSet{UInt}
         ssv = @inferred collect(ss)
         @test length(ssv) == length(ss) == length(unique(ssv))
@@ -133,13 +137,13 @@ end
     end
 end
 
-@testset "AllSubsets" begin
+@testset "subsets(n)" begin
     for n in [-1, 0, 1, 2, 10]
         if n < 0
-            @test_throws Exception Subsets(n)
+            @test_throws Exception subsets(n)
             continue
         end
-        ss = Subsets(n)
+        ss = subsets(n)
         @test_inferred length(ss) 2^n
         @test eltype(ss) == SmallBitSet{UInt}
         ssv = @inferred collect(ss)
@@ -147,13 +151,13 @@ end
     end
 end
 
-@testset "Shuffles" begin
+@testset "shuffles" begin
     for k in [-1, 0, 1, 2, 4], l in [-1, 0, 1, 2, 4]
         if !(k >= 0 && l >= 0)
-            @test_throws Exception Shuffles(k, l)
+            @test_throws Exception shuffles(k, l)
             continue
         end
-        sh = @inferred Shuffles(k, l)
+        sh = @inferred shuffles(k, l)
         @test_inferred length(sh) binomial(k+l, l)
         @test eltype(sh) == Tuple{SmallBitSet{UInt},SmallBitSet{UInt},Bool}
         @test allunique(sh)

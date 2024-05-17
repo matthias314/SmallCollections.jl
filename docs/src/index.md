@@ -73,9 +73,6 @@ julia> v = SmallVector{8}('a':'c'); t = ('p', 'q', 'r'); uppercase.(v .* t .* 'x
 
 ```@docs
 SmallBitSet
-AllSubsets
-Subsets
-Shuffles
 bits
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
@@ -86,6 +83,8 @@ pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)
 pop(::SmallBitSet, ::Any, ::Any)
 delete
+subsets
+shuffles
 ```
 
 ## [BangBang support](@id sec-bangbang)

@@ -323,55 +323,57 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 # subset iterators
 #
 
-export Subsets, AllSubsets, Shuffles
+export subsets, shuffles
 
 using Base: Generator
 import Base: eltype, length, size, getindex
 
-"""
-    Shuffles(k::Integer, l::Integer)
+struct Shuffles
+    k::Int
+    l::Int
+end
 
-Iterating over `Shuffles(k, l)` gives all `(k, l)`-shuffles, that is, all partitions
+"""
+    shuffles(k::Integer, l::Integer)
+
+Return an iterator that yields all `(k, l)`-shuffles, that is, all partitions
 of the integers from `1` to `k+l` into two sets of size `k` and `l`, respectively.
 The sets are of type `SmallBitSet`. The sign of the shuffle is returned as a `Bool`
 where `false` means `+1` and `true` means `-1`. The two sets and the sign are returned
 as a triple.
 
-See also [`Subsets`](@ref).
+See also [`subsets`](@ref subsets(::Integer, ::Integer)).
 
 # Examples
 ```jldoctest
-julia> collect(Shuffles(2, 1))
+julia> collect(shuffles(2, 1))
 3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, Bool}}:
  (SmallBitSet([1, 2]), SmallBitSet([3]), 0)
  (SmallBitSet([1, 3]), SmallBitSet([2]), 1)
  (SmallBitSet([2, 3]), SmallBitSet([1]), 0)
 
-julia> eltype(Shuffles(2, 1))
+julia> eltype(shuffles(2, 1))
 Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, Bool}
 
-julia> [(-1)^s * maximum(a) for (a, _, s) in Shuffles(2, 1)]
+julia> [(-1)^s * maximum(a) for (a, _, s) in shuffles(2, 1)]
 3-element Vector{Int64}:
   2
  -3
   3
 ```
 """
-struct Shuffles
-    k::Int
-    l::Int
-    function Shuffles(k::Integer, l::Integer)
-        (k >= 0 && l >= 0) || error("arguments must be non-negative")
-        k+l <= bitsize(UInt) || error("arguments too large")
-        new(k, l)
-    end
+function shuffles(k::Integer, l::Integer)
+    (k >= 0 && l >= 0) || error("both arguments must be non-negative")
+    k+l <= bitsize(UInt) || error("arguments too large")
+    Shuffles(k, l)
 end
 
 eltype(::Shuffles) = Tuple{SmallBitSet{UInt}, SmallBitSet{UInt}, Bool}
 
-length(sh::Shuffles) = binomial(sh.k+sh.l, sh.k)
+length(sh::Shuffles) = sh.k >= 0 && sh.l >= 0 ? binomial(sh.k+sh.l, sh.k) : 0
 
 function iterate(sh::Shuffles)
+    (sh.k >= 0 && sh.l >= 0) || return nothing
     m = UInt(1) << sh.k - UInt(1)
     last = m << sh.l
     mc = one(m) << (sh.k+sh.l) - one(m)
@@ -391,88 +393,68 @@ function iterate(sh::Shuffles, (m, last, mc, s))
     return (_SmallBitSet(m), _SmallBitSet(mc ⊻ m), isodd(s)), (m, last, mc, s)
 end
 
-"""
-    Subsets(n::Integer, k::Integer)
-
-Iterating over `Subsets(n, k)` gives all `k`-element subsets of the set of integers from `1` to `n`.
-The element type is `SmallBitSet`.
-
-See also [`AllSubsets`](@ref), [`Shuffles`](@ref).
-
-# Example
-```jldoctest
-julia> collect(Subsets(3, 2))
-3-element Vector{SmallBitSet{UInt64}}:
- SmallBitSet([1, 2])
- SmallBitSet([1, 3])
- SmallBitSet([2, 3])
-```
-"""
-function Subsets(n::Integer, k::Integer)
-    if 0 <= k <= n
-        Generator(first, Shuffles(k, n-k))
-    else
-        error("illegal arguments: 0 <= $k <= $n violated")
-    end
-end
-
 eltype(::Generator{Shuffles, typeof(first)}) = SmallBitSet{UInt}
 
-#=
-function Subsets(n::Integer)
-    if n >= 0
-        m = UInt(1) << n - UInt(1)
-        Generator(_SmallBitSet, UInt(0):m)
-    else
-        error("illegal argument")
-    end
+struct Subsets <: AbstractVector{SmallBitSet{UInt}}
+    n::Int
 end
 
-eltype(::Generator{UnitRange{UInt}, typeof(_SmallBitSet)}) = SmallBitSet{UInt}
-=#
-
 """
-    AllSubsets <: AbstractVector{SmallBitSet{UInt}}
+    subsets(n::Integer) -> AbstractVector{SmallBitSet{UInt}}
 
-    AllSubsets(n::Integer)
-    Subsets(n::Integer)
 
-`AllSubsets(n)` is a vector whose `2^n` elements of type `SmallBitSet` are the
-subsets of the set of integers from `1` to `n`. `Subsets(n)` is a shorthand notation
-for `AllSubsets(n)`.
+Return a vector whose `2^n` elements of type `SmallBitSet` are the
+subsets of the set of integers from `1` to `n`.
 
-See also [`Subsets`](@ref).
-
-# Example
+# Examples
 ```jldoctest
-julia> collect(Subsets(2))
+julia> collect(subsets(2))
 4-element Vector{SmallBitSet{UInt64}}:
  SmallBitSet([])
  SmallBitSet([1])
  SmallBitSet([2])
  SmallBitSet([1, 2])
+
+julia> subsets(2)[3]
+SmallBitSet{UInt64} with 1 element:
+  2
 ```
 """
-struct AllSubsets <: AbstractVector{SmallBitSet{UInt}}
-    n::Int
-    function AllSubsets(n::Integer)
-        n >= 0 || error("illegal argument")
-        new(n)
-    end
+function subsets(n::Integer)
+    n >= 0 || error("argument must be non-negative")
+    n <= bitsize(UInt) || error("argument too large")
+    Subsets(n)
 end
 
+show(io::IO, ss::Subsets) = print(io, "Subsets(", ss.n, ')')
+show(io::IO, ::MIME"text/plain", ss::Subsets) = print(io, "Subsets(", ss.n, ')')
+
+size(ss::Subsets) = (ss.n >= 0 ? 1 << ss.n : 0,)
+
+getindex(ss::Subsets, i::Int) = _SmallBitSet((i-1) % UInt)
+
 """
-    Subsets(n::Integer)
+    subsets(n::Integer, k::Integer)
 
-`Subsets(n)` is a shorthand notation for `AllSubsets(n)`.
+Return an iterator that yields all `k`-element subsets of the set of integers from `1` to `n`.
+The element type is `SmallBitSet`.
 
-See also [`Subsets`](@ref), [`AllSubsets`](@ref).
+See also [`shuffles`](@ref).
+
+# Example
+```jldoctest
+julia> collect(subsets(3, 2))
+3-element Vector{SmallBitSet{UInt64}}:
+ SmallBitSet([1, 2])
+ SmallBitSet([1, 3])
+ SmallBitSet([2, 3])
+
+julia> collect(subsets(3, 4))
+SmallBitSet{UInt64}[]
+```
 """
-Subsets(n::Integer) = AllSubsets(n)
-
-show(io::IO, ss::AllSubsets) = print(io, "AllSubsets(", ss.n, ')')
-show(io::IO, ::MIME"text/plain", ss::AllSubsets) = print(io, "AllSubsets(", ss.n, ')')
-
-size(ss::AllSubsets) = (ss.n >= 0 ? 1 << ss.n : 0,)
-
-getindex(ss::AllSubsets, i::Int) = _SmallBitSet((i-1) % UInt)
+function subsets(n::Integer, k::Integer)
+    n >= 0 || error("first argument must be non-negative")
+    n <= bitsize(UInt) || error("first argument too large")
+    Generator(first, Shuffles(k, n-k))
+end
