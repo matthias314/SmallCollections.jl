@@ -8,26 +8,26 @@ import Base: ==, getindex, setindex, length, size, empty, iterate, rest,
 export PackedVector, bits
 
 """
-    PackedVector{U<:Unsigned,N,T<:Union{Base.BitInteger,Bool}} <: AbstractSmallVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractSmallVector{T}
 
-    PackedVector{U,N,T}()
-    PackedVector{U,N,T}(iter)
-    PackedVector{U,N}(v::AbstractVector{T})
-    PackedVector{U,N}(t::Tuple)
-    PackedVector(v::SmallVector{N,T})
+    PackedVector{U,M,T}()
+    PackedVector{U,M,T}(iter)
+    PackedVector{U,M}(v::AbstractVector{T})
+    PackedVector{U,M}(t::Tuple)
+    PackedVector(v::SmallVector{M,T})
 
 This type of immutable vector stores the elements in a common bit mask of type `U`
-with `N` bits for each entry. The range of allowed values is `-2^(N-1):2^(N-1)-1`
-if `T <: Signed`, `0:2^N-1` if `T <: Unsigned` and `false:true` if `T == Bool`.
+with `M` bits for each entry. The range of allowed values is `-2^(M-1):2^(M-1)-1`
+if `T <: Signed`, `0:2^M-1` if `T <: Unsigned` and `false:true` if `T == Bool`.
 Apart from that, the official element type `T` is only used when retrieving an entry.
  The capacity, that is, the number of elements that can be stored, is given
-by `bitsize(U)÷N`.
+by `bitsize(U)÷M`.
 
 The element type `T` can be omitted when creating the `PackedVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
-If the `PackedVector` is created from a `SmallVector` `v` and the parameters `U` and `N`
-are omitted, then `N` is set to `bitsize(T)` and `U` is chosen such that the capacity
+If the `PackedVector` is created from a `SmallVector` `v` and the parameters `U` and `M`
+are omitted, then `M` is set to `bitsize(T)` and `U` is chosen such that the capacity
 of the resulting vector is at least the capacity of `v`.
 
 Overflow or underflow during addition or subtraction of vectors do not throw an error.
@@ -36,7 +36,7 @@ other types returns a `Vector`.
 
 Compared to `SmallVector`, a `PackedVector` often has faster `push` and `pop` operations,
 with `pushfirst` and `popfirst` being particularly fast. Arithmetic operations are usually
-slower unless `N` is the size of a hardware integer.
+slower unless `M` is the size of a hardware integer.
 
 See also [`capacity`](@ref capacity(::Type{<:PackedVector})), [`$(@__MODULE__).bitsize`](@ref).
 
@@ -74,20 +74,20 @@ julia> Int8(2)*v
  -12
 ```
 """
-struct PackedVector{U<:Unsigned,N,T<:Union{BitInteger,Bool}} <: AbstractSmallVector{T}
+struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractSmallVector{T}
     m::U
     n::Int
 end
 
-PackedVector{U,N,T}(v::PackedVector{U,N,T}) where {U,N,T} = v
+PackedVector{U,M,T}(v::PackedVector{U,M,T}) where {U,M,T} = v
 
-@inline function PackedVector{U,N,T}(w::Union{AbstractVector,Tuple}) where {U,N,T}
-    v = PackedVector{U,N,T}()
+@inline function PackedVector{U,M,T}(w::Union{AbstractVector,Tuple}) where {U,M,T}
+    v = PackedVector{U,M,T}()
     @boundscheck if !isempty(w)
         checklength(v, length(w))
         x, y = extrema(w)
-        checkvalue(N, convert(T, x))
-        checkvalue(N, convert(T, y))
+        checkvalue(M, convert(T, x))
+        checkvalue(M, convert(T, y))
     end
     for x in Iterators.reverse(w)
         @inbounds v = pushfirst(v, x)
@@ -95,19 +95,19 @@ PackedVector{U,N,T}(v::PackedVector{U,N,T}) where {U,N,T} = v
     v
 end
 
-@propagate_inbounds function PackedVector{U,N,T}(iter) where {U,N,T}
-    v = PackedVector{U,N,T}()
+@propagate_inbounds function PackedVector{U,M,T}(iter) where {U,M,T}
+    v = PackedVector{U,M,T}()
     for x in iter
         v = push(v, x)
     end
     v
 end
 
-PackedVector{U,N}(v::AbstractVector{T}) where {U,N,T} = PackedVector{U,N,T}(v)
+PackedVector{U,M}(v::AbstractVector{T}) where {U,M,T} = PackedVector{U,M,T}(v)
 
-function PackedVector{U,N}(v::V) where {U, N, V <: Tuple}
+function PackedVector{U,M}(v::V) where {U, M, V <: Tuple}
     T = promote_type(fieldtypes(V)...)
-    PackedVector{U,N,T}(v)
+    PackedVector{U,M,T}(v)
 end
 
 @propagate_inbounds function PackedVector{U,M,S}(v::SmallVector{N,T}) where {U,M,S,N, T <: BitInteger}
@@ -142,12 +142,12 @@ length(v::PackedVector) = v.n
 
 size(v::PackedVector) = (length(v),)
 
-capacity(::Type{<:PackedVector{U,N}}) where {U,N} = bitsize(U) ÷ N
+capacity(::Type{<:PackedVector{U,M}}) where {U,M} = bitsize(U) ÷ M
 
-==(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T} =
+==(v::PackedVector{U,M,T}, w::PackedVector{U,M,T}) where {U,M,T} =
     v.n == w.n && v.m == w.m
 
-empty(v::PackedVector{U,N,T}, ::Type{S} = T) where {U,N,T,S} = PackedVector{U,N,S}()
+empty(v::PackedVector{U,M,T}, ::Type{S} = T) where {U,M,T,S} = PackedVector{U,M,S}()
 
 iszero(v::PackedVector) = iszero(v.m)
 
@@ -158,14 +158,14 @@ function zeros(::Type{V}, n::Integer) where {U, V <: PackedVector{U}}
     V(zero(U), n)
 end
 
-Base.@assume_effects :total all_ones(::Type{U}, N) where U =
-    foldl((m, i) -> m | unsafe_shl(one(U), i), 0:N:bitsize(U)-1; init = zero(U))
+Base.@assume_effects :total all_ones(::Type{U}, M) where U =
+    foldl((m, i) -> m | unsafe_shl(one(U), i), 0:M:bitsize(U)-1; init = zero(U))
 
-function ones(::Type{V}, n::Integer) where {U, N, V <: PackedVector{U,N}}
+function ones(::Type{V}, n::Integer) where {U, M, V <: PackedVector{U,M}}
     n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
-    mask = N*n == bitsize(U) ? ~zero(U) : unsafe_shl(one(U), N*n) - one(U)
+    mask = M*n == bitsize(U) ? ~zero(U) : unsafe_shl(one(U), M*n) - one(U)
 # TODO: same test elsewhere!!! should be OK
-    m = all_ones(U, N) & mask
+    m = all_ones(U, M) & mask
     V(m, n)
 end
 
@@ -180,13 +180,13 @@ end
 
 rest(v::PackedVector, w = v) = w
 
-@inline function checkvalue(N, x::T) where T
-    bitsize(T) == N && return
-    bitsize(T) < N && error("type $T has fewer than $N bits")
+@inline function checkvalue(M, x::T) where T
+    bitsize(T) == M && return
+    bitsize(T) < M && error("type $T has fewer than $M bits")
     if T <: Signed
-        -one(T) << (N-1) <= x < one(T) << (N-1) || error("value $x out of range for $N bits signed integer")
+        -one(T) << (M-1) <= x < one(T) << (M-1) || error("value $x out of range for $M bits signed integer")
     else
-        x < one(T) << N || error("value $x out of range for $N bits unsigned integer")
+        x < one(T) << M || error("value $x out of range for $M bits unsigned integer")
     end
     nothing
 end
@@ -198,18 +198,18 @@ function checklength(v::PackedVector, m = 1)
 end
 
 # TODO: can we omit the conversion to U?
-@inline maskvalue(::Type{U}, N, x::Union{Unsigned,Bool}) where U = x % U
+@inline maskvalue(::Type{U}, M, x::Union{Unsigned,Bool}) where U = x % U
 
-@inline function maskvalue(::Type{U}, N, x::T) where {U, T <: Signed}
-    mask = one(T) << N - one(T)
+@inline function maskvalue(::Type{U}, M, x::T) where {U, T <: Signed}
+    mask = one(T) << M - one(T)
     unsigned(x & mask) % U
 end
 
-@inline function getindex(v::PackedVector{U,N,T}, i::Int) where {U,N,T}
+@inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
-    x = unsafe_lshr(v.m, N*(i-1)) % T
-    mask = one(T) << N - one(T)
-    signbit = one(T) << (N-1)
+    x = unsafe_lshr(v.m, M*(i-1)) % T
+    mask = one(T) << M - one(T)
+    signbit = one(T) << (M-1)
     if T == Bool
         x
     elseif T <: Unsigned || iszero(x & signbit)
@@ -219,12 +219,12 @@ end
     end
 end
 
-@inline function getindex(v::V, r::AbstractUnitRange{<:Integer}) where {U <: Unsigned, N, V <: PackedVector{U,N}}
+@inline function getindex(v::V, r::AbstractUnitRange{<:Integer}) where {U <: Unsigned, M, V <: PackedVector{U,M}}
     @boundscheck checkbounds(v, r)
     l = length(r)
     l == capacity(v) && return v
-    mask = unsafe_shl(one(U), N*l) - one(U)
-    m = unsafe_lshr(v.m, N*(first(r)-1)) & mask
+    mask = unsafe_shl(one(U), M*l) - one(U)
+    m = unsafe_lshr(v.m, M*(first(r)-1)) & mask
     V(m, l)
 end
 
@@ -237,42 +237,42 @@ end
     @inbounds V(@inbounds(v[i]) for i in ii)
 end
 
-@inline function setindex(v::PackedVector{U,N,T}, x, i::Int) where {U,N,T}
+@inline function setindex(v::PackedVector{U,M,T}, x, i::Int) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
         checkbounds(v, i)
-        checkvalue(N, x)
+        checkvalue(M, x)
     end
-    s = N*(i-1)
-    mask = one(U) << N - one(U)
-    y = maskvalue(U, N, x)
+    s = M*(i-1)
+    mask = one(U) << M - one(U)
+    y = maskvalue(U, M, x)
     m = (v.m & ~unsafe_shl(mask, s)) | unsafe_shl(y, s)
-    PackedVector{U,N,T}(m, v.n)
+    PackedVector{U,M,T}(m, v.n)
 end
 
-@inline function insert(v::PackedVector{U,N,T}, i::Integer, x) where {U,N,T}
+@inline function insert(v::PackedVector{U,M,T}, i::Integer, x) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
         isone(i) || checkbounds(v, i-1)
         checklength(v)
-        checkvalue(N, x)
+        checkvalue(M, x)
     end
-    s = N*(i-1)
+    s = M*(i-1)
     mask = unsafe_shl(one(U), s) - one(U)
     m1 = v.m & mask
-    m2 = (v.m & ~mask) << N
-    y = maskvalue(U, N, x)
+    m2 = (v.m & ~mask) << M
+    y = maskvalue(U, M, x)
     m = m1 | m2 | unsafe_shl(y, s)
-    PackedVector{U,N,T}(m, v.n+1)
+    PackedVector{U,M,T}(m, v.n+1)
 end
 
-@inline function deleteat(v::PackedVector{U,N,T}, i::Integer) where {U,N,T}
+@inline function deleteat(v::PackedVector{U,M,T}, i::Integer) where {U,M,T}
     @boundscheck checkbounds(v, i)
-    s = N*(i-1)
+    s = M*(i-1)
     mask = unsafe_shl(one(U), s) - one(U)
-    m1 = v.m >> N & ~mask
+    m1 = v.m >> M & ~mask
     m2 = v.m & mask
-    PackedVector{U,N,T}(m1 | m2, v.n-1)
+    PackedVector{U,M,T}(m1 | m2, v.n-1)
 end
 
 @propagate_inbounds popat(v::PackedVector, i::Integer) =
@@ -281,153 +281,153 @@ end
 @propagate_inbounds push(v::PackedVector, xs...) = append(v, xs)
 
 # TODO: needed?
-@inline function push(v::PackedVector{U,N,T}, x) where {U,N,T}
+@inline function push(v::PackedVector{U,M,T}, x) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
         checklength(v)
-        checkvalue(N, x)
+        checkvalue(M, x)
     end
-    s = N*v.n
-    y = maskvalue(U, N, x)
+    s = M*v.n
+    y = maskvalue(U, M, x)
     m = v.m | unsafe_shl(y, s)
-    PackedVector{U,N,T}(m, v.n+1)
+    PackedVector{U,M,T}(m, v.n+1)
 end
 
-@inline function pop(v::PackedVector{U,N,T}) where {U,N,T}
+@inline function pop(v::PackedVector{U,M,T}) where {U,M,T}
     @boundscheck checkbounds(v, 1)
-    s = N*(v.n-1)
+    s = M*(v.n-1)
     mask = unsafe_shl(one(U), s) - one(U)
     m = v.m & mask
-    PackedVector{U,N,T}(m, v.n-1), @inbounds v[v.n]
+    PackedVector{U,M,T}(m, v.n-1), @inbounds v[v.n]
 end
 
 pushfirst(v::PackedVector) = v
 
-@inline function pushfirst(v::PackedVector{U,N,T}, x) where {U <: Unsigned, N, T <: Union{BitInteger,Bool}}
+@inline function pushfirst(v::PackedVector{U,M,T}, x) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
     x = convert(T, x)
     @boundscheck begin
         checklength(v)
-        checkvalue(N, x)
+        checkvalue(M, x)
     end
-    y = maskvalue(U, N, x)
-    m = v.m << N | y
-    PackedVector{U,N,T}(m, v.n+1)
+    y = maskvalue(U, M, x)
+    m = v.m << M | y
+    PackedVector{U,M,T}(m, v.n+1)
 end
 
 @propagate_inbounds pushfirst(v::PackedVector, xs...) = prepend(v, xs)
 
-@inline function popfirst(v::PackedVector{U,N,T}) where {U,N,T}
+@inline function popfirst(v::PackedVector{U,M,T}) where {U,M,T}
     @boundscheck checkbounds(v, 1)
-    PackedVector{U,N,T}(v.m >> N, v.n-1), @inbounds v[1]
+    PackedVector{U,M,T}(v.m >> M, v.n-1), @inbounds v[1]
 end
 
 append(v::PackedVector, ws...) = foldl(append, ws; init = v)
 
 @propagate_inbounds append(v::V, w) where V <: PackedVector = append(v, V(w))
 
-@inline function append(v::PackedVector{U,N,T}, w::PackedVector{W,N,T}) where {U <: Unsigned, N, T <: Union{BitInteger,Bool}, W}
+@inline function append(v::PackedVector{U,M,T}, w::PackedVector{W,M,T}) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}, W}
     isempty(w) && return v   # otherwise we cannot use unsafe_shl
     @boundscheck checklength(v, w.n)
-    m = v.m | unsafe_shl(w.m % U, N*v.n)
-    PackedVector{U,N,T}(m, v.n+w.n)
+    m = v.m | unsafe_shl(w.m % U, M*v.n)
+    PackedVector{U,M,T}(m, v.n+w.n)
 end
 
 prepend(v::PackedVector, ws...) = foldr((w, v) -> prepend(v, w), ws; init = v)
 
 @propagate_inbounds prepend(v::V, w) where V <: PackedVector = append(V(w), v)
 
-@inline function duplicate(v::PackedVector{U,N,T}, i::Integer) where {U,N,T}
+@inline function duplicate(v::PackedVector{U,M,T}, i::Integer) where {U,M,T}
     @boundscheck begin
         checkbounds(v, i)
         checklength(v)
     end
-    mask = unsafe_shl(one(U), N*i) - one(U)
+    mask = unsafe_shl(one(U), M*i) - one(U)
     m1 = v.m & mask
-    m2 = (v.m & ~(mask >>> N)) << N
-    PackedVector{U,N,T}(m1 | m2, v.n+1)
+    m2 = (v.m & ~(mask >>> M)) << M
+    PackedVector{U,M,T}(m1 | m2, v.n+1)
 end
 
-@generated function bitcast_add(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T}
+@generated function bitcast_add(v::PackedVector{U,M,T}, w::PackedVector{U,M,T}) where {U,M,T}
     b = bitsize(U)
-    n = b ÷ N
-    c = n * N
+    n = b ÷ M
+    c = n * M
     ir = c == b ? """
-        %a2 = bitcast i$c %0 to <$n x i$N>
-        %b2 = bitcast i$c %1 to <$n x i$N>
-        %c2 = add <$n x i$N> %a2, %b2
-        %c1 = bitcast <$n x i$N> %c2 to i$c
+        %a2 = bitcast i$c %0 to <$n x i$M>
+        %b2 = bitcast i$c %1 to <$n x i$M>
+        %c2 = add <$n x i$M> %a2, %b2
+        %c1 = bitcast <$n x i$M> %c2 to i$c
         ret i$b %c1
     """ : """
         %a1 = trunc i$b %0 to i$c
-        %a2 = bitcast i$c %a1 to <$n x i$N>
+        %a2 = bitcast i$c %a1 to <$n x i$M>
         %b1 = trunc i$b %1 to i$c
-        %b2 = bitcast i$c %b1 to <$n x i$N>
-        %c2 = add <$n x i$N> %a2, %b2
-        %c1 = bitcast <$n x i$N> %c2 to i$c
+        %b2 = bitcast i$c %b1 to <$n x i$M>
+        %c2 = add <$n x i$M> %a2, %b2
+        %c1 = bitcast <$n x i$M> %c2 to i$c
         %c0 = zext i$c %c1 to i$b
         ret i$b %c0
     """
     quote
         $(Expr(:meta, :inline))
         m = Base.llvmcall($ir, U, Tuple{U, U}, v.m, w.m)
-        PackedVector{U,N,T}(m, v.n)
+        PackedVector{U,M,T}(m, v.n)
     end
 end
 
-@generated function bitcast_sub(v::PackedVector{U,N,T}, w::PackedVector{U,N,T}) where {U,N,T}
+@generated function bitcast_sub(v::PackedVector{U,M,T}, w::PackedVector{U,M,T}) where {U,M,T}
     b = bitsize(U)
-    n = b ÷ N
-    c = n * N
+    n = b ÷ M
+    c = n * M
     ir = c == b ? """
-        %a2 = bitcast i$c %0 to <$n x i$N>
-        %b2 = bitcast i$c %1 to <$n x i$N>
-        %c2 = sub <$n x i$N> %a2, %b2
-        %c1 = bitcast <$n x i$N> %c2 to i$c
+        %a2 = bitcast i$c %0 to <$n x i$M>
+        %b2 = bitcast i$c %1 to <$n x i$M>
+        %c2 = sub <$n x i$M> %a2, %b2
+        %c1 = bitcast <$n x i$M> %c2 to i$c
         ret i$b %c1
     """ : """
         %a1 = trunc i$b %0 to i$c
-        %a2 = bitcast i$c %a1 to <$n x i$N>
+        %a2 = bitcast i$c %a1 to <$n x i$M>
         %b1 = trunc i$b %1 to i$c
-        %b2 = bitcast i$c %b1 to <$n x i$N>
-        %c2 = sub <$n x i$N> %a2, %b2
-        %c1 = bitcast <$n x i$N> %c2 to i$c
+        %b2 = bitcast i$c %b1 to <$n x i$M>
+        %c2 = sub <$n x i$M> %a2, %b2
+        %c1 = bitcast <$n x i$M> %c2 to i$c
         %c0 = zext i$c %c1 to i$b
         ret i$b %c0
     """
     quote
         $(Expr(:meta, :inline))
         m = Base.llvmcall($ir, U, Tuple{U, U}, v.m, w.m)
-        PackedVector{U,N,T}(m, v.n)
+        PackedVector{U,M,T}(m, v.n)
     end
 end
 
-@generated function bitcast_mul(c::T, v::PackedVector{U,N,T}) where {U,N,T}
+@generated function bitcast_mul(c::T, v::PackedVector{U,M,T}) where {U,M,T}
     b = bitsize(U)
-    n = b ÷ N
-    (bitsize(T) == N && n*N == b) || error("not implemented")
+    n = b ÷ M
+    (bitsize(T) == M && n*M == b) || error("not implemented")
     ir = """
-        %a = bitcast i$b %1 to <$n x i$N>
-        %b1 = insertelement <$n x i$N> poison, i$N %0, i32 0
-        %b2 = shufflevector <$n x i$N> %b1, <$n x i$N> poison, <$n x i32> zeroinitializer
-        %c2 = mul <$n x i$N> %a, %b2
-        %c1 = bitcast <$n x i$N> %c2 to i$b
+        %a = bitcast i$b %1 to <$n x i$M>
+        %b1 = insertelement <$n x i$M> poison, i$M %0, i32 0
+        %b2 = shufflevector <$n x i$M> %b1, <$n x i$M> poison, <$n x i32> zeroinitializer
+        %c2 = mul <$n x i$M> %a, %b2
+        %c1 = bitcast <$n x i$M> %c2 to i$b
         ret i$b %c1
     """
     quote
         $(Expr(:meta, :inline))
         m = Base.llvmcall($ir, U, Tuple{T, U}, c, v.m)
-        PackedVector{U,N,T}(m, v.n)
+        PackedVector{U,M,T}(m, v.n)
     end
 end
 
 +(v::PackedVector) = v
 
-@inline function +(v::V, w::V) where {U, N, V <: PackedVector{U,N}}
+@inline function +(v::V, w::V) where {U, M, V <: PackedVector{U,M}}
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
-    N >= 8 && ispow2(N) && return bitcast_add(v, w)
-    mask = one(U) << N - one(U)
-    ones0 = all_ones(U, 2*N)
-    ones1 = ones0 << N
+    M >= 8 && ispow2(M) && return bitcast_add(v, w)
+    mask = one(U) << M - one(U)
+    ones0 = all_ones(U, 2*M)
+    ones1 = ones0 << M
     mask0 = mask*ones0
     mask1 = mask*ones1
     m0 = (v.m & mask0 + w.m & mask0) & mask0
@@ -442,12 +442,12 @@ end
 
 -(v::PackedVector) = @inbounds zero(v)-v
 
-@inline function -(v::V, w::V) where {U, N, V <: PackedVector{U,N}}
+@inline function -(v::V, w::V) where {U, M, V <: PackedVector{U,M}}
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
-    N >= 8 && ispow2(N) && return bitcast_sub(v, w)
-    mask = one(U) << N - one(U)
-    ones0 = all_ones(U, 2*N)
-    ones1 = ones0 << N
+    M >= 8 && ispow2(M) && return bitcast_sub(v, w)
+    mask = one(U) << M - one(U)
+    ones0 = all_ones(U, 2*M)
+    ones1 = ones0 << M
     mask0 = mask*ones0
     mask1 = mask*ones1
     wc = ~w.m
@@ -458,23 +458,23 @@ end
 
 -(vs::V...) where {U, V <: PackedVector{U,1,<:BitInteger}} = +(vs...)
 
-@inline function *(c::T, v::PackedVector{U,N,T}) where {U, N, T <: BitInteger}
-    @boundscheck checkvalue(N, c)
-    bitsize(T) == N && return bitcast_mul(c, v)
-    mask = one(U) << N - one(U)
-    ones0 = all_ones(U, 2*N)
-    ones1 = ones0 << N
+@inline function *(c::T, v::PackedVector{U,M,T}) where {U, M, T <: BitInteger}
+    @boundscheck checkvalue(M, c)
+    bitsize(T) == M && return bitcast_mul(c, v)
+    mask = one(U) << M - one(U)
+    ones0 = all_ones(U, 2*M)
+    ones1 = ones0 << M
     mask0 = mask*ones0
     mask1 = mask*ones1
-    cm = maskvalue(U, N, c)
+    cm = maskvalue(U, M, c)
     m0 = (cm * (v.m & mask0)) & mask0
     m1 = (cm * (v.m & mask1)) & mask1
-    PackedVector{U,N,T}(m0 | m1, v.n)
+    PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
 *(c::T, v::PackedVector{U,1,T}) where {U, T <: BitInteger} = isodd(c) ? v : zero(v)
 
-*(v::PackedVector{U,N,T}, c::T) where {U, N, T <: BitInteger} = c*v
+*(v::PackedVector{U,M,T}, c::T) where {U, M, T <: BitInteger} = c*v
 
 """
     $(@__MODULE__).unsafe_add(v::V, w::V) where V <: PackedVector -> V
@@ -500,14 +500,14 @@ See also [`unsafe_add`](@ref).
 """
 unsafe_sub(v::V, w::V) where V <: PackedVector = V(v.m-w.m, v.n)
 
-@generated function sum_split(v::PackedVector{U,N,T}) where {U,N,T}
-    @assert N > 1
+@generated function sum_split(v::PackedVector{U,M,T}) where {U,M,T}
+    @assert M > 1
     c = capacity(v)
     l = top_set_bit(c-1)
     quote
         m = v.m
         Base.Cartesian.@nexprs $l i -> begin
-            n = N*2^(i-1)
+            n = M*2^(i-1)
             ones2 = all_ones(U, 2*n)
             mask = one(U) << n - one(U)
             mask2 = mask * ones2
@@ -518,7 +518,7 @@ unsafe_sub(v::V, w::V) where V <: PackedVector = V(v.m-w.m, v.n)
                 m2 = (m >> n) & mask2
             end
             if T <: Signed
-                signmask = ones2 << (N-1 + i-1)
+                signmask = ones2 << (M-1 + i-1)
                 m1 |= (m1 & signmask) << 1
                 m2 |= (m2 & signmask) << 1
             end
@@ -537,17 +537,17 @@ unsafe_sub(v::V, w::V) where V <: PackedVector = V(v.m-w.m, v.n)
         if T <: Unsigned
             m % TT
         else
-            k = bitsize(U) - (N+$l)
+            k = bitsize(U) - (M+$l)
             (signed(m << k) >> k) % TT
         end
     end
 end
 
-function sum_count(v::PackedVector{U,N,T}) where {U,N,T}
-    o = all_ones(U, N)
-    t = ntuple(Val(N)) do i
+function sum_count(v::PackedVector{U,M,T}) where {U,M,T}
+    o = all_ones(U, M)
+    t = ntuple(Val(M)) do i
         c = count_ones(v.m & (o << (i-1))) << (i-1)
-        T <: Signed && i == N ? -c : c
+        T <: Signed && i == M ? -c : c
     end
     s = sum(t)
     if bitsize(T) > bitsize(Int)
@@ -559,18 +559,18 @@ function sum_count(v::PackedVector{U,N,T}) where {U,N,T}
     end
 end
 
-@generated inttype(::Val{N}) where N = Symbol(:Int, N)
-@generated uinttype(::Val{N}) where N = Symbol(:UInt, N)
+@generated inttype(::Val{M}) where M = Symbol(:Int, M)
+@generated uinttype(::Val{M}) where M = Symbol(:UInt, M)
 
-function sum(v::PackedVector{U,N,T}) where {U,N,T}
-    if N >= 8 && N <= 64 && ispow2(N)
-        S = T <: Signed ? inttype(Val(N)) : uinttype(Val(N))
-        w = PackedVector{U,N,S}(v.m, v.n)
+function sum(v::PackedVector{U,M,T}) where {U,M,T}
+    if M >= 8 && M <= 64 && ispow2(M)
+        S = T <: Signed ? inttype(Val(M)) : uinttype(Val(M))
+        w = PackedVector{U,M,S}(v.m, v.n)
         s = sum(SmallVector(w))
         bitsize(T) <= bitsize(s) ? s : s % T
     else
         log2u = top_set_bit(bitsize(U))-1
-        if N <= log2u + (T <: Signed ? 1 : -2)
+        if M <= log2u + (T <: Signed ? 1 : -2)
             sum_count(v)
         else
             sum_split(v)
@@ -578,38 +578,38 @@ function sum(v::PackedVector{U,N,T}) where {U,N,T}
     end
 end
 
-function maximum(v::PackedVector{U,N,T}) where {U,N,T}
-    if N >= 8 && ispow2(N)
-        S = T <: Signed ? inttype(Val(N)) : uinttype(Val(N))
-        w = PackedVector{U,N,S}(v.m, v.n)
+function maximum(v::PackedVector{U,M,T}) where {U,M,T}
+    if M >= 8 && ispow2(M)
+        S = T <: Signed ? inttype(Val(M)) : uinttype(Val(M))
+        w = PackedVector{U,M,S}(v.m, v.n)
         maximum(SmallVector(w)) % T
     else
         invoke(maximum, Tuple{AbstractVector{T}}, v)
     end
 end
 
-function minimum(v::PackedVector{U,N,T}) where {U,N,T}
-    if N >= 8 && ispow2(N)
-        S = T <: Signed ? inttype(Val(N)) : uinttype(Val(N))
-        w = PackedVector{U,N,S}(v.m, v.n)
+function minimum(v::PackedVector{U,M,T}) where {U,M,T}
+    if M >= 8 && ispow2(M)
+        S = T <: Signed ? inttype(Val(M)) : uinttype(Val(M))
+        w = PackedVector{U,M,S}(v.m, v.n)
         minimum(SmallVector(w)) % T
     else
         invoke(minimum, Tuple{AbstractVector{T}}, v)
     end
 end
 
-function support(v::PackedVector{U,N}) where {U,N}
+function support(v::PackedVector{U,M}) where {U,M}
     S = SmallBitSet{UInt}
     capacity(v) <= capacity(S) || length(v) <= capacity(S) ||
         error("$S can only contain integers between 1 and $(capacity(S))")
-    mask = one(U) << N - one(U)
+    mask = one(U) << M - one(U)
     m = zero(UInt)
     b = one(m)
     for i in 1:length(v)
         if !iszero(v.m & mask)
             m |= b
         end
-        mask <<= N
+        mask <<= M
         b <<= 1
     end
     convert(S, m)
