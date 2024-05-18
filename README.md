@@ -1,12 +1,12 @@
 # SmallCollections.jl
 
-This Julia package defines two immutable collections types, `SmallVector` and
-`SmallBitSet`. They don't allocate and are much faster than their
-allocating counterparts `Vector` and `BitSet`. Unlike the static vectors
+This Julia package defines three immutable collections types, `SmallVector`,
+`PackedVector` and `SmallBitSet`. They don't allocate and are often much faster
+than their allocating counterparts `Vector` and `BitSet`. Unlike the static vectors
 provided by [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl),
 [StaticVectors.jl](https://github.com/chakravala/StaticVectors.jl) and
 [SIMD.jl](https://github.com/eschnett/SIMD.jl),
-the length of a `SmallVector` is variable with a user-defined limit.
+the length of a `SmallVector` or `PackedVector` is variable with a user-defined limit.
 
 If the package [BangBang.jl](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then many functions defined by this package are also available
@@ -66,6 +66,46 @@ julia> map(uppercase, u)
  'A': ASCII/Unicode U+0041 (category Lu: Letter, uppercase)
  'B': ASCII/Unicode U+0042 (category Lu: Letter, uppercase)
  'C': ASCII/Unicode U+0043 (category Lu: Letter, uppercase)
+```
+
+### `PackedVector`
+
+A `PackedVector` can store bit integers or `Bool` values.
+The elements of a `PackedVector{U,M,T}` are stored in a common bit mask of type `U`
+with `M` bits for each entry. When retrieving elements, they are of type `T`.
+
+Compared to `SmallVector`, a `PackedVector` often has faster `push` and `pop` operations,
+with `pushfirst` and `popfirst` being particularly fast. Arithmetic operations are usually
+slower unless `M` is the size of a hardware integer.
+```julia
+julia> v = PackedVector{UInt64,5,Int}(4:6)
+3-element PackedVector{UInt64, 5, Int64}:
+ 4
+ 5
+ 6
+
+julia> capacity(v)  # 64 bits available, 5 for each entry
+12
+
+julia> pushfirst(v, 7)
+4-element PackedVector{UInt64, 5, Int64}:
+ 7
+ 4
+ 5
+ 6
+
+julia> duplicate(v, 2)
+4-element PackedVector{UInt64, 5, Int64}:
+ 4
+ 5
+ 5
+ 6
+
+julia> 3*v   # note the overflow in the last entry
+3-element PackedVector{UInt64, 5, Int64}:
+  12
+  15
+ -14
 ```
 
 ### `SmallBitSet`
