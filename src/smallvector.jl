@@ -2,22 +2,21 @@
 # small vectors
 #
 
-export SmallVector, setindex, addindex,
-    push, pop, pushfirst, popfirst, insert, duplicate, deleteat, popat,
-    append, prepend, support, fasthash, sum_fast
+export SmallVector, fasthash, sum_fast
 
 import Base: ==, copy, Tuple, empty,
     length, size, getindex, setindex, rest,
-    zero, zeros, ones, map,
+    zero, map,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 """
-    SmallVector{N,T} <: AbstractVector{T}
+    SmallVector{N,T} <: AbstractSmallVector{T}
 
     SmallVector{N,T}()
     SmallVector{N,T}(iter)
     SmallVector{N}(v::AbstractVector{T})
     SmallVector{N}(t::Tuple)
+    SmallVector(v::PackedVector{T})
 
 `SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
@@ -26,6 +25,8 @@ and hardware float types, one usually takes `N` to be a power of `2`.
 The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
+If the `SmallVector` is created from a `PackedVector` `v` and the parameter `N` is omitted,
+then it is set to capacity of `v`.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
 predefined for several types including `Number`. Default values for other types must be defined
@@ -58,19 +59,10 @@ julia> v+w
  10.0
 ```
 """
-struct SmallVector{N,T} <: AbstractVector{T}
+struct SmallVector{N,T} <: AbstractSmallVector{T}
     b::Values{N,T}
     n::Int
 end
-
-"""
-    capacity(::Type{<:SmallVector{N}}) where N -> N
-    capacity(v::SmallVector{N}) where N -> N
-
-Return `N`, which is the largest number of elements this vector type can hold.
-"""
-capacity(::Type{<:SmallVector{N}}) where N,
-capacity(::SmallVector)
 
 capacity(::Type{<:SmallVector{N}}) where N = N
 
@@ -165,25 +157,11 @@ end
     SmallVector(Values{N,T}(t), n)
 end
 
-"""
-    setindex(v::V, x, i::Integer) where V <: SmallVector -> V
-
-Substitute `x` for the `i`-th component of `v` and return the new vector.
-
-See also `Base.setindex`,  [`addindex`](@ref).
-"""
 @inline function setindex(v::SmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds _setindex(v.b, x, i)), length(v))
 end
 
-"""
-    addindex(v::V, x, i::Integer) where V <: SmallVector -> V
-
-Add `x` to the `i`-th component of `v` and return the new vector.
-
-See also [`setindex`](@ref).
-"""
 @inline function addindex(v::SmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     @inbounds v += setindex(zero(v), x, i)
@@ -206,28 +184,10 @@ default(::Type{SmallVector{N,T}}) where {N,T} = SmallVector{N,T}()
 
 zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
 
-"""
-    zeros(::Type{V}, n::Integer) where V <: SmallVector -> V
-
-Return a `SmallVector` of type `V` containing `n` zeros.
-
-See also [`ones`](@ref).
-"""
-zeros(::Type{<:SmallVector}, ::Integer)
-
 function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
     SmallVector(zero(Values{N,T}), n)
 end
-
-"""
-    ones(::Type{V}, n::Integer) where V <: SmallVector -> V
-
-Return a `SmallVector` of type `V` containing `n` ones.
-
-See also [`zeros`](@ref).
-"""
-ones(::Type{<:SmallVector}, ::Integer)
 
 function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
@@ -401,31 +361,14 @@ end
 extrema(v::SmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
-"""
-    push(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
-
-Return the `SmallVector` obtained from `v` by appending the arguments `xs`.
-
-See also `Base.push!`, `BangBang.push!!`.
-"""
 @propagate_inbounds push(v::SmallVector, xs...) = append(v, xs)
 
+# TODO: needed?
 @inline function push(v::SmallVector{N}, x) where N
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
     @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
 end
-
-"""
-    pop(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}
-
-Return the tuple `(w, x)` where `x` is the last element of `v`
-and `w` obtained from `v` by dropping this element.
-The vector `v` must not be empty.
-
-See also `Base.pop!`, `BangBang.pop!!`.
-"""
-pop(v::SmallVector)
 
 @inline function pop(v::SmallVector{N,T}) where {N,T}
     n = length(v)
@@ -433,29 +376,12 @@ pop(v::SmallVector)
     @inbounds SmallVector(_setindex(v.b, default(T), n), n-1), v[n]
 end
 
-"""
-    pushfirst(v::SmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
-
-Return the `SmallVector` obtained from `v` by prepending the other arguments `xs`.
-The length of `v` must be less than `N`.
-
-See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
-"""
 @inline function pushfirst(v::SmallVector{N}, xs...) where N
     n = length(xs)+length(v)
     @boundscheck n <= N || error("vector cannot have more $N elements")
     SmallVector(pushfirst(v.b, xs...), n)
 end
 
-"""
-    popfirst(v::SmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T},T}
-
-Return the tuple `(w, x)` where `x` is the first element of `v`
-and `w` obtained from `v` by dropping this element.
-The vector `v` must not be empty.
-
-See also `Base.popfirst!`, `BangBang.popfirst!!`.
-"""
 @inline function popfirst(v::SmallVector)
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
@@ -463,16 +389,6 @@ See also `Base.popfirst!`, `BangBang.popfirst!!`.
     SmallVector(c, n-1), x
 end
 
-"""
-    insert(v::SmallVector{N,T}, i::Integer, x) where {N,T} -> SmallVector{N,T}
-
-Return the `SmallVector` obtained from `v` by inserting `x` at position `i`.
-The position `i` must be between `1` and `length(v)+1`, and `length(v)` must be less than `N`.
-
-This is the non-mutating analog of `Base.insert!`.
-
-See also [`duplicate`](@ref).
-"""
 @inline function insert(v::SmallVector{N}, i::Integer, x) where N
     n = length(v)
     @boundscheck begin
@@ -482,29 +398,6 @@ See also [`duplicate`](@ref).
     @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
 
-"""
-    duplicate(v::SmallVector{N,T}, i::Integer) where {N,T} -> SmallVector{N,T}
-
-Duplicate the `i`-th entry of `v` by inserting it at position `i+1` and return the new vector.
-
-See also [`insert`](@ref).
-
-# Example
-```jldoctest
-julia> v = SmallVector{8,Int8}(1:3)
-3-element SmallVector{8, Int8}:
- 1
- 2
- 3
-
-julia> duplicate(v, 2)
-4-element SmallVector{8, Int8}:
- 1
- 2
- 2
- 3
-```
-"""
 @inline function duplicate(v::SmallVector{N,T}, i::Integer) where {N,T}
     @boundscheck begin
         checkbounds(v, i)
@@ -516,24 +409,8 @@ julia> duplicate(v, 2)
     SmallVector(Values{N,T}(t), length(v)+1)
 end
 
-"""
-    deleteat(v::V, i::Integer) where V <: SmallVector -> V
-
-Return the `SmallVector` obtained from `v` by deleting the element at position `i`.
-The position `i` must be between `1` and `length(v)`.
-
-See also `Base.deleteat!`, `BangBang.deleteat!!`.
-"""
 @propagate_inbounds deleteat(v::SmallVector, i::Integer) = first(popat(v, i))
 
-"""
-    popat(v::SmallVector{N,T}, i::Integer) where {N,T} -> Tuple{SmallVector{N,T},T}
-
-Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
-at position `i`. The latter must be between `1` and `length(v)`.
-
-See also `Base.popat!`, `BangBang.popat!!`.
-"""
 @inline function popat(v::SmallVector, i::Integer)
     n = length(v)
     @boundscheck checkbounds(v, i)
@@ -541,14 +418,6 @@ See also `Base.popat!`, `BangBang.popat!!`.
     SmallVector(c, n-1), x
 end
 
-"""
-    append(v::V, ws...) where V <: SmallVector -> V
-
-Append all elements of the collections `ws` to `v` and return the new vector.
-Note that the resulting `SmallVector` has the same capacity as `v`.
-
-See also `Base.append!`, `BangBang.append!!`.
-"""
 @propagate_inbounds append(v::SmallVector, ws...) = foldl(append, ws; init = v)
 
 @propagate_inbounds append(v::SmallVector, w) = foldl(push, w; init = v)
@@ -563,14 +432,6 @@ See also `Base.append!`, `BangBang.append!!`.
     SmallVector{N,T}(Values{N,T}(t), m)
 end
 
-"""
-    prepend(v::V, ws...) where V <: SmallVector -> V
-
-Prepend all elements of the collections `ws` to `v` and return the new vector.
-Note that the resulting `SmallVector` has the same capacity as `v`.
-
-See also `Base.prepend!`.
-"""
 @propagate_inbounds function prepend(v::SmallVector, ws...)
     foldr((w, v) -> prepend(v, w), ws; init = v)
 end
@@ -584,24 +445,6 @@ end
 
 prepend(v::SmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
-"""
-    support(v::SmallVector) -> SmallBitSet
-
-Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
-
-See also [`SmallBitSet`](@ref).
-
-# Example
-```jldoctest
-julia> v = SmallVector{8,Int8}([1, 0, 2, 0, 0, 3]);
-
-julia> support(v)
-SmallBitSet{UInt64} with 3 elements:
-  1
-  3
-  6
-```
-"""
 support(v::SmallVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v.b)))
 
 """

@@ -180,8 +180,7 @@ end
     end
 end
 
-#=
-@generated function convert(::Type{Values{N,T}}, x::U) where {N, T <: BitInteger, U <: Unsigned}
+@generated function _convert(::Type{Values{N,T}}, x::U) where {N, T <: BitInteger, U <: Unsigned}
     s = bitsize(T)
     b = N*s
     c = bitsize(U)
@@ -210,7 +209,7 @@ end
     end
 end
 
-@generated function convert(::Type{Values{N,Bool}}, x::U) where {N, U <: Unsigned}
+@generated function _convert(::Type{Values{N,Bool}}, x::U) where {N, U <: Unsigned}
     c = bitsize(U)
     N2 = nextpow(2, N)   # work around an LLVM bug
     if N2 == c
@@ -241,4 +240,3 @@ end
         Values{N,Bool}(unvec(v))
     end
 end
-=#

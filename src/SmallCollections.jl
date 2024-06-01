@@ -4,13 +4,13 @@
 This packages provides several immutable collections that don't allocate
 and are therefore faster than the usual types. The number of elements
 that these collections can hold is necessarily limited. At present
-`SmallBitSet` and `SmallVector` are defined.
+`SmallBitSet` and subtypes of `AbstractSmallVector` are defined.
 
 If the package `BangBang.jl` is loaded, then many functions defined by
 this package are also available in `!!`-form. For example, `setindex!!`
 with a `SmallVector` as first argument calls [`setindex`](@ref).
 
-See [`SmallBitSet`](@ref), [`SmallVector`](@ref),
+See [`SmallBitSet`](@ref), [`AbstractSmallVector`](@ref),
 [Section "BangBang support"](@ref sec-bangbang).
 """
 module SmallCollections
@@ -35,7 +35,9 @@ fasthash(x) = fasthash(x, UInt(0))
 
 include("bits.jl")
 include("smallbitset.jl")
+include("abstractsmallvector.jl")
 include("smallvector.jl")
+include("packedvector.jl")
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :SmallVectorStyle))

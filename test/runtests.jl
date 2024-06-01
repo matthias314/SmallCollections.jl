@@ -27,4 +27,5 @@ end
 include("bits.jl")
 include("smallbitset.jl")
 include("smallvector.jl")
+include("packedvector.jl")
 include("bangbang.jl")

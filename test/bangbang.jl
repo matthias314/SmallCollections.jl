@@ -30,3 +30,21 @@ end
     @test_broken isdefined(BangBang, :map!!)
     @test_inferred add!!(v, w) v+w
 end
+
+@testset "PackedVector !!" begin
+    v = PackedVector{UInt64,8,Int8}(1:6)
+    w = PackedVector{UInt64,8,Int8}(4:9)
+    x = -1
+    i = 5
+    @test_inferred setindex!!(v, x, i) setindex(v, x, i)
+    @test_inferred push!!(v, x) push(v, x)
+    @test_inferred pushfirst!!(v, x) pushfirst(v, x)
+    @test_inferred pop!!(v) pop(v)
+    @test_inferred popfirst!!(v) popfirst(v)
+    @test_broken insert!!(v, i, x) == insert(v, i, x)
+    @test_inferred deleteat!!(v, i) deleteat(v, i)
+    @test_inferred append!!(v, (x,)) append(v, (x,))
+    @test_broken prepend!!(v, (x,)) == prepend(v, (x,))
+    @test_broken isdefined(BangBang, :map!!)
+    @test_inferred add!!(v, w) v+w
+end

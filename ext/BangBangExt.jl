@@ -10,13 +10,13 @@ for f in (:push, :pop, :delete)
     @eval NoBang.$f(v::SmallBitSet, args...) = $f(v, args...)
 end
 
-BangBang.implements(::Mutator, ::Type{<:SmallVector}) = false
+BangBang.implements(::Mutator, ::Type{<:AbstractSmallVector}) = false
 
 for f in (:push, :pop, :pushfirst, :popfirst, :deleteat, :append)
-    @eval NoBang.$f(v::SmallVector, args...) = $f(v, args...)
+    @eval NoBang.$f(v::AbstractSmallVector, args...) = $f(v, args...)
 end
 
-BangBang.NoBang._setindex(v::SmallVector, args...) = setindex(v, args...)
-BangBang.add!!(v::SmallVector, w::SmallVector) = v+w
+BangBang.NoBang._setindex(v::AbstractSmallVector, args...) = setindex(v, args...)
+BangBang.add!!(v::AbstractSmallVector, w::AbstractVector) = v+w
 
 end # module
