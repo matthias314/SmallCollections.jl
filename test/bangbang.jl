@@ -7,6 +7,7 @@ using BangBang
     @test_inferred push!!(s, x) push(s, x)
     @test_inferred pop!!(s) pop(s)
     @test_inferred delete!!(s, x) delete(s, x)
+    @test_broken filter!!(isodd, s) == filter(isodd, s)
     @test_inferred union!!(s, t) union(s, t)
     @test_inferred intersect!!(s, t) intersect(s, t)
     @test_inferred setdiff!!(s, t) setdiff(s, t)
@@ -27,6 +28,7 @@ end
     @test_inferred deleteat!!(v, i) deleteat(v, i)
     @test_inferred append!!(v, (x,)) append(v, (x,))
     @test_broken prepend!!(v, (x,)) == prepend(v, (x,))
+    @test_broken filter!!(isodd, v) == filter(isodd, v)
     @test_broken isdefined(BangBang, :map!!)
     @test_inferred add!!(v, w) v+w
 end
@@ -45,6 +47,7 @@ end
     @test_inferred deleteat!!(v, i) deleteat(v, i)
     @test_inferred append!!(v, (x,)) append(v, (x,))
     @test_broken prepend!!(v, (x,)) == prepend(v, (x,))
+    @test_broken filter!!(isodd, v) == filter(isodd, v)
     @test_broken isdefined(BangBang, :map!!)
     @test_inferred add!!(v, w) v+w
 end

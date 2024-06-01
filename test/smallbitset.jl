@@ -96,6 +96,7 @@ end
             @test_inferred delete(s, i) delete!(copy(t), i) SmallBitSet{U}
             @test_inferred delete(s, m+1) s
         end
+        @test_inferred filter(isodd, s) filter(isodd, t) s
     end
 end
 

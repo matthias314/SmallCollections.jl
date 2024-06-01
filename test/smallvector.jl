@@ -210,6 +210,9 @@ end
             @test_throws Exception prepend(v, xy[i] for i in 1:2)
             @test_throws Exception prepend(v, (x,), [y])
         end
+        if T <: Integer
+            @test_inferred filter(isodd, v) filter(isodd, u) v
+        end
     end
 end
 

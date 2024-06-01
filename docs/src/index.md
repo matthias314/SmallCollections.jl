@@ -124,7 +124,7 @@ for `SmallBitSet` as well as
 for `AbstractSmallVector`
 are also available in `!!`-form.
 For example, `setindex!!` with an `AbstractSmallVector` as first argument calls `setindex`.
-(`BangBang.jl` does not define `insert!!`, `prepend!!` and `map!!`.)
+(`BangBang.jl` does not define `insert!!`, `prepend!!`, `filter!!` and `map!!`.)
 Moreover, `add!!(v::AbstractSmallVector, w::AbstractSmallVector)` is a synonym for `v+w`.
 
 This allows to write efficient code that works for both mutable and immutable arguments.

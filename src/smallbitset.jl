@@ -9,7 +9,7 @@ using Base: hasfastin
 import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
     length, issubset, maximum, minimum, extrema,
-    union, intersect, setdiff, symdiff
+    union, intersect, setdiff, symdiff, filter
 
 isinteger(x) = x isa Number && Base.isinteger(x)
 
@@ -277,6 +277,20 @@ function delete(s::SmallBitSet{U}, n) where U
     else
         s
     end
+end
+
+function filter(f::F, s::SmallBitSet) where F
+    m = bits(s)
+    q = zero(m)
+    while !iszero(m)
+        p = blsr(m)
+        n = trailing_zeros(m)+1
+        if f(n)
+            q |= m ⊻ p
+        end
+        m = p
+    end
+    _SmallBitSet(q)
 end
 
 union(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask | t.mask)

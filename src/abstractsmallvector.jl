@@ -6,7 +6,7 @@ export AbstractSmallVector, capacity, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
-import Base: setindex, zeros, ones
+import Base: setindex, zeros, ones, filter
 
 """
     AbstractSmallVector{T} <: AbstractVector{T}
@@ -184,6 +184,16 @@ Note that the resulting `AbstractSmallVector` has the same capacity as `v`.
 See also `Base.prepend!`.
 """
 prepend(::AbstractSmallVector, ::Vararg)
+
+function filter(f::F, v::AbstractSmallVector) where F
+    w = empty(v)
+    for x in v
+        if f(x)
+            w = @inbounds push(w, x)
+        end
+    end
+    w
+end
 
 """
     support(v::AbstractSmallVector) -> SmallBitSet
