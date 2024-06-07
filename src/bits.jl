@@ -12,20 +12,26 @@ bitsize(::Type{T}) where T = 8*sizeof(T)
 bitsize(::Type{Bool}) = 1
 
 """
-    $(@__MODULE__).top_set_bit(x) -> Int
+    $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
 
 Return the position of the highest set bit in `x` (counting from `1`),
-or return `0` if `x` is `0`. Here `x` must be of type `BitInteger`,
-`AbstractBitSigned` or `AbstractBitUnsigned`.
+or return `0` if `x` is `0`.
 
 This function is analogous to Julia's internal function `Base.top_set_bit`,
 but it is also fast and correct for bit integers defined by `BitIntegers.jl`.
 
-See also `Base.top_set_bit`, `Base.BitInteger`,
-`BitIntegers.AbstractBitSigned`, `BitIntegers.AbstractBitUnsigned`.
+See also `Base.top_set_bit`, [`$(@__MODULE__).AbstractBitInteger`](@ref).
 """
 top_set_bit(x::T) where T <: AbstractBitInteger = bitsize(T) - leading_zeros(x)
 
+"""
+    $(@__MODULE__).unsafe_shl(x::U, i::Integer) where U <: AbstractBitInteger -> U
+
+This is a fast, but unsafe version of the left bit shift operator `x << i`.
+The shift `i` is assumed to be between `0` and `bitsize(x)-1`.
+
+See also [`$(@__MODULE__).bitsize`](@ref), [`$(@__MODULE__).AbstractBitInteger`](@ref).
+"""
 @generated function unsafe_shl(x::U, i::Integer) where U <: AbstractBitInteger
     b = bitsize(U)
     ir = """
@@ -38,6 +44,14 @@ top_set_bit(x::T) where T <: AbstractBitInteger = bitsize(T) - leading_zeros(x)
     end
 end
 
+"""
+    $(@__MODULE__).unsafe_lshr(x::U, i::Integer) where U <: AbstractBitInteger -> U
+
+This is a fast, but unsafe version of the logical (or unsigned) right bit shift operator `x >>> i`.
+The shift `i` is assumed to be between `0` and `bitsize(x)-1`.
+
+See also [`$(@__MODULE__).bitsize`](@ref), [`$(@__MODULE__).AbstractBitInteger`](@ref).
+"""
 @generated function unsafe_lshr(x::U, i::Integer) where U <: AbstractBitInteger
     b = bitsize(U)
     ir = """

@@ -500,7 +500,7 @@ import Base.Broadcast: BroadcastStyle
 
 The broadcasting style used for `SmallVector`.
 
-See also `Broadcast.AbstractArrayStyle`.
+See also [`SmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
 """
 struct SmallVectorStyle <: AbstractArrayStyle{1} end
 

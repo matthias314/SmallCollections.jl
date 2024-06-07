@@ -134,18 +134,23 @@ f!!(v, ws...) = foldl(add!!, ws; init = v)
 ```
 adds up its arguments, mutating the first argument `v` if possible.
 
-## Non-exported functions
+## Non-exported names
 
-### Public functions
+### Public names
 
 ```@docs
+SmallCollections.bitsize
 SmallCollections.default
 SmallCollections.SmallVectorStyle
 ```
 
-### Internal functions
+### Internal names
+
+These names are not public and may change in future versions.
 
 ```@docs
-SmallCollections.bitsize
+SmallCollections.AbstractBitInteger
 SmallCollections.top_set_bit
+SmallCollections.unsafe_shl
+SmallCollections.unsafe_lshr
 ```

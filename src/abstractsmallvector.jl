@@ -12,10 +12,10 @@ import Base: setindex, zeros, ones, filter
     AbstractSmallVector{T} <: AbstractVector{T}
 
 `AbstractSmallVector` is the supertype of the vector types provided
-by the module `SmallCollections`. At present, these are `SmallVector`
-and `PackedVector`. Both are read-only ans can hold a variable
-number of elements up to a predefined maximal capacity. If the element
-type `T` is concrete, then these vector types do not allocate.
+by this module. At present, these are `SmallVector` and `PackedVector`.
+Both are read-only ans can hold a variable number of elements up to
+a predefined maximal capacity. If the element type `T` is concrete,
+then these vector types do not allocate.
 
 See also [`SmallVector`](@ref), [`PackedVector`](@ref).
 """

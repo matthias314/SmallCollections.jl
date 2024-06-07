@@ -34,9 +34,8 @@ Overflow or underflow during addition or subtraction of vectors do not throw an 
 The same applies to multiplication by a scalar of type `T`. Scalar multiplication by
 other types returns a `Vector`.
 
-Compared to `SmallVector`, a `PackedVector` often has faster `push` and `pop` operations,
-with `pushfirst` and `popfirst` being particularly fast. Arithmetic operations are usually
-slower unless `M` is the size of a hardware integer.
+Compared to a `SmallVector`, a `PackedVector` may have faster insert and delete operations.
+Arithmetic operations are usually slower unless `M` is the size of a hardware integer.
 
 See also [`capacity`](@ref capacity(::Type{<:PackedVector})), [`$(@__MODULE__).bitsize`](@ref).
 

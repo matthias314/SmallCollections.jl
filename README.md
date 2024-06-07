@@ -11,7 +11,7 @@ the length of a `SmallVector` or `PackedVector` is variable with a user-defined 
 If the package [BangBang.jl](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then many functions defined by this package are also available
 in a `!!`-form. For example, both `push` and `push!!` add an element
-to a `SmallVector` or `SmallBitSet`.
+to a `SmallVector`, `PackedVector` or `SmallBitSet`.
 
 Below are [examples](#examples) and [benchmarks](#benchmarks). For details see
 the [documentation](https://matthias314.github.io/SmallCollections.jl/stable/).
@@ -74,9 +74,8 @@ A `PackedVector` can store bit integers or `Bool` values.
 The elements of a `PackedVector{U,M,T}` are stored in a common bit mask of type `U`
 with `M` bits for each entry. When retrieving elements, they are of type `T`.
 
-Compared to `SmallVector`, a `PackedVector` often has faster `push` and `pop` operations,
-with `pushfirst` and `popfirst` being particularly fast. Arithmetic operations are usually
-slower unless `M` is the size of a hardware integer.
+Compared to a `SmallVector`, a `PackedVector` may have faster insert and delete operations.
+Arithmetic operations are usually slower unless `M` is the size of a hardware integer.
 ```julia
 julia> v = PackedVector{UInt64,5,Int}(4:6)
 3-element PackedVector{UInt64, 5, Int64}:
@@ -139,6 +138,10 @@ SmallBitSet{UInt64} with 4 elements:
   4
   7
   9
+
+julia> filter(iseven, s)
+SmallBitSet{UInt64} with 1 element:
+  4
 ```
 Smaller or larger sets are possible by choosing a different unsigned bit integer
 as bitmask type, for example `UInt16` or `UInt128` or types like `UInt256` defined
