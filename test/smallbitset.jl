@@ -170,6 +170,15 @@ end
                 s2 ⊻= i > j
             end
             @test s == s2
+            s3 = @inferred shuffle_signbit(a, b)
+            @test s == s3
+            @test shuffle_signbit(a) == false
+            c = convert(SmallBitSet{UInt8}, rand(UInt8))
+            a1 = SmallBitSet{UInt8}(intersect(a, c))
+            a2 = SmallBitSet{UInt128}(setdiff(a, c))
+            s4 = @inferred shuffle_signbit(a1, a2, b)
+            @test s4 == shuffle_signbit(a1, a2) ⊻ shuffle_signbit(a, b)
         end
     end
+    @test shuffle_signbit() == false
 end

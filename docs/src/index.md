@@ -100,6 +100,7 @@ pop(::SmallBitSet, ::Any, ::Any)
 delete
 subsets
 shuffles
+shuffle_signbit
 ```
 
 ## [BangBang support](@id sec-bangbang)

@@ -337,7 +337,7 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 # subset iterators
 #
 
-export subsets, shuffles
+export subsets, shuffles, shuffle_signbit
 
 using Base: Generator
 import Base: eltype, length, size, getindex
@@ -356,7 +356,7 @@ The sets are of type `SmallBitSet`. The sign of the shuffle is returned as a `Bo
 where `false` means `+1` and `true` means `-1`. The two sets and the sign are returned
 as a triple.
 
-See also [`subsets`](@ref subsets(::Integer, ::Integer)).
+See also [`subsets`](@ref subsets(::Integer, ::Integer)), [`shuffle_signbit`](@ref).
 
 # Examples
 ```jldoctest
@@ -408,6 +408,39 @@ function iterate(sh::Shuffles, (m, last, mc, s))
 end
 
 eltype(::Generator{Shuffles, typeof(first)}) = SmallBitSet{UInt}
+
+"""
+    shuffle_signbit(ss::SmallBitSet...) -> Bool
+
+Return `true` if an odd number of transpositions is needed to transform the elements of the
+sets `ss` into an increasing sequence, and `false` otherwise. The sets are considered as
+increasing sequences and assumed to be disjoint.
+
+See also [`shuffles`](@ref).
+
+# Examples
+```
+julia> s, t, u = SmallBitSet([2, 3, 8]), SmallBitSet([1, 4, 6]), SmallBitSet([5, 7]);
+
+julia> shuffle_signbit(s, t), shuffle_signbit(s, t, u)
+(true, false)
+```
+"""
+shuffle_signbit(ss::Vararg{SmallBitSet,N}) where N =
+    shuffle_signbit(ss[N-1], ss[N]) ⊻ (@inline shuffle_signbit(ss[1:N-2]..., ss[N-1] ∪ ss[N]))
+
+shuffle_signbit() = false
+shuffle_signbit(::SmallBitSet) = false
+
+function shuffle_signbit(s::SmallBitSet, t::SmallBitSet)
+    m = bits(s)
+    p = zero(m)
+    while !iszero(m)
+        p ⊻= blsi(m)-one(m)
+        m = blsr(m)
+    end
+    isodd(count_ones(p & bits(t)))
+end
 
 struct Subsets <: AbstractVector{SmallBitSet{UInt}}
     n::Int

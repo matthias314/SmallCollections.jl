@@ -64,5 +64,8 @@ See also [`$(@__MODULE__).bitsize`](@ref), [`$(@__MODULE__).AbstractBitInteger`]
     end
 end
 
+blsi(x::Integer) = x & -x
+# extract lowest set bit, compiles to single blsi instruction
+
 blsr(x::Integer) = x & (x-one(x))
 # reset lowest set bit, compiles to single blsr instruction
