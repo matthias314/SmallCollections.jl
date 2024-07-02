@@ -394,16 +394,16 @@ function iterate(sh::Shuffles)
     (_SmallBitSet(m), _SmallBitSet(mc ⊻ m), false), (m, last, mc, zero(m))
 end
 
-# adapted from https://graphics.stanford.edu/~seander/bithacks.html#NextBitPermutation
-# via https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
+# see also https://graphics.stanford.edu/~seander/bithacks.html#NextBitPermutation
+# and https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
 function iterate(sh::Shuffles, (m, last, mc, s))
     m == last && return nothing
-    t = m | (m-one(m))
-    t1 = t+one(t)
-    zm = trailing_zeros(m)
-    zt = trailing_zeros(t1)
-    m = t1 | unsafe_lshr((~t & -~t) - one(t), zm+1)
-    s ⊻= ~(zm & zt)
+    p = m + blsi(m)
+    t = trailing_zeros(m)
+    q = unsafe_lshr(m ⊻ p, t) >>> 2
+    # t+2 can be the bit size of m, so we can't use unsafe_lshr with t+2
+    m = p | q
+    s ⊻= ~(t & count_ones(q))
     return (_SmallBitSet(m), _SmallBitSet(mc ⊻ m), isodd(s)), (m, last, mc, s)
 end
 

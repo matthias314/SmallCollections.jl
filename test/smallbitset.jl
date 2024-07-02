@@ -181,4 +181,6 @@ end
         end
     end
     @test shuffle_signbit() == false
+    # check that unsafe_lshr in iterate for Shuffles is safe
+    @test collect(subsets(bitsize(UInt), 1)) == [SmallBitSet((k,)) for k in 1:bitsize(UInt)]
 end
