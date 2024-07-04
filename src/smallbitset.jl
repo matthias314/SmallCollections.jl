@@ -401,6 +401,7 @@ function iterate(sh::Shuffles, (m, last, mc, s))
     p = m + blsi(m)
     t = trailing_zeros(m)
     q = unsafe_lshr(m ⊻ p, t) >>> 2
+    # q = unsafe_lshr(blsmsk(p), t) >>> 2
     # t+2 can be the bit size of m, so we can't use unsafe_lshr with t+2
     m = p | q
     s ⊻= ~(t & count_ones(q))
@@ -436,7 +437,8 @@ function shuffle_signbit(s::SmallBitSet, t::SmallBitSet)
     m = bits(s)
     p = zero(m)
     while !iszero(m)
-        p ⊻= blsi(m)-one(m)
+        # p ⊻= blsi(m)-one(m)
+        p ⊻= blsmsk(m)
         m = blsr(m)
     end
     isodd(count_ones(p & bits(t)))

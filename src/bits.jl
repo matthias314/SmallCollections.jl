@@ -69,3 +69,6 @@ blsi(x::Integer) = x & -x
 
 blsr(x::Integer) = x & (x-one(x))
 # reset lowest set bit, compiles to single blsr instruction
+
+blsmsk(x::Integer) = x ⊻ (x-one(x))
+# get mask up to lowest set bit, compiles to single blsmsk instruction
