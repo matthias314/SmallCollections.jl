@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.0"
+julia_version = "1.10.4"
 manifest_format = "2.0"
 project_hash = "726fff9c54db00bd8fa3af8b04890d6ba6e31197"
 
@@ -39,7 +39,13 @@ version = "0.7.4"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.5+1"
+version = "1.1.1+0"
+
+[[deps.CpuId]]
+deps = ["Markdown"]
+git-tree-sha1 = "fcbb72b032692610bfbdb15018ac16a36cf2e406"
+uuid = "adafc99b-e345-5852-983c-f28acb93d879"
+version = "0.3.1"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -179,7 +185,7 @@ version = "1.2.0"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+2"
+version = "0.3.23+4"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -241,10 +247,10 @@ version = "0.7.0"
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[deps.SmallCollections]]
-deps = ["BitIntegers", "StaticVectors"]
+deps = ["BitIntegers", "CpuId", "StaticVectors"]
 path = ".."
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
-version = "0.1.0"
+version = "0.3.0"
 
     [deps.SmallCollections.extensions]
     BangBangExt = "BangBang"

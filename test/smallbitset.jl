@@ -136,6 +136,23 @@ end
         length(ss) == 0 && continue
         @test unique(map(length, ssv)) == [k]
     end
+
+    for U in unsigned_types, a in map(SmallBitSet{U}, [Int[], [3], [3, 5], [2, 4, 6, 7]])
+        n = length(a)
+        for k in [-1, 0, 1, n-1, n, n+1]
+            ss = @inferred subsets(a, k)
+            if 0 <= k <= n
+                @test_inferred length(ss) binomial(n, k)
+            else
+                @test_inferred length(ss) 0
+            end
+            @test eltype(ss) == SmallBitSet{U}
+            ssv = @inferred collect(ss)
+            @test length(ssv) == length(ss) == length(unique(ssv))
+            length(ss) == 0 && continue
+            @test unique(map(length, ssv)) == [k]
+        end
+    end
 end
 
 @testset "subsets(n)" begin
@@ -150,9 +167,61 @@ end
         ssv = @inferred collect(ss)
         @test length(ssv) == length(ss) == length(unique(ssv))
     end
+
+    for U in unsigned_types, a in map(SmallBitSet{U}, [Int[], [3], [3, 5], [2, 4, 6, 7]])
+        ss = subsets(a)
+        @test_inferred length(ss) 2^length(a)
+        @test eltype(ss) == SmallBitSet{U}
+        ssv = @inferred collect(ss)
+        @test length(ssv) == length(ss) == length(unique(ssv))
+    end
 end
 
 @testset "shuffles" begin
+    function test_shuffles(ks)
+        sh = @inferred shuffles(ks...)
+        a = SmallBitSet(1:sum(ks; init = 0))
+        # TODO: length
+        @test all(map(length, t) == ks &&
+            (isempty(t) ? isempty(a) : (union(t...) == a)) &&
+            shuffle_signbit(t...) == s for (t, s) in sh)
+        @test allunique(sh)
+    end
+
+    function test_shuffles(a::S, ks::NTuple{N,Int}) where {S <: SmallBitSet, N}
+        test_shuffles(ks)
+        sh = @inferred shuffles(a, ks...)
+        # TODO: length
+        @test eltype(sh) == Tuple{NTuple{N, S}, Bool}
+        @test all(t isa NTuple{N, S} && s isa Bool &&
+            map(length, t) == ks &&
+            (isempty(t) ? isempty(a) : (union(t...) == a)) &&
+            shuffle_signbit(t...) == s for (t, s) in sh)
+        @test allunique(sh)
+    end
+
+    for U in unsigned_types, (v, ks) in [(Int[], ()), (Int[], (0,)), (Int[], (0, 0)),
+                (3:2:11, (5,)), (3:2:11, (2, 3)),  (3:2:11, (0, 2, 3)),  (3:2:11, (2, 0, 3)),  (3:2:11, (2, 3, 0)),
+                (20:2:38, (2, 3, 2, 3)), (20:2:38, (1, 4, 0, 2, 3))]
+        maximum(v; init = 0) <= bitsize(U) || continue
+        a = SmallBitSet{U}(v)
+        test_shuffles(a, ks)
+    end
+
+    @test_throws Exception shuffles(-1, 2)
+    @test_throws Exception shuffles(bitsize(UInt)-1, 2)
+    for U in unsigned_types
+        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6))
+        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6), -1, 2, 2)
+        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6), 3, 4)
+        if bitsize(U) <= bitsize(UInt)
+            @test (shuffles(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-4, 4); true)
+        else
+            @test_throws Exception shuffles(SmallBitSet{U}(1:bitsize(UInt)+1), bitsize(UInt), 1)
+        end
+    end
+
+    # TODO: still necessary?
     for k in [-1, 0, 1, 2, 4], l in [-1, 0, 1, 2, 4]
         if !(k >= 0 && l >= 0)
             @test_throws Exception shuffles(k, l)
@@ -160,9 +229,9 @@ end
         end
         sh = @inferred shuffles(k, l)
         @test_inferred length(sh) binomial(k+l, l)
-        @test eltype(sh) == Tuple{SmallBitSet{UInt},SmallBitSet{UInt},Bool}
+        @test eltype(sh) == Tuple{NTuple{2,SmallBitSet{UInt}},Bool}
         @test allunique(sh)
-        for (a, b, s) in sh
+        for ((a, b), s) in sh
             @test a isa SmallBitSet{UInt} && b isa SmallBitSet{UInt} && s isa Bool
             @test length(a) == k && length(b) == l && union(a, b) == SmallBitSet(1:k+l)
             s2 = false

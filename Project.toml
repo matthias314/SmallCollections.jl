@@ -1,11 +1,12 @@
 name = "SmallCollections"
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
 authors = ["matthias314"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
 StaticVectors = "20fadf95-9e3d-483c-97cd-cab2760e7998"
+CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
 
 [weakdeps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
@@ -17,6 +18,7 @@ BangBangExt = "BangBang"
 julia = "1.6"
 BitIntegers = "0.3"
 StaticVectors = "1"
+CpuId = "0.3"
 BangBang = "0.4"
 
 [extras]
