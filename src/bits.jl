@@ -72,3 +72,33 @@ blsr(x::Integer) = x & (x-one(x))
 
 blsmsk(x::Integer) = x ⊻ (x-one(x))
 # get mask up to lowest set bit, compiles to single blsmsk instruction
+
+"""
+    $(@__MODULE__).pdep(x::Unsigned, y::U) where U <: Unsigned -> U
+
+Assume that `y` has exactly `m` `1`-bits. Then `pdep(x, y)` replaces these bits by the `m` lowest bits
+of `x` (in order) and returns the result. The remaining bits of `x` are ignored.
+
+On `x86_64` and `i686` machines, this function uses the corresponding instruction from the
+[BMI2](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI2) instruction set
+if possible. Without hardware support it is much slower.
+"""
+function pdep(x::Unsigned, y::U) where U <: Unsigned
+    a = zero(U)
+    while !iszero(y)
+        b = blsi(y)
+        a |= b & -(isodd(x) % U)
+        y ⊻= b
+        x >>>= 1
+    end
+    a
+end
+
+using CpuId: cpufeature
+
+if (Sys.ARCH == :x86_64 || Sys.ARCH == :i686) && cpufeature(:BMI2)
+    const llvm_pdep = "llvm.x86.bmi.pdep.$(bitsize(UInt))"
+
+    pdep(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
+        ccall(llvm_pdep, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+end
