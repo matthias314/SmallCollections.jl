@@ -337,7 +337,7 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 # subset iterators
 #
 
-export subsets, shuffles, shuffle_signbit
+export compositions, subsets, shuffles, shuffle_signbit
 
 using Base: Generator
 import Base: eltype, length, size, getindex
@@ -351,16 +351,16 @@ end
     shuffles(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
     shuffles(ks::Vararg{Integer,N}) where N
 
-In the first form, return an iterator that yields all `ks`-shuffles of the set `s`, that is,
-all ordered partitions of `s` into sets of size `ks[1]` to `ks[N]`, respectively.
-The sign of each shuffle is also returned.
-More precisely, the iterator returns tuples `(t, s)`, where `t` is of type `NTuple{N, S}`
+In the first form, return an iterator that yields all `ks`-compositions of the set `s`
+together with the sign of the permutation that puts the elements back into an increasing order.
+See `compositions` and `shuffle_signbit` for details.
+The iterator returns tuples `(t, s)`, where `t` is of type `NTuple{N, S}`
 and the sign bit `s` is of type `Bool` where `false` means `+1` and `true` means `-1`.
 The partition sizes in `ks` must be non-negative and add up to `length(s)`.
 
 In the second form the set `s` is taken to be `SmallBitSet(1:sum(ks))`.
 
-See also [`subsets`](@ref subsets(::SmallBitSet, ::Integer)), [`shuffle_signbit`](@ref).
+See also [`compositions`](@ref), [`shuffle_signbit`](@ref).
 
 # Examples
 ```jldoctest
@@ -370,27 +370,8 @@ julia> collect(shuffles(SmallBitSet([2, 4, 5]), 1, 2))
  ((SmallBitSet([4]), SmallBitSet([2, 5])), 1)
  ((SmallBitSet([5]), SmallBitSet([2, 4])), 0)
 
-julia> collect(shuffles(1, 1, 1))
-6-element Vector{Tuple{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}, Bool}}:
- ((SmallBitSet([1]), SmallBitSet([2]), SmallBitSet([3])), 0)
- ((SmallBitSet([2]), SmallBitSet([1]), SmallBitSet([3])), 1)
- ((SmallBitSet([1]), SmallBitSet([3]), SmallBitSet([2])), 1)
- ((SmallBitSet([3]), SmallBitSet([1]), SmallBitSet([2])), 0)
- ((SmallBitSet([2]), SmallBitSet([3]), SmallBitSet([1])), 0)
- ((SmallBitSet([3]), SmallBitSet([2]), SmallBitSet([1])), 1)
-
 julia> all(s == shuffle_signbit(a, b) for ((a, b), s) in shuffles(1, 2))
 true
-
-julia> collect(shuffles(SmallBitSet([2, 4, 5]), 1, 0, 2))
-3-element Vector{Tuple{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}, Bool}}:
- ((SmallBitSet([2]), SmallBitSet([]), SmallBitSet([4, 5])), 0)
- ((SmallBitSet([4]), SmallBitSet([]), SmallBitSet([2, 5])), 1)
- ((SmallBitSet([5]), SmallBitSet([]), SmallBitSet([2, 4])), 0)
-
-julia> collect(shuffles(SmallBitSet()))
-1-element Vector{Tuple{Tuple{}, Bool}}:
- ((), 0)
 ```
 """
 function shuffles(ks::Integer...)
@@ -521,6 +502,52 @@ function shuffle_signbit(s::SmallBitSet, t::SmallBitSet)
     end
     isodd(count_ones(p & bits(t)))
 end
+
+"""
+    compositions(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
+    compositions(ks::Vararg{Integer,N}) where N
+
+In the first form, return an iterator that yields all `ks`-compositions of the set `s`, that is,
+all ordered partitions of `s` into `N` sets of size `ks[1]` to `ks[N]`, respectively. The element type
+is `NTuple{N, S}`. The partition sizes in `ks` must be non-negative and add up to `length(s)`.
+
+In the second form the set `s` is taken to be `SmallBitSet(1:sum(ks))`.
+This gives an iterator over all set compositions of the integer `sum(ks)`.
+
+See also [`subsets`](@ref subsets(::SmallBitSet, ::Integer)),
+[`shuffles`](@ref shuffles(::Vararg{Integer,N}) where N).
+
+# Examples
+```jldoctest
+julia> collect(compositions(SmallBitSet([2, 4, 5]), 1, 2))
+3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
+ (SmallBitSet([2]), SmallBitSet([4, 5]))
+ (SmallBitSet([4]), SmallBitSet([2, 5]))
+ (SmallBitSet([5]), SmallBitSet([2, 4]))
+
+julia> collect(compositions(1, 1, 1))
+6-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
+ (SmallBitSet([1]), SmallBitSet([2]), SmallBitSet([3]))
+ (SmallBitSet([2]), SmallBitSet([1]), SmallBitSet([3]))
+ (SmallBitSet([1]), SmallBitSet([3]), SmallBitSet([2]))
+ (SmallBitSet([3]), SmallBitSet([1]), SmallBitSet([2]))
+ (SmallBitSet([2]), SmallBitSet([3]), SmallBitSet([1]))
+ (SmallBitSet([3]), SmallBitSet([2]), SmallBitSet([1]))
+
+julia> collect(compositions(SmallBitSet([2, 4, 5]), 1, 0, 2))
+3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
+ (SmallBitSet([2]), SmallBitSet([]), SmallBitSet([4, 5]))
+ (SmallBitSet([4]), SmallBitSet([]), SmallBitSet([2, 5]))
+ (SmallBitSet([5]), SmallBitSet([]), SmallBitSet([2, 4]))
+
+julia> collect(compositions(SmallBitSet()))
+1-element Vector{Tuple{}}:
+ ()
+```
+"""
+compositions(args...) = Generator(first, shuffles(args...))
+
+eltype(g::Generator{<:Shuffles, typeof(first)}) = fieldtype(eltype(g.iter), 1)
 
 struct Subsets{T,S<:SmallBitSet} <: AbstractVector{S}
     set::T

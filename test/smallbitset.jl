@@ -227,3 +227,42 @@ end
     # check that unsafe_lshr in iterate for Shuffles is safe
     @test collect(subsets(bitsize(UInt), 1)) == [SmallBitSet((k,)) for k in 1:bitsize(UInt)]
 end
+
+@testset "compositions" begin
+    function test_compositions(ks)
+        N = length(ks)
+        sh = @inferred compositions(ks...)
+        a = SmallBitSet(1:sum(ks; init = 0))
+        @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
+        @test @inferred(eltype(sh)) == NTuple{N, SmallBitSet{UInt}}
+        @test all(map(length, t) == ks && (isempty(t) ? isempty(a) : (union(t...) == a)) for t in sh)
+        @test allunique(sh)
+    end
+
+    function test_compositions(a::S, ks::NTuple{N,Int}) where {S <: SmallBitSet, N}
+        test_compositions(ks)
+        sh = @inferred compositions(a, ks...)
+        @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
+        @test @inferred(eltype(sh)) == NTuple{N, S}
+        @test all(t isa NTuple{N, S} && map(length, t) == ks && (isempty(t) ? isempty(a) : (union(t...) == a)) for t in sh)
+        @test allunique(sh)
+    end
+
+    for U in unsigned_types, (v, ks) in [(Int[], ()), (Int[], (0,)), (Int[], (0, 0)),
+                (bitsize(U)-4:2:bitsize(U), (1, 1, 1)),
+                (3:2:11, (5,)), (3:2:11, (2, 3)),  (3:2:11, (0, 2, 3)),  (3:2:11, (2, 0, 3)),  (3:2:11, (2, 3, 0)),
+                (20:2:38, (2, 3, 2, 3)), (20:2:38, (1, 4, 0, 2, 3))]
+        maximum(v; init = 0) <= bitsize(U) || continue
+        a = SmallBitSet{U}(v)
+        test_compositions(a, ks)
+    end
+
+    @test_throws Exception compositions(-1, 2)
+    @test_throws Exception compositions(bitsize(UInt)-1, 2)
+    for U in unsigned_types
+        @test_throws Exception compositions(SmallBitSet{U}(2:2:6))
+        @test_throws Exception compositions(SmallBitSet{U}(2:2:6), -1, 2, 2)
+        @test_throws Exception compositions(SmallBitSet{U}(2:2:6), 3, 4)
+        @test (compositions(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
+    end
+end

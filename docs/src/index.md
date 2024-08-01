@@ -110,6 +110,7 @@ The same applies to `shuffles` with more than two parts, even if the first argum
 ```@docs
 subsets(::Integer)
 subsets(::Integer, ::Integer)
+compositions
 shuffles(::Vararg{Integer})
 shuffle_signbit
 ```
