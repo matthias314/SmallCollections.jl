@@ -174,10 +174,32 @@ chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
 
 | `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| (8, Float64) | 464.900 μs | 43.407 μs | 43.594 μs | 43.891 μs | 45.617 μs |
-| (8, Int64) | 475.530 μs | 38.033 μs | 42.071 μs | 40.767 μs | 41.646 μs |
-| (16, Int32) | 510.680 μs | 39.397 μs | 42.226 μs | 39.467 μs | 43.737 μs |
-| (32, Int16) | 564.500 μs | 40.572 μs | 45.774 μs | 45.119 μs | 44.704 μs |
+| (8, Float64) | 47.727 μs | 4.475 μs | 4.416 μs | 4.385 μs | 4.617 μs |
+| (8, Int64) | 50.417 μs | 4.088 μs | 4.406 μs | 4.540 μs | 4.324 μs |
+| (16, Int32) | 53.516 μs | 3.934 μs | 4.425 μs | 4.487 μs | 4.456 μs |
+| (32, Int16) | 55.855 μs | 4.182 μs | 4.527 μs | 4.410 μs | 4.446 μs |
+
+### `PackedVector`
+
+Here we compare a `PackedVector{UInt128, 4, Int8}` (that can hold 32 elements) to a `SmallVector{32, Int8}`
+and to a `Vector{Int8}` with 30 elements.
+The function `duplicate(v, i)` is equivalent to `insert(v, i+1, v[i])`.
+For the operations listed in the table below we have chosen the mutating variant for `Vector`;
+these timings are done in a naive way.
+
+| operation | `Vector` | `SmallVector` | `PackedVector` |
+| ---: | ---: | ---: | ---: |
+| getindex | 2.672 ns | 2.966 ns | 3.545 ns |
+| setindex | 2.677 ns | 6.512 ns | 7.054 ns |
+| add | 12.844 ns | 3.257 ns | 4.356 ns |
+| scalar_mul | 9.769 ns | 5.159 ns | 5.429 ns |
+| push | 7.621 ns | 5.979 ns | 9.212 ns |
+| pushfirst | 8.924 ns | 4.344 ns | 4.474 ns |
+| pop | 6.855 ns | 5.174 ns | 4.090 ns |
+| popfirst | 9.763 ns | 4.138 ns | 3.264 ns |
+| insert | 12.745 ns | 25.198 ns | 7.336 ns |
+| deleteat | 12.206 ns | 17.149 ns | 4.033 ns |
+| duplicate | 12.748 ns | 21.949 ns | 4.618 ns |
 
 ### `SmallBitSet`
 
@@ -187,20 +209,20 @@ Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
 
 | `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
 | ---: | ---: | ---: | ---: |
-| UInt8 | 3.305 ms | 739.950 μs | 990.539 ns |
-| UInt16 | 8.058 ms | 749.850 μs | 3.168 μs |
-| UInt32 | 16.009 ms | 751.700 μs | 4.339 μs |
-| UInt64 | 29.385 ms | 751.860 μs | 6.959 μs |
-| UInt128 | 58.823 ms | 731.350 μs | 15.360 μs |
-| UInt256 | 119.087 ms | 754.820 μs | 26.260 μs |
-| UInt512 | 241.477 ms | 963.700 μs | 52.742 μs |
+| UInt8 | 323.895 μs | 75.721 μs | 101.740 ns |
+| UInt16 | 805.738 μs | 74.712 μs | 302.132 ns |
+| UInt32 | 1.582 ms | 71.815 μs | 425.487 ns |
+| UInt64 | 2.921 ms | 72.920 μs | 709.962 ns |
+| UInt128 | 5.920 ms | 74.294 μs | 1.561 μs |
+| UInt256 | 12.027 ms | 75.367 μs | 2.566 μs |
+| UInt512 | 24.595 ms | 97.067 μs | 5.320 μs |
 
 Versions: Julia v1.10.4,
-SmallCollections: v0.3.0,
-StaticArrays: v1.9.7,
-StaticVectors: v1.0.5,
-SIMD: v3.5.0,
-BitIntegers: v0.3.1
+SmallCollections v0.3.0,
+StaticArrays v1.9.7,
+StaticVectors v1.0.5,
+SIMD v3.5.0,
+BitIntegers v0.3.1
 
 Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
 

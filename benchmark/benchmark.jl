@@ -1,12 +1,16 @@
 using BenchmarkTools
 
-prettytime(t) = BenchmarkTools.prettytime(t*10e9)
+macro bstr(ex)
+    esc(:(BenchmarkTools.prettytime(@belapsed($ex)*1e9)))
+end
 
-using SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers
+using SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers, BangBang
 
 const n = 1000
 
 s = """
+## Benchmarks
+
 ### `SmallVector`
 
 The timings are for pairwise adding the elements of two `Vector`s,
@@ -34,15 +38,84 @@ for (N, T) in [(8, Float64), (8, Int64), (16, Int32), (32, Int16)]
 
     # @show typeof(v1) typeof(v2) typeof(v3) typeof(v4) typeof(v5)
 
-    t1 = prettytime(@belapsed map(+, $v1, $w1))
-    t2 = prettytime(@belapsed map(+, $v2, $w2))
-    t3 = prettytime(@belapsed map(+, $v3, $w3))
-    t4 = prettytime(@belapsed map(+, $v4, $w4))
-    t5 = prettytime(@belapsed map(+, $v5, $w5))
+    t1 = @bstr map(+, $v1, $w1)
+    t2 = @bstr map(+, $v2, $w2)
+    t3 = @bstr map(+, $v3, $w3)
+    t4 = @bstr map(+, $v4, $w4)
+    t5 = @bstr map(+, $v5, $w5)
     s0 = "| ($N, $T) | $t1 | $t2 | $t4 | $t3 | $t5 |\n"
 
     print(stderr, s0)
     global s *= s0
+end
+
+mul!!(v::Vector, x) = v .*= x
+mul!!(v::AbstractSmallVector, x) = x * v
+
+insert!!(v::Vector, i, x) = insert!(v, i, x)
+insert!!(v::AbstractSmallVector, i, x) = SmallCollections.insert(v, i, x)
+
+@inline function duplicate!!(v::Vector, i)
+    @boundscheck checkbounds(v, i)
+    @inbounds insert!(v, i+1, v[i])
+end
+
+duplicate!!(v::AbstractSmallVector, i) = duplicate(v, i)
+
+let
+    m = 30
+    U = UInt128
+    M = 4
+    N = SmallCollections.bitsize(U) ÷ M
+    r = Int8(-2^(M-1)):Int8(2^(M-1)-1)
+    v1 = rand(r, m)
+    w1 = rand(r, m)
+    v2 = PackedVector{U,M,Int8}(v1)
+    w2 = PackedVector{U,M,Int8}(w1)
+    v3 = SmallVector{N,Int8}(v1)
+    w3 = SmallVector{N,Int8}(w1)
+    types = [Vector{Int8}, SmallVector{N,Int8}, PackedVector{U,M,Int8}]
+
+    global s *= """
+
+### `PackedVector`
+
+Here we compare a `$(types[3])` (that can hold $N elements) to a `$(types[2])`
+and to a `$(types[1])` with $m elements.
+The function `duplicate(v, i)` is equivalent to `insert(v, i+1, v[i])`.
+For the operations listed in the table below we have chosen the mutating variant for `Vector`;
+these timings are done in a naive way.
+
+"""
+
+    c = Int8(3)
+    i = m ÷ 2
+    t = Dict{Any,String}()
+    for (v, w) in [(v1, w1), (v2, w2), (v3, w3)]
+        T = typeof(v)
+        println(stderr, T)
+        t[T, :getindex] = @bstr $v[$i]
+        t[T, :setindex] = @bstr setindex!!($v, $c, $i)
+        t[T, :add] = @bstr add!!($v, $w)
+        t[T, :scalar_mul] = @bstr mul!!($v, $c)
+        t[T, :pushfirst] = @bstr pushfirst!!($v, $c)
+        t[T, :push] = @bstr push!!($v, $c)
+        t[T, :popfirst] = @bstr popfirst!!($v)
+        t[T, :pop] = @bstr pop!!($v)
+        t[T, :insert] = @bstr insert!!($v, $i, $c)
+        t[T, :deleteat] = @bstr deleteat!!($v, $i)
+        t[T, :duplicate] = @bstr duplicate!!($v, $i)
+    end
+
+    global s *= """
+    | operation | `Vector` | `SmallVector` | `PackedVector` |
+    | ---: | ---: | ---: | ---: |
+    """
+
+    for f in [:getindex, :setindex, :add, :scalar_mul, :push, :pushfirst, :pop, :popfirst, :insert, :deleteat, :duplicate]
+        global s *= "| $f | " * join((t[T, f] for T in types), " | ") * " |\n"
+    end
+
 end
 
 s *= """
@@ -67,9 +140,9 @@ for U in (UInt8, UInt16, UInt32, UInt64, UInt128, UInt256, UInt512)
 
     # @show typeof(s1) typeof(s2) typeof(s3)
 
-    t1 = prettytime(@belapsed map(union, $s1, $u1))
-    t2 = prettytime(@belapsed map(union, $s2, $u2))
-    t3 = prettytime(@belapsed map(union, $s3, $u3))
+    t1 = @bstr map(union, $s1, $u1)
+    t2 = @bstr map(union, $s2, $u2)
+    t3 = @bstr map(union, $s3, $u3)
     s0 = "| $U | $t1 | $t2 | $t3 |\n"
 
     print(stderr, s0)
@@ -83,7 +156,7 @@ Versions: Julia v$VERSION,
 
 w = map([SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers]) do M
     v = pkgversion(M)
-    "$M: v$v"
+    "$M v$v"
 end
 
 s *= join(w, ",\n")
