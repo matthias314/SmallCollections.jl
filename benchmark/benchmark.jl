@@ -5,8 +5,16 @@ prettytime(t) = BenchmarkTools.prettytime(t*10e9)
 using SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers
 
 const n = 1000
+
 s = """
 ### `SmallVector`
+
+The timings are for pairwise adding the elements of two `Vector`s,
+each containing $n vectors with element type `T`.
+For `Vector` and `SmallVector` the length of each pair of elements is **variable** and
+chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
+`Values{N,T}` (from StaticVectors.jl) and `Vec{N,T}` (from SIMD.jl) the vectors have
+**fixed** length `N`.
 
 | `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
 | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -31,7 +39,7 @@ for (N, T) in [(8, Float64), (8, Int64), (16, Int32), (32, Int16)]
     t3 = prettytime(@belapsed map(+, $v3, $w3))
     t4 = prettytime(@belapsed map(+, $v4, $w4))
     t5 = prettytime(@belapsed map(+, $v5, $w5))
-    s0 = "| ($N, $T) | $t1 | $t2 | $t3 | $t4 | $t5 |\n"
+    s0 = "| ($N, $T) | $t1 | $t2 | $t4 | $t3 | $t5 |\n"
 
     print(stderr, s0)
     global s *= s0
@@ -40,6 +48,10 @@ end
 s *= """
 
 ### `SmallBitSet`
+
+The timings are for taking the pairwise union of the elements of two `Vector`s,
+each containing $n sets of the indicated type.
+Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
 
 | `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
 | ---: | ---: | ---: | ---: |
@@ -63,5 +75,17 @@ for U in (UInt8, UInt16, UInt32, UInt64, UInt128, UInt256, UInt512)
     print(stderr, s0)
     global s *= s0
 end
+
+s *= """
+
+Versions: Julia v$VERSION,
+"""
+
+w = map([SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers]) do M
+    v = pkgversion(M)
+    "$M: v$v"
+end
+
+s *= join(w, ",\n")
 
 println(s)

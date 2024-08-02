@@ -174,10 +174,10 @@ chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
 
 | `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| (8, Float64) | 455.530 μs | 40.682 μs | 39.750 μs | 39.371 μs | 30.801 μs |
-| (8, Int64) | 469.030 μs | 38.203 μs | 41.150 μs | 40.511 μs | 30.697 μs |
-| (16, Int32) | 473.250 μs | 37.240 μs | 41.281 μs | 42.200 μs | 32.883 μs |
-| (32, Int16) | 522.150 μs | 44.418 μs | 33.390 μs | 32.934 μs | 36.219 μs |
+| (8, Float64) | 464.900 μs | 43.407 μs | 43.594 μs | 43.891 μs | 45.617 μs |
+| (8, Int64) | 475.530 μs | 38.033 μs | 42.071 μs | 40.767 μs | 41.646 μs |
+| (16, Int32) | 510.680 μs | 39.397 μs | 42.226 μs | 39.467 μs | 43.737 μs |
+| (32, Int16) | 564.500 μs | 40.572 μs | 45.774 μs | 45.119 μs | 44.704 μs |
 
 ### `SmallBitSet`
 
@@ -187,20 +187,20 @@ Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
 
 | `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
 | ---: | ---: | ---: | ---: |
-| UInt8 | 3.047 ms | 684.980 μs | 975.095 ns |
-| UInt16 | 7.484 ms | 685.170 μs | 3.147 μs |
-| UInt32 | 14.712 ms | 681.080 μs | 4.208 μs |
-| UInt64 | 27.161 ms | 682.310 μs | 7.116 μs |
-| UInt128 | 55.051 ms | 682.950 μs | 15.583 μs |
-| UInt256 | 112.145 ms | 693.970 μs | 25.316 μs |
-| UInt512 | 224.086 ms | 923.660 μs | 50.205 μs |
+| UInt8 | 3.305 ms | 739.950 μs | 990.539 ns |
+| UInt16 | 8.058 ms | 749.850 μs | 3.168 μs |
+| UInt32 | 16.009 ms | 751.700 μs | 4.339 μs |
+| UInt64 | 29.385 ms | 751.860 μs | 6.959 μs |
+| UInt128 | 58.823 ms | 731.350 μs | 15.360 μs |
+| UInt256 | 119.087 ms | 754.820 μs | 26.260 μs |
+| UInt512 | 241.477 ms | 963.700 μs | 52.742 μs |
 
-Versions:
-Julia v1.10.0,
-StaticArrays v1.9.3,
-StaticVectors v1.0.3,
-SIMD 3.4.6,
-BitIntegers v0.3.1
+Versions: Julia v1.10.4,
+SmallCollections: v0.3.0,
+StaticArrays: v1.9.7,
+StaticVectors: v1.0.5,
+SIMD: v3.5.0,
+BitIntegers: v0.3.1
 
 Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
 
