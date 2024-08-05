@@ -27,6 +27,7 @@ Base.rand(::Type{T}, n::Integer) where T <: Union{String,Symbol,A} = T[rand(T) f
     for N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = @inferred SmallVector{N,T}(u)
+        @test v === @inferred copy(v)
         @test_inferred capacity(v) N Int
         @test_inferred v == u true
         @test isvalid(v)

@@ -4,7 +4,7 @@
 
 export SmallVector, fasthash, sum_fast
 
-import Base: ==, copy, Tuple, empty,
+import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest,
     zero, map,
     +, -, *, sum, prod, maximum, minimum, extrema
@@ -121,8 +121,6 @@ function fasthash(v::SmallVector{N,T}, h0::UInt) where {N,T}
         hash(v, h0)
     end
 end
-
-copy(v::SmallVector) = v
 
 convert(::Type{V}, v::AbstractVector) where {N, V <: SmallVector{N}} = V(v)
 

@@ -35,6 +35,7 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
     for m in (0, 1, round(Int, 0.7*c), c-1, c)
         u = packed_rand(N, T, m)
         v = @inferred PackedVector{U,N,T}(u)
+        @test v === @inferred copy(v)
         @test_inferred capacity(v) c Int
         @test_inferred v == u true
         @test isvalid(v)

@@ -2,7 +2,7 @@
 # AbstractSmallVector
 #
 
-export AbstractSmallVector, capacity, support,
+export AbstractSmallVector, copy, capacity, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
@@ -20,6 +20,8 @@ then these vector types do not allocate.
 See also [`SmallVector`](@ref), [`PackedVector`](@ref).
 """
 abstract type AbstractSmallVector{T} <: AbstractVector{T} end
+
+copy(v::AbstractSmallVector) = v
 
 """
     capacity(::Type{<:AbstractSmallVector}) -> Int
