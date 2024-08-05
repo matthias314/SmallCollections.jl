@@ -1,7 +1,13 @@
-using BenchmarkTools
+using Chairmarks
 
-macro bstr(ex)
-    esc(:(BenchmarkTools.prettytime(@belapsed($ex)*1e9)))
+function pretty_time(sample)
+    io = IOBuffer()
+    Chairmarks.print_time(io, sample)
+    String(take!(io))
+end
+
+macro bstr(ex...)
+    esc(:(pretty_time((@b $(ex...)).time)))
 end
 
 using SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers, BangBang
@@ -83,8 +89,7 @@ let
 Here we compare a `$(types[3])` (that can hold $N elements) to a `$(types[2])`
 and to a `$(types[1])` with $m elements.
 The function `duplicate(v, i)` is equivalent to `insert(v, i+1, v[i])`.
-For the operations listed in the table below we have chosen the mutating variant for `Vector`;
-these timings are done in a naive way.
+For the operations listed in the table below we have chosen the mutating variant for `Vector`.
 
 """
 
@@ -95,16 +100,16 @@ these timings are done in a naive way.
         T = typeof(v)
         println(stderr, T)
         t[T, :getindex] = @bstr $v[$i]
-        t[T, :setindex] = @bstr setindex!!($v, $c, $i)
-        t[T, :add] = @bstr add!!($v, $w)
-        t[T, :scalar_mul] = @bstr mul!!($v, $c)
-        t[T, :pushfirst] = @bstr pushfirst!!($v, $c)
-        t[T, :push] = @bstr push!!($v, $c)
-        t[T, :popfirst] = @bstr popfirst!!($v)
-        t[T, :pop] = @bstr pop!!($v)
-        t[T, :insert] = @bstr insert!!($v, $i, $c)
-        t[T, :deleteat] = @bstr deleteat!!($v, $i)
-        t[T, :duplicate] = @bstr duplicate!!($v, $i)
+        t[T, :setindex] = @bstr copy(v) setindex!!(_, $c, $i)
+        t[T, :add] = @bstr copy(v) add!!(_, $w)
+        t[T, :scalar_mul] = @bstr copy(v) mul!!(_, $c)
+        t[T, :pushfirst] = @bstr copy(v) pushfirst!!(_, $c)
+        t[T, :push] = @bstr copy(v) push!!(_, $c)
+        t[T, :popfirst] = @bstr copy(v) popfirst!!(_) evals = i
+        t[T, :pop] = @bstr copy(v) pop!!(_) evals = i
+        t[T, :insert] = @bstr copy(v) insert!!(_, $i, $c)
+        t[T, :deleteat] = @bstr copy(v) deleteat!!(_, $i) evals = i
+        t[T, :duplicate] = @bstr copy(v) duplicate!!(_, $i)
     end
 
     global s *= """
@@ -154,7 +159,7 @@ s *= """
 Versions: Julia v$VERSION,
 """
 
-w = map([SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers]) do M
+w = map([Chairmarks, SmallCollections, StaticArrays, StaticVectors, SIMD, BitIntegers]) do M
     v = pkgversion(M)
     "$M v$v"
 end

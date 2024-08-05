@@ -174,32 +174,31 @@ chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
 
 | `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| (8, Float64) | 47.727 μs | 4.475 μs | 4.416 μs | 4.385 μs | 4.617 μs |
-| (8, Int64) | 50.417 μs | 4.088 μs | 4.406 μs | 4.540 μs | 4.324 μs |
-| (16, Int32) | 53.516 μs | 3.934 μs | 4.425 μs | 4.487 μs | 4.456 μs |
-| (32, Int16) | 55.855 μs | 4.182 μs | 4.527 μs | 4.410 μs | 4.446 μs |
+| (8, Float64) | 66.682 μs | 3.341 μs | 3.452 μs | 3.197 μs | 3.046 μs |
+| (8, Int64) | 48.642 μs | 4.962 μs | 3.196 μs | 4.551 μs | 2.954 μs |
+| (16, Int32) | 49.449 μs | 3.866 μs | 3.284 μs | 3.623 μs | 3.757 μs |
+| (32, Int16) | 55.027 μs | 5.046 μs | 4.212 μs | 3.618 μs | 3.548 μs |
 
 ### `PackedVector`
 
 Here we compare a `PackedVector{UInt128, 4, Int8}` (that can hold 32 elements) to a `SmallVector{32, Int8}`
 and to a `Vector{Int8}` with 30 elements.
 The function `duplicate(v, i)` is equivalent to `insert(v, i+1, v[i])`.
-For the operations listed in the table below we have chosen the mutating variant for `Vector`;
-these timings are done in a naive way.
+For the operations listed in the table below we have chosen the mutating variant for `Vector`.
 
 | operation | `Vector` | `SmallVector` | `PackedVector` |
 | ---: | ---: | ---: | ---: |
-| getindex | 2.672 ns | 2.966 ns | 3.545 ns |
-| setindex | 2.677 ns | 6.512 ns | 7.054 ns |
-| add | 12.844 ns | 3.257 ns | 4.356 ns |
-| scalar_mul | 9.769 ns | 5.159 ns | 5.429 ns |
-| push | 7.621 ns | 5.979 ns | 9.212 ns |
-| pushfirst | 8.924 ns | 4.344 ns | 4.474 ns |
-| pop | 6.855 ns | 5.174 ns | 4.090 ns |
-| popfirst | 9.763 ns | 4.138 ns | 3.264 ns |
-| insert | 12.745 ns | 25.198 ns | 7.336 ns |
-| deleteat | 12.206 ns | 17.149 ns | 4.033 ns |
-| duplicate | 12.748 ns | 21.949 ns | 4.618 ns |
+| getindex | 2.902 ns | 2.647 ns | 3.167 ns |
+| setindex | 2.638 ns | 5.279 ns | 6.861 ns |
+| add | 12.419 ns | 2.375 ns | 4.222 ns |
+| scalar_mul | 9.762 ns | 4.749 ns | 4.223 ns |
+| push | 8.241 ns | 5.541 ns | 8.970 ns |
+| pushfirst | 8.750 ns | 4.221 ns | 4.223 ns |
+| pop | 8.600 ns | 6.000 ns | 4.933 ns |
+| popfirst | 11.267 ns | 4.667 ns | 3.867 ns |
+| insert | 12.928 ns | 24.804 ns | 7.328 ns |
+| deleteat | 12.933 ns | 18.200 ns | 5.667 ns |
+| duplicate | 13.546 ns | 20.845 ns | 4.486 ns |
 
 ### `SmallBitSet`
 
@@ -209,15 +208,16 @@ Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
 
 | `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
 | ---: | ---: | ---: | ---: |
-| UInt8 | 323.895 μs | 75.721 μs | 101.740 ns |
-| UInt16 | 805.738 μs | 74.712 μs | 302.132 ns |
-| UInt32 | 1.582 ms | 71.815 μs | 425.487 ns |
-| UInt64 | 2.921 ms | 72.920 μs | 709.962 ns |
-| UInt128 | 5.920 ms | 74.294 μs | 1.561 μs |
-| UInt256 | 12.027 ms | 75.367 μs | 2.566 μs |
-| UInt512 | 24.595 ms | 97.067 μs | 5.320 μs |
+| UInt8 | 366.256 μs | 69.439 μs | 95.698 ns |
+| UInt16 | 801.736 μs | 68.195 μs | 311.559 ns |
+| UInt32 | 1.537 ms | 68.354 μs | 400.259 ns |
+| UInt64 | 2.836 ms | 68.751 μs | 640.833 ns |
+| UInt128 | 5.686 ms | 68.846 μs | 1.540 μs |
+| UInt256 | 11.579 ms | 69.398 μs | 2.441 μs |
+| UInt512 | 23.819 ms | 92.041 μs | 4.866 μs |
 
 Versions: Julia v1.10.4,
+Chairmarks v1.2.1,
 SmallCollections v0.3.0,
 StaticArrays v1.9.7,
 StaticVectors v1.0.5,
