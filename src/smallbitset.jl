@@ -31,8 +31,10 @@ struct SmallBitSet{U<:Unsigned} <: AbstractSet{Int}
     global _SmallBitSet(mask::U) where U = new{U}(mask)
 end
 
-function show(io::IO, s::SmallBitSet)
-    print(io, "SmallBitSet([")
+function show(io::IO, s::SmallBitSet{U}) where U
+    print(io, "SmallBitSet")
+    get(io, :typeinfo, Any) == SmallBitSet{U} || print(io, '{', U, '}')
+    print(io, "([")
     join(io, s, ", ")
     print(io, "])")
 end
