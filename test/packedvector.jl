@@ -297,6 +297,26 @@ end
     x1, x2, w... = v
     @test w == v[3:end] && typeof(w) == typeof(v) && isvalid(w)
     @test_throws Exception x1, x2, x3, w... = v
+
+    if VERSION >= v"1.9"
+        v = PackedVector{UInt32,5,UInt8}(1:3)
+        w..., y1 = v
+        @test w == v[1:end-1] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end]
+        x1, w..., y1 = v
+        @test w == v[2:end-1] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end]
+        x1, x2, w..., y1 = v
+        @test w == v[3:end-1] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end]
+        @test_throws Exception x1, x2, x3, w..., y1 = v
+
+        v = PackedVector{UInt128,7,Int32}(1:4)
+        w..., y1, y2 = v
+        @test w == v[1:end-2] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end-1] && y2 === v[end]
+        x1, w..., y1, y2 = v
+        @test w == v[2:end-2] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end-1] && y2 === v[end]
+        x1, x2, w..., y1, y2 = v
+        @test w == v[3:end-2] && typeof(w) == typeof(v) && isvalid(w) && y1 === v[end-1] && y2 === v[end]
+        @test_throws Exception x1, x2, x3, w..., y1, y2 = v
+    end
 end
 
 @testset "PackedVector support" begin

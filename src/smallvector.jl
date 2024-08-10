@@ -5,7 +5,7 @@
 export SmallVector, fasthash, sum_fast
 
 import Base: ==, Tuple, empty,
-    length, size, getindex, setindex, rest,
+    length, size, getindex, setindex, rest, split_rest,
     zero, map,
     +, -, *, sum, prod, maximum, minimum, extrema
 
@@ -132,6 +132,14 @@ length(v::SmallVector) = v.n
 size(v::SmallVector) = (length(v),)
 
 rest(v::SmallVector, (r, i) = (Base.OneTo(length(v)), 0)) = @inbounds v[i+1:last(r)]
+
+if VERSION >= v"1.9"
+    @inline function split_rest(v::SmallVector, n::Int, (r, i) = (Base.OneTo(length(v)), 0))
+        m = length(r)-n
+        @boundscheck (n >= 0 && m >= i) || error("impossible number of elements requested")
+        @inbounds v[i+1:m], v[m+1:end]
+    end
+end
 
 @inline function getindex(v::SmallVector, i::Int)
     @boundscheck checkbounds(v, i)
