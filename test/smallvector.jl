@@ -354,11 +354,13 @@ end
 end
 
 @testset "SmallVector rest" begin
-    v = SmallVector{8}([1,2])
+    v = SmallVector{8}(1:2)
+    w..., = v
+    @test w == v && typeof(w) == typeof(v) && isvalid(w)
     x1, w... = v
-    @test w == v[2:2] && typeof(w) == typeof(v) && isvalid(w)
+    @test w == v[2:end] && typeof(w) == typeof(v) && isvalid(w)
     x1, x2, w... = v
-    @test w == v[3:2] && typeof(w) == typeof(v) && isvalid(w)
+    @test w == v[3:end] && typeof(w) == typeof(v) && isvalid(w)
     @test_throws Exception x1, x2, x3, w... = v
 end
 

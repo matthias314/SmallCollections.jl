@@ -131,7 +131,7 @@ length(v::SmallVector) = v.n
 
 size(v::SmallVector) = (length(v),)
 
-rest(v::SmallVector, (r, i)) = @inbounds v[i+1:last(r)]
+rest(v::SmallVector, (r, i) = (Base.OneTo(length(v)), 0)) = @inbounds v[i+1:last(r)]
 
 @inline function getindex(v::SmallVector, i::Int)
     @boundscheck checkbounds(v, i)
