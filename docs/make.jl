@@ -3,7 +3,7 @@ using SmallCollections
 
 DocMeta.setdocmeta!(SmallCollections, :DocTestSetup, quote
         using SmallCollections
-	# for jldoctest in docstrings
+        # for jldoctest in docstrings
     end; recursive = true)
 
 makedocs(sitename = "SmallCollections.jl",
