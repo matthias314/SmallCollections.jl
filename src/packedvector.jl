@@ -181,6 +181,16 @@ true
 SmallCollections.fasthash(v::PackedVector, h0::UInt) =
     Base.hash_integer(bits(v), hash(length(v), h0))
 
+"""
+    empty(v::PackedVector{U,M}, S::Type) where {U,M,S} -> SmallVector{U,M,S}
+
+Return an empty `PackedVector` with the same bit mask type and same bit size as `v`,
+but element type `S`.
+
+See also [`empty(v::AbstractSmallVector)`](@ref).
+"""
+empty(v::PackedVector, ::Type)
+
 empty(v::PackedVector{U,M,T}, ::Type{S} = T) where {U,M,T,S} = PackedVector{U,M,S}()
 
 iszero(v::PackedVector) = iszero(v.m)

@@ -174,14 +174,12 @@ end
 end
 
 """
-    empty(v::V) where V <: SmallVector -> V
-    empty(v::SmallVector{N}, U::Type) where {N,U} -> SmallVector{N,U}
+    empty(v::SmallVector{N}, S::Type) where {N,S} -> SmallVector{N,S}
 
-Called with one argument, return an empty `SmallVector` of the same type as `v`.
-Called with two arguments, return an empty `SmallVector` with the same capacity as `v`
-and element type `U`.
+Return an empty `SmallVector` with the same capacity as `v` and element type `U`.
+
+See also [`empty(v::AbstractSmallVector)`](@ref).
 """
-empty(v::SmallVector),
 empty(v::SmallVector, ::Type)
 
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()

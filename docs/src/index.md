@@ -16,6 +16,7 @@ SmallCollections
 ```@docs
 AbstractSmallVector
 capacity(::Type{<:AbstractSmallVector})
+empty(::AbstractSmallVector)
 zeros
 ones
 setindex
@@ -37,7 +38,7 @@ support
 
 ```@docs
 SmallVector
-empty(::SmallVector)
+empty(::SmallVector, ::Type)
 fasthash(::SmallVector, ::UInt)
 sum_fast
 map
@@ -48,6 +49,7 @@ map
 ```@docs
 PackedVector
 bits(::PackedVector)
+empty(::PackedVector, ::Type)
 fasthash(::PackedVector, ::UInt)
 SmallCollections.unsafe_add
 SmallCollections.unsafe_sub

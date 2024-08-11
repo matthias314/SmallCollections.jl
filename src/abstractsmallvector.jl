@@ -6,7 +6,7 @@ export AbstractSmallVector, copy, capacity, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
-import Base: setindex, zeros, ones, filter
+import Base: setindex, empty, zeros, ones, filter
 
 """
     AbstractSmallVector{T} <: AbstractVector{T}
@@ -51,6 +51,15 @@ See also [`setindex`](@ref).
 """
 @propagate_inbounds addindex(v::AbstractSmallVector, x, i::Integer) =
     setindex(v, v[i]+x, i)
+
+"""
+    empty(v::V) where V <: AbstractSmallVector -> V
+
+Return an empty `AbstractSmallVector` of the same type as `v`.
+
+See also [`empty(v::SmallVector, ::Type)`](@ref),  [`empty(v::PackedVector, ::Type)`](@ref).
+"""
+empty(v::AbstractSmallVector)
 
 """
     zeros(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V
