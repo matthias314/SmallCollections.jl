@@ -66,8 +66,15 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
             @test_inferred v == v7 false
         end
         @test_inferred hash(v) hash(u) UInt
-        v8 = PackedVector{U,N,T}(u)
-        # @test_inferred fasthash(v) fasthash(v8) UInt
+        if bitsize(U) < bitsize(UInt256)
+            v1 = PackedVector{UInt256,N,T}(u)
+            @test_inferred fasthash(v) fasthash(v1) UInt
+        end
+        let uu = map(x -> clamp(x, 0, BigInt(2)^(N-1)-1), u)
+            w1 = PackedVector{U,N,signed(T)}(uu)
+            w2 = PackedVector{U,N,unsigned(T)}(uu)
+            @test_inferred fasthash(w1) fasthash(w2) UInt
+        end
         @test_inferred length(v) length(u) Int
         @test_inferred PackedVector{U,N,T}() PackedVector{U,N,T}(())
         @test_inferred empty(v) PackedVector{U,N,T}()

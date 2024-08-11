@@ -48,6 +48,7 @@ map
 ```@docs
 PackedVector
 bits(::PackedVector)
+fasthash(::PackedVector, ::UInt)
 SmallCollections.unsafe_add
 SmallCollections.unsafe_sub
 ```
