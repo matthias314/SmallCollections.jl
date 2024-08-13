@@ -33,7 +33,9 @@ end
 
 function show(io::IO, s::SmallBitSet{U}) where U
     print(io, "SmallBitSet")
-    get(io, :typeinfo, Any) == SmallBitSet{U} || print(io, '{', U, '}')
+    if bitsize(U) > bitsize(UInt) || get(io, :typeinfo, Any) != SmallBitSet{U}
+        print(io, '{', U, '}')
+    end
     print(io, "([")
     join(io, s, ", ")
     print(io, "])")
