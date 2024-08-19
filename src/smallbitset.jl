@@ -344,7 +344,7 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 export compositions, subsets, shuffles, shuffle_signbit
 
 using Base: Generator
-import Base: eltype, length, size, getindex
+import Base: eltype, length, size, IndexStyle, getindex
 
 struct Shuffles{N,S}
     set::S
@@ -604,6 +604,8 @@ show(io::IO, ss::Subsets) = print(io, "Subsets(", ss.set, ')')
 show(io::IO, ::MIME"text/plain", ss::Subsets) = print(io, "Subsets(", ss.set, ')')
 
 size(ss::Subsets) = (ss.length,)
+
+IndexStyle(::Type{<:Subsets}) = IndexLinear()
 
 @inline function getindex(ss::Subsets{<:Integer}, i::Int)
     @boundscheck checkbounds(ss, i)
