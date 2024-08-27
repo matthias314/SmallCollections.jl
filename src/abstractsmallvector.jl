@@ -2,7 +2,7 @@
 # AbstractSmallVector
 #
 
-export AbstractSmallVector, copy, capacity, support,
+export AbstractSmallVector, capacity, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
