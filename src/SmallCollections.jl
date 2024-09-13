@@ -35,6 +35,7 @@ const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigne
 const FastInteger = Union{BitInteger,Complex{<:BitInteger}}
 const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
 
+include("fixedvector.jl")
 include("staticvectors.jl")
 
 export capacity, fasthash

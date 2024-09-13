@@ -1,8 +1,6 @@
 #
-# extensions of StaticVectors.jl
+# extensions of FixedVector
 #
-
-using StaticVectors
 
 using Base: BitInteger, @assume_effects
 
