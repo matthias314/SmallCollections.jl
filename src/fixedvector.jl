@@ -17,6 +17,7 @@ end
 mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
     MutableFixedVector{N,T}(t::NTuple{N,T}) where {N,T} = new{N,T}(t)
+    MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
 
 function (::Type{V})(t) where {N,T,V<:AbstractFixedVector{N,T}}
@@ -235,8 +236,6 @@ end
 
 # findfirst & findlast
 
-import Base: findfirst, findlast
-
 @generated function bits(v::AbstractFixedVector{N,Bool}) where N
     c = max(nextpow(2, N), 8)
     U = Symbol(:UInt, c)
@@ -260,6 +259,10 @@ import Base: findfirst, findlast
     end
 end
 
+=#
+
+import Base: findfirst, findlast
+
 function findfirst(v::AbstractFixedVector{N,Bool}) where N
     m = bits(v)
     iszero(m) ? nothing : trailing_zeros(m)+1
@@ -269,6 +272,8 @@ function findlast(v::AbstractFixedVector{N,Bool}) where N
     m = bits(v)
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
 end
+
+#=
 
 #
 # from SmallCollections/src/staticvectors.jl
