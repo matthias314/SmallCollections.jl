@@ -1,17 +1,17 @@
 #
-# AbstractSmallVector
+# AbstractCapacityVector
 #
 
-export AbstractSmallVector, capacity, support,
+export AbstractCapacityVector, capacity, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
 import Base: setindex, empty, zeros, ones, filter
 
 """
-    AbstractSmallVector{T} <: AbstractVector{T}
+    AbstractCapacityVector{T} <: AbstractVector{T}
 
-`AbstractSmallVector` is the supertype of the vector types provided
+`AbstractCapacityVector` is the supertype of the vector types provided
 by this module. At present, these are `SmallVector` and `PackedVector`.
 Both are read-only ans can hold a variable number of elements up to
 a predefined maximal capacity. If the element type `T` is concrete,
@@ -19,77 +19,77 @@ then these vector types do not allocate.
 
 See also [`SmallVector`](@ref), [`PackedVector`](@ref).
 """
-abstract type AbstractSmallVector{T} <: AbstractVector{T} end
+abstract type AbstractCapacityVector{T} <: AbstractVector{T} end
 
-copy(v::AbstractSmallVector) = v
+copy(v::AbstractCapacityVector) = v
 
 """
-    capacity(::Type{<:AbstractSmallVector}) -> Int
-    capacity(v::AbstractSmallVector) -> Int
+    capacity(::Type{<:AbstractCapacityVector}) -> Int
+    capacity(v::AbstractCapacityVector) -> Int
 
 Return the largest number of elements this vector type can hold.
 """
-capacity(::Type{<:AbstractSmallVector})
+capacity(::Type{<:AbstractCapacityVector})
 
-capacity(::V) where V <: AbstractSmallVector = capacity(V)
+capacity(::V) where V <: AbstractCapacityVector = capacity(V)
 
 """
-    setindex(v::V, x, i::Integer) where V <: AbstractSmallVector -> V
+    setindex(v::V, x, i::Integer) where V <: AbstractCapacityVector -> V
 
 Substitute `x` for the `i`-th component of `v` and return the new vector.
 
 See also `Base.setindex`,  [`addindex`](@ref).
 """
-setindex(::AbstractSmallVector, ::Any, ::Integer)
+setindex(::AbstractCapacityVector, ::Any, ::Integer)
 
 """
-    addindex(v::V, x, i::Integer) where V <: AbstractSmallVector -> V
+    addindex(v::V, x, i::Integer) where V <: AbstractCapacityVector -> V
 
 Add `x` to the `i`-th component of `v` and return the new vector.
 
 See also [`setindex`](@ref).
 """
-@propagate_inbounds addindex(v::AbstractSmallVector, x, i::Integer) =
+@propagate_inbounds addindex(v::AbstractCapacityVector, x, i::Integer) =
     setindex(v, v[i]+x, i)
 
 """
-    empty(v::V) where V <: AbstractSmallVector -> V
+    empty(v::V) where V <: AbstractCapacityVector -> V
 
-Return an empty `AbstractSmallVector` of the same type as `v`.
+Return an empty `AbstractCapacityVector` of the same type as `v`.
 
 See also [`empty(v::SmallVector, ::Type)`](@ref),  [`empty(v::PackedVector, ::Type)`](@ref).
 """
-empty(v::AbstractSmallVector)
+empty(v::AbstractCapacityVector)
 
 """
-    zeros(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V
+    zeros(::Type{V}, n::Integer) where V <: AbstractCapacityVector -> V
 
-Return an `AbstractSmallVector` of type `V` containing `n` zeros.
+Return an `AbstractCapacityVector` of type `V` containing `n` zeros.
 
 See also [`ones`](@ref).
 """
-zeros(::Type{<:AbstractSmallVector}, ::Integer)
+zeros(::Type{<:AbstractCapacityVector}, ::Integer)
 
 """
-    ones(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V
+    ones(::Type{V}, n::Integer) where V <: AbstractCapacityVector -> V
 
-Return a `AbstractSmallVector` of type `V` containing `n` ones.
+Return a `AbstractCapacityVector` of type `V` containing `n` ones.
 
 See also [`zeros`](@ref).
 """
-ones(::Type{<:AbstractSmallVector}, ::Integer)
+ones(::Type{<:AbstractCapacityVector}, ::Integer)
 
 """
-    push(v::V, xs...) where V <: AbstractSmallVector -> V
+    push(v::V, xs...) where V <: AbstractCapacityVector -> V
 
-Return the `AbstractSmallVector` obtained from `v` by appending the arguments `xs`.
+Return the `AbstractCapacityVector` obtained from `v` by appending the arguments `xs`.
 
 See also `Base.push!`, `BangBang.push!!`.
 """
-push(::AbstractSmallVector, ::Vararg)
+push(::AbstractCapacityVector, ::Vararg)
 
 """
-    pop(v::V) where {T, V <: AbstractSmallVector{T}} -> Tuple{V,T}
+    pop(v::V) where {T, V <: AbstractCapacityVector{T}} -> Tuple{V,T}
 
 Return the tuple `(w, x)` where `x` is the last element of `v`
 and `w` obtained from `v` by dropping this element.
@@ -97,19 +97,19 @@ The vector `v` must not be empty.
 
 See also `Base.pop!`, `BangBang.pop!!`.
 """
-pop(v::AbstractSmallVector)
+pop(v::AbstractCapacityVector)
 
 """
-    pushfirst((v::V, xs...) where V <: AbstractSmallVector -> V
+    pushfirst((v::V, xs...) where V <: AbstractCapacityVector -> V
 
-Return the `AbstractSmallVector` obtained from `v` by prepending the arguments `xs`.
+Return the `AbstractCapacityVector` obtained from `v` by prepending the arguments `xs`.
 
 See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
 """
-pushfirst(::AbstractSmallVector, ::Vararg)
+pushfirst(::AbstractCapacityVector, ::Vararg)
 
 """
-    popfirst(v::V) where {T, V <: AbstractSmallVector{T}} -> Tuple{V,T}
+    popfirst(v::V) where {T, V <: AbstractCapacityVector{T}} -> Tuple{V,T}
 
 Return the tuple `(w, x)` where `x` is the first element of `v`
 and `w` obtained from `v` by dropping this element.
@@ -117,22 +117,22 @@ The vector `v` must not be empty.
 
 See also `Base.popfirst!`, `BangBang.popfirst!!`.
 """
-popfirst(v::AbstractSmallVector)
+popfirst(v::AbstractCapacityVector)
 
 """
-    insert(v::V, i::Integer, x) where V <: AbstractSmallVector{T} -> V
+    insert(v::V, i::Integer, x) where V <: AbstractCapacityVector{T} -> V
 
-Return the `AbstractSmallVector` obtained from `v` by inserting `x` at position `i`.
+Return the `AbstractCapacityVector` obtained from `v` by inserting `x` at position `i`.
 The position `i` must be between `1` and `length(v)+1`.
 
 This is the non-mutating analog of `Base.insert!`.
 
 See also [`duplicate`](@ref).
 """
-insert(::AbstractSmallVector, ::Integer, ::Any)
+insert(::AbstractCapacityVector, ::Integer, ::Any)
 
 """
-    duplicate(v::V, i::Integer, x) where V <: AbstractSmallVector{T} -> V
+    duplicate(v::V, i::Integer, x) where V <: AbstractCapacityVector{T} -> V
 
 Duplicate the `i`-th entry of `v` by inserting it at position `i+1` and return the new vector.
 
@@ -154,49 +154,49 @@ julia> duplicate(v, 2)
  3
 ```
 """
-duplicate(::AbstractSmallVector, ::Integer, ::Any)
+duplicate(::AbstractCapacityVector, ::Integer, ::Any)
 
 """
-    deleteat(v::V, i::Integer) where V <: AbstractSmallVector -> V
+    deleteat(v::V, i::Integer) where V <: AbstractCapacityVector -> V
 
-Return the `AbstractSmallVector` obtained from `v` by deleting the element at position `i`.
+Return the `AbstractCapacityVector` obtained from `v` by deleting the element at position `i`.
 The latter must be between `1` and `length(v)`.
 
 See also `Base.deleteat!`, `BangBang.deleteat!!`.
 """
-deleteat(::AbstractSmallVector, ::Integer)
+deleteat(::AbstractCapacityVector, ::Integer)
 
 """
-    popat(v::V, i::Integer) where {T, V <: AbstractSmallVector{T}} -> Tuple{V,T}
+    popat(v::V, i::Integer) where {T, V <: AbstractCapacityVector{T}} -> Tuple{V,T}
 
 Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
 at position `i`. The latter must be between `1` and `length(v)`.
 
 See also `Base.popat!`, `BangBang.popat!!`.
 """
-popat(::AbstractSmallVector, ::Integer)
+popat(::AbstractCapacityVector, ::Integer)
 
 """
-    append(v::V, ws...) where V <: AbstractSmallVector -> V
+    append(v::V, ws...) where V <: AbstractCapacityVector -> V
 
 Append all elements of the collections `ws` to `v` and return the new vector.
-Note that the resulting `AbstractSmallVector` has the same capacity as `v`.
+Note that the resulting `AbstractCapacityVector` has the same capacity as `v`.
 
 See also `Base.append!`, `BangBang.append!!`.
 """
-append(::AbstractSmallVector, ::Vararg)
+append(::AbstractCapacityVector, ::Vararg)
 
 """
-    prepend(v::V, ws...) where V <: AbstractSmallVector -> V
+    prepend(v::V, ws...) where V <: AbstractCapacityVector -> V
 
 Prepend all elements of the collections `ws` to `v` and return the new vector.
-Note that the resulting `AbstractSmallVector` has the same capacity as `v`.
+Note that the resulting `AbstractCapacityVector` has the same capacity as `v`.
 
 See also `Base.prepend!`.
 """
-prepend(::AbstractSmallVector, ::Vararg)
+prepend(::AbstractCapacityVector, ::Vararg)
 
-function filter(f::F, v::AbstractSmallVector) where F
+function filter(f::F, v::AbstractCapacityVector) where F
     w = empty(v)
     for x in v
         if f(x)
@@ -207,7 +207,7 @@ function filter(f::F, v::AbstractSmallVector) where F
 end
 
 """
-    support(v::AbstractSmallVector) -> SmallBitSet
+    support(v::AbstractCapacityVector) -> SmallBitSet
 
 Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
 
@@ -224,4 +224,4 @@ SmallBitSet{UInt64} with 3 elements:
   6
 ```
 """
-support(::AbstractSmallVector)
+support(::AbstractCapacityVector)

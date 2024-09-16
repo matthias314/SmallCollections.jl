@@ -56,17 +56,17 @@ for (N, T) in [(8, Float64), (8, Int64), (16, Int32), (32, Int16)]
 end
 
 mul!!(v::Vector, x) = v .*= x
-mul!!(v::AbstractSmallVector, x) = x * v
+mul!!(v::AbstractCapacityVector, x) = x * v
 
 insert!!(v::Vector, i, x) = insert!(v, i, x)
-insert!!(v::AbstractSmallVector, i, x) = SmallCollections.insert(v, i, x)
+insert!!(v::AbstractCapacityVector, i, x) = SmallCollections.insert(v, i, x)
 
 @inline function duplicate!!(v::Vector, i)
     @boundscheck checkbounds(v, i)
     @inbounds insert!(v, i+1, v[i])
 end
 
-duplicate!!(v::AbstractSmallVector, i) = duplicate(v, i)
+duplicate!!(v::AbstractCapacityVector, i) = duplicate(v, i)
 
 let
     m = 30

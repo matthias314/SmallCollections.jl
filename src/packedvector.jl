@@ -8,7 +8,7 @@ import Base: ==, getindex, setindex, length, size, empty, iterate, rest, split_r
 export PackedVector, bits
 
 """
-    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractSmallVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractCapacityVector{T}
 
     PackedVector{U,M,T}()
     PackedVector{U,M,T}(iter)
@@ -73,7 +73,7 @@ julia> Int8(2)*v
  -12
 ```
 """
-struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractSmallVector{T}
+struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractCapacityVector{T}
     m::U
     n::Int
 end
@@ -186,7 +186,7 @@ fasthash(v::PackedVector, h0::UInt) = Base.hash_integer(bits(v), hash(length(v),
 Return an empty `PackedVector` with the same bit mask type and same bit size as `v`,
 but element type `S`.
 
-See also [`empty(v::AbstractSmallVector)`](@ref).
+See also [`empty(v::AbstractCapacityVector)`](@ref).
 """
 empty(v::PackedVector, ::Type)
 
