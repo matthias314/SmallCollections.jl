@@ -11,18 +11,18 @@ DocTestSetup = quote
 SmallCollections
 ```
 
-## [`AbstractSmallVector`](@id sec-abstractsmallvector)
+## [`AbstractCapacityVector`](@id sec-abstractsmallvector)
 
 ```@docs
-AbstractSmallVector
-capacity(::Type{<:AbstractSmallVector})
-empty(::AbstractSmallVector)
+AbstractCapacityVector
+capacity(::Type{<:AbstractCapacityVector})
+empty(::AbstractCapacityVector)
 zeros
 ones
 setindex
 addindex
-push(::AbstractSmallVector, ::Vararg)
-pop(::AbstractSmallVector)
+push(::AbstractCapacityVector, ::Vararg)
+pop(::AbstractCapacityVector)
 pushfirst
 popfirst
 insert
@@ -63,7 +63,7 @@ if at least one argument is a `SmallVector` and all other arguments (if any) are
 of the `SmallVector` arguments. Broadcasted assignments to a `SmallVector` are
 of course not possible.
 
-See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractSmallVector})),
+See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractCapacityVector})),
 [`SmallCollections.SmallVectorStyle`](@ref).
 
 #### Examples
@@ -137,11 +137,11 @@ for `SmallBitSet` as well as
 [`popfirst`](@ref),
 [`deleteat`](@ref) and
 [`append`](@ref)
-for `AbstractSmallVector`
+for `AbstractCapacityVector`
 are also available in `!!`-form.
-For example, `setindex!!` with an `AbstractSmallVector` as first argument calls `setindex`.
+For example, `setindex!!` with an `AbstractCapacityVector` as first argument calls `setindex`.
 (`BangBang.jl` does not define `insert!!`, `prepend!!`, `filter!!` and `map!!`.)
-Moreover, `add!!(v::AbstractSmallVector, w::AbstractSmallVector)` is a synonym for `v+w`.
+Moreover, `add!!(v::AbstractCapacityVector, w::AbstractCapacityVector)` is a synonym for `v+w`.
 
 This allows to write efficient code that works for both mutable and immutable arguments.
 For example, the function

@@ -10,7 +10,7 @@ import Base: ==, Tuple, empty,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 """
-    SmallVector{N,T} <: AbstractSmallVector{T}
+    SmallVector{N,T} <: AbstractCapacityVector{T}
 
     SmallVector{N,T}()
     SmallVector{N,T}(iter)
@@ -59,7 +59,7 @@ julia> v+w
  10.0
 ```
 """
-struct SmallVector{N,T} <: AbstractSmallVector{T}
+struct SmallVector{N,T} <: AbstractCapacityVector{T}
     b::Values{N,T}
     n::Int
 end
@@ -178,7 +178,7 @@ end
 
 Return an empty `SmallVector` with the same capacity as `v` and element type `U`.
 
-See also [`empty(v::AbstractSmallVector)`](@ref).
+See also [`empty(v::AbstractCapacityVector)`](@ref).
 """
 empty(v::SmallVector, ::Type)
 
