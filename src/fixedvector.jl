@@ -5,7 +5,8 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     sum, prod, minimum, maximum, extrema, count, any, all, in, reverse,
-    mapfoldl, mapfoldr, vcat, copy, copyto!, convert
+    mapfoldl, mapfoldr, vcat, copy, copyto!, convert,
+    strides, elsize, unsafe_convert
 
 abstract type AbstractFixedVector{N,T} <: AbstractVector{T} end
 
@@ -55,6 +56,13 @@ copyto!(v::MutableFixedVector{N}, w::AbstractFixedVector{N}) where N = copyto!(v
 Tuple(v::AbstractFixedVector) = v.t
 
 size(v::AbstractFixedVector{N}) where N = (N,)
+
+strides(::MutableFixedVector) = (1,)
+
+elsize(::Type{MutableFixedVector{N,T}}) where {N,T} = elsize(Vector{T})
+
+unsafe_convert(::Type{Ptr{T}}, v::MutableFixedVector{N,T}) where {N,T} =
+    Ptr{T}(pointer_from_objref(v))
 
 IndexStyle(::Type{<:AbstractFixedVector}) = IndexLinear()
 
