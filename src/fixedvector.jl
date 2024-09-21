@@ -128,6 +128,9 @@ function extrema(v::AbstractFixedVector; init::Union{Missing,Tuple{Any,Any}} = m
     end
 end
 
+sum_fast(v::AbstractFixedVector) = sum(v)
+sum_fast(v::AbstractFixedVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, Tuple(v))
+
 for f in (:mapfoldl, :mapfoldr)
     @eval $f(g, op, v::AbstractFixedVector; kw...) = $f(g, op, v.t; kw...)
 end
