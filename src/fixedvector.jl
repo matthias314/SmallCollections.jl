@@ -111,20 +111,23 @@ end
 
 for f in (:sum, :prod, :minimum, :maximum)
     ff = Symbol('_', f)
-    @eval function $f(v::AbstractFixedVector; dims = :, kw...)
+    @eval $f(v::AbstractFixedVector; kw...) = $f(identity, v; kw...)
+    @eval function $f(g, v::AbstractFixedVector; dims = :, kw...)
         if dims isa Colon
-            $f(v.t; kw...)
+            $f(g, Tuple(v); kw...)
         else
-            invoke($f, Tuple{typeof(identity),AbstractVector}, identity, v; dims, kw...)
+            invoke($f, Tuple{typeof(g),AbstractVector}, g, v; dims, kw...)
         end
     end
 end
 
-function extrema(v::AbstractFixedVector; init::Union{Missing,Tuple{Any,Any}} = missing)
+extrema(v::AbstractFixedVector; kw...) = extrema(identity, v; kw...)
+
+function extrema(g, v::AbstractFixedVector; init::Union{Missing,Tuple{Any,Any}} = missing)
     if init === missing
-        (minimum(v), maximum(v))
+        (minimum(g, v), maximum(g, v))
     else
-        (minimum(v; init = init[1]), maximum(v; init = init[2]))
+        (minimum(g, v; init = init[1]), maximum(g, v; init = init[2]))
     end
 end
 
