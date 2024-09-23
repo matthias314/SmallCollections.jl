@@ -2,7 +2,7 @@
 # small vectors
 #
 
-export SmallVector, sum_fast
+export AbstractSmallVector, SmallVector, sum_fast
 
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
@@ -10,7 +10,16 @@ import Base: ==, Tuple, empty,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 """
-    SmallVector{N,T} <: AbstractCapacityVector{T}
+    AbstractSmallVector{N,T} <: AbstractVector{T}
+
+`AbstractSmallVector{N,T}` is the supertype of `SmallVector{N,T}` and `MutableSmallVector{N,T}`.
+
+See also [`SmallVector{N,T}`](@ref), [`MutableSmallVector{N,T}`](@ref).
+"""
+abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
+
+"""
+    SmallVector{N,T} <: AbstractSmallVector{N,T}
 
     SmallVector{N,T}()
     SmallVector{N,T}(iter)
@@ -59,36 +68,36 @@ julia> v+w
  10.0
 ```
 """
-struct SmallVector{N,T} <: AbstractCapacityVector{T}
+struct SmallVector{N,T} <: AbstractSmallVector{N,T}
     b::Values{N,T}
     n::Int
 end
 
-capacity(::Type{<:SmallVector{N}}) where N = N
+capacity(::Type{<:AbstractSmallVector{N}}) where N = N
 
-function Base.FastMath.eq_fast(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where
+function Base.FastMath.eq_fast(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where
         {N1, T1<:Union{FastInteger,FastFloat}, N2, T2<:Union{FastInteger,FastFloat}}
     length(v) == length(w) && iszero(padded_sub(v.b, w.b))
 end
 
-function ==(v::SmallVector{N1}, w::SmallVector{N2}) where {N1,N2}
+function ==(v::AbstractSmallVector{N1}, w::AbstractSmallVector{N2}) where {N1,N2}
     N = min(N1, N2)
     length(v) == length(w) && all(ntuple(i -> v.b[i] == w.b[i], Val(N)))
 end
 
-==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastInteger} = @fastmath v == w
+==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastInteger} = @fastmath v == w
 
-==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastFloat} = @fastmath v == w
+==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastFloat} = @fastmath v == w
 
-==(v::SmallVector{N1,T1}, w::SmallVector{N2,T2}) where {N1,T1<:FastFloat,N2,T2<:FastInteger} = @fastmath v == w
+==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastFloat,N2,T2<:FastInteger} = @fastmath v == w
 
 """
-    fasthash(v::SmallVector [, h0::UInt]) -> UInt
+    fasthash(v::AbstractSmallVector [, h0::UInt]) -> UInt
 
 Return a hash for `v` that may be computed faster than the standard `hash`
-for vectors. This new hash is consistent across all `SmallVector`s
+for vectors. This new hash is consistent across all `AbstractSmallVector`s
 of the same element type, but it may not be compatible with `hash` or
-with `fasthash` for a `SmallVector` having a different element type.
+with `fasthash` for a `AbstractSmallVector` having a different element type.
 
 Currently, `fasthash` differs from `hash` only if the element type of `v`
 is a bit integer type with at most 32 bits, `Bool` or `Char`.
@@ -112,9 +121,9 @@ julia> w = SmallVector{8,Int16}(v); fasthash(v) == fasthash(w)
 false
 ```
 """
-fasthash(v::SmallVector, h0::UInt)
+fasthash(v::AbstractSmallVector, h0::UInt)
 
-function fasthash(v::SmallVector{N,T}, h0::UInt) where {N,T}
+function fasthash(v::AbstractSmallVector{N,T}, h0::UInt) where {N,T}
     if (T <: BitInteger && bitsize(T) <= 32) || T == Bool || T == Char
         Base.hash_integer(bits(v.b), hash(length(v), h0))
     else
@@ -122,36 +131,36 @@ function fasthash(v::SmallVector{N,T}, h0::UInt) where {N,T}
     end
 end
 
-convert(::Type{V}, v::AbstractVector) where {N, V <: SmallVector{N}} = V(v)
+convert(::Type{V}, v::AbstractVector) where {N, V <: AbstractSmallVector{N}} = V(v)
 
-Tuple(v::SmallVector) = ntuple(i -> v[i], length(v))
+Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 # this seems to be fast for length(v) <= 10
 
-length(v::SmallVector) = v.n
+length(v::AbstractSmallVector) = v.n
 
-size(v::SmallVector) = (length(v),)
+size(v::AbstractSmallVector) = (length(v),)
 
-rest(v::SmallVector, (r, i) = (Base.OneTo(length(v)), 0)) = @inbounds v[i+1:last(r)]
+rest(v::AbstractSmallVector, (r, i) = (Base.OneTo(length(v)), 0)) = @inbounds v[i+1:last(r)]
 
 if VERSION >= v"1.9"
-    @inline function split_rest(v::SmallVector, n::Int, (r, i) = (Base.OneTo(length(v)), 0))
+    @inline function split_rest(v::AbstractSmallVector, n::Int, (r, i) = (Base.OneTo(length(v)), 0))
         m = length(r)-n
         @boundscheck (n >= 0 && m >= i) || error("impossible number of elements requested")
         @inbounds v[i+1:m], v[m+1:end]
     end
 end
 
-@inline function getindex(v::SmallVector, i::Int)
+@inline function getindex(v::AbstractSmallVector, i::Int)
     @boundscheck checkbounds(v, i)
     @inbounds v.b[i]
 end
 
 #=
-@propagate_inbounds getindex(v::V, ii::AbstractVector{<:Integer}) where V <: SmallVector =
+@propagate_inbounds getindex(v::V, ii::AbstractVector{<:Integer}) where V <: AbstractSmallVector =
     V(v[i] for i in ii)
 =#
 
-@inline function getindex(v::SmallVector{N,T}, ii::AbstractVector{<:Integer}) where {N,T}
+@inline function getindex(v::AbstractSmallVector{N,T}, ii::AbstractVector{<:Integer}) where {N,T}
     n = length(ii)
     @boundscheck begin
         n <= N || error("vector cannot have more than $N elements")
@@ -163,12 +172,12 @@ end
     SmallVector(Values{N,T}(t), n)
 end
 
-@inline function setindex(v::SmallVector, x, i::Integer)
+@inline function setindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds _setindex(v.b, x, i)), length(v))
 end
 
-@inline function addindex(v::SmallVector, x, i::Integer)
+@inline function addindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     @inbounds v + setindex(zero(v), x, i)
 end
@@ -250,25 +259,25 @@ function SmallVector{N}(v::V) where {N, V <: Tuple}
     SmallVector{N,T}(v)
 end
 
-+(v::SmallVector) = v
++(v::AbstractSmallVector) = v
 
-@inline function +(v::SmallVector, w::SmallVector)
+@inline function +(v::AbstractSmallVector, w::AbstractSmallVector)
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
     SmallVector(padded_add(v.b, w.b), length(v))
 end
 
--(v::SmallVector) = SmallVector(-v.b, length(v))
+-(v::AbstractSmallVector) = SmallVector(-v.b, length(v))
 
-@inline function -(v::SmallVector, w::SmallVector)
+@inline function -(v::AbstractSmallVector, w::AbstractSmallVector)
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
     SmallVector(padded_sub(v.b, w.b), length(v))
 end
 
-Base.FastMath.mul_fast(c, v::SmallVector) = SmallVector(c*v.b, length(v))
+Base.FastMath.mul_fast(c, v::AbstractSmallVector) = SmallVector(c*v.b, length(v))
 
-*(c::Integer, v::SmallVector{N}) where N = @fastmath c*v
+*(c::Integer, v::AbstractSmallVector{N}) where N = @fastmath c*v
 
-function *(c::Number, v::SmallVector{N}) where N
+function *(c::Number, v::AbstractSmallVector{N}) where N
 # multiplication by Inf and NaN does not preserve zero padding
     c0 = zero(c)
     n = length(v)
@@ -276,9 +285,9 @@ function *(c::Number, v::SmallVector{N}) where N
     SmallVector(Values{N}(t), n)
 end
 
-*(v::SmallVector, c::Number) = c*v
+*(v::AbstractSmallVector, c::Number) = c*v
 
-function sum(v::SmallVector{N,T}) where {N,T}
+function sum(v::AbstractSmallVector{N,T}) where {N,T}
     if T <: Base.BitSignedSmall
         sum(Int, v.b)
     elseif T <: Base.BitUnsignedSmall
@@ -297,7 +306,7 @@ function sum(v::SmallVector{N,T}) where {N,T}
 end
 
 """
-    sum_fast(v::SmallVector{N,T}) where {N,T}
+    sum_fast(v::AbstractSmallVector{N,T}) where {N,T}
 
 Return the sum of the elements of `v` using `@fastmath` arithmetic
 if `T` is `Float32` or `Float64`. Otherwise return `sum(v)`.
@@ -315,10 +324,10 @@ julia> sum(v), sum_fast(v)
 (-0.0, 0.0)
 ```
 """
-sum_fast(v::SmallVector) = sum(v)
-sum_fast(v::SmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b)
+sum_fast(v::AbstractSmallVector) = sum(v)
+sum_fast(v::AbstractSmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b)
 
-function prod(v::SmallVector{N,T}) where {N,T}
+function prod(v::AbstractSmallVector{N,T}) where {N,T}
     if T <: Base.BitInteger
         b = padtail(v.b, length(v), one(T))
         if T <: Base.BitSignedSmall
@@ -339,7 +348,7 @@ function prod(v::SmallVector{N,T}) where {N,T}
     end
 end
 
-function maximum(v::SmallVector{N,T}; init = missing) where {N,T}
+function maximum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     if isempty(v)
         if init === missing
             error("collection must be non-empty unless `init` is given")
@@ -355,7 +364,7 @@ function maximum(v::SmallVector{N,T}; init = missing) where {N,T}
     end
 end
 
-function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
+function minimum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     if isempty(v)
         if init === missing
             error("collection must be non-empty unless `init` is given")
@@ -369,38 +378,38 @@ function minimum(v::SmallVector{N,T}; init = missing) where {N,T}
     end
 end
 
-extrema(v::SmallVector; init::Tuple{Any,Any} = (missing, missing)) =
+extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
-@propagate_inbounds push(v::SmallVector, xs...) = append(v, xs)
+@propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
 # TODO: needed?
-@inline function push(v::SmallVector{N}, x) where N
+@inline function push(v::AbstractSmallVector{N}, x) where N
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
     @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
 end
 
-@inline function pop(v::SmallVector{N,T}) where {N,T}
+@inline function pop(v::AbstractSmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
     @inbounds SmallVector(_setindex(v.b, default(T), n), n-1), v[n]
 end
 
-@inline function pushfirst(v::SmallVector{N}, xs...) where N
+@inline function pushfirst(v::AbstractSmallVector{N}, xs...) where N
     n = length(xs)+length(v)
     @boundscheck n <= N || error("vector cannot have more $N elements")
     SmallVector(pushfirst(v.b, xs...), n)
 end
 
-@inline function popfirst(v::SmallVector)
+@inline function popfirst(v::AbstractSmallVector)
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
     c, x = popfirst(v.b)
     SmallVector(c, n-1), x
 end
 
-@inline function insert(v::SmallVector{N}, i::Integer, x) where N
+@inline function insert(v::AbstractSmallVector{N}, i::Integer, x) where N
     n = length(v)
     @boundscheck begin
         1 <= i <= n+1 || throw(BoundsError(v, i))
@@ -409,7 +418,7 @@ end
     @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
 
-@inline function duplicate(v::SmallVector{N,T}, i::Integer) where {N,T}
+@inline function duplicate(v::AbstractSmallVector{N,T}, i::Integer) where {N,T}
     @boundscheck begin
         checkbounds(v, i)
         length(v) < N || error("vector cannot have more than $N elements")
@@ -420,20 +429,20 @@ end
     SmallVector(Values{N,T}(t), length(v)+1)
 end
 
-@propagate_inbounds deleteat(v::SmallVector, i::Integer) = first(popat(v, i))
+@propagate_inbounds deleteat(v::AbstractSmallVector, i::Integer) = first(popat(v, i))
 
-@inline function popat(v::SmallVector, i::Integer)
+@inline function popat(v::AbstractSmallVector, i::Integer)
     n = length(v)
     @boundscheck checkbounds(v, i)
     c, x = @inbounds popat(v.b, i)
     SmallVector(c, n-1), x
 end
 
-@propagate_inbounds append(v::SmallVector, ws...) = foldl(append, ws; init = v)
+@propagate_inbounds append(v::AbstractSmallVector, ws...) = foldl(append, ws; init = v)
 
-@propagate_inbounds append(v::SmallVector, w) = foldl(push, w; init = v)
+@propagate_inbounds append(v::AbstractSmallVector, w) = foldl(push, w; init = v)
 
-@inline function append(v::SmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+@inline function append(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     m = n+length(w)
     @boundscheck m <= N || error("vector cannot have more than $N elements")
@@ -443,23 +452,23 @@ end
     SmallVector{N,T}(Values{N,T}(t), m)
 end
 
-@propagate_inbounds function prepend(v::SmallVector, ws...)
+@propagate_inbounds function prepend(v::AbstractSmallVector, ws...)
     foldr((w, v) -> prepend(v, w), ws; init = v)
 end
 
-@inline function prepend(v::SmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+@inline function prepend(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     m = n+length(w)
     @boundscheck m <= N || error("vector cannot have more than $N elements")
     SmallVector{N,T}(prepend(v.b, w), m)
 end
 
-prepend(v::SmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
+prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
-support(v::SmallVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v.b)))
+support(v::AbstractSmallVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v.b)))
 
 """
-    map(f, v::SmallVector...) -> SmallVector
+    map(f, v::AbstractSmallVector...) -> SmallVector
 
 Apply `f` to the argument vectors elementwise and stop when one of them is exhausted.
 Note that the capacity of the resulting `SmallVector` is the minimum of the argument
@@ -483,17 +492,17 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
  "cz"
 ```
 """
-function map(f::F, vs::Vararg{SmallVector,M}) where {F,M}
+function map(f::F, vs::Vararg{AbstractSmallVector,M}) where {F,M}
     n = minimum(length, vs)
     _map(f, n, vs...)
 end
 
-function map_fast(f::F, n, vs::Vararg{SmallVector{N},M}) where {F,N,M}
+function map_fast(f::F, n, vs::Vararg{AbstractSmallVector{N},M}) where {F,N,M}
     bs = map(v -> v.b, vs)
     SmallVector(map(f, bs...), n)
 end
 
-function map_fast_pad(f::F, n, vs::Vararg{SmallVector{N},M}) where {F,N,M}
+function map_fast_pad(f::F, n, vs::Vararg{AbstractSmallVector{N},M}) where {F,N,M}
     bs = map(v -> v.b, vs)
     b = map(f, bs...)
     SmallVector(padtail(b, n), n)
@@ -509,19 +518,19 @@ import Base.Broadcast: BroadcastStyle
 """
     $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
 
-The broadcasting style used for `SmallVector`.
+The broadcasting style used for `AbstractSmallVector`.
 
 See also [`SmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
 """
 struct SmallVectorStyle <: AbstractArrayStyle{1} end
 
-BroadcastStyle(::Type{<:SmallVector}) = SmallVectorStyle()
+BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
 
 function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
-    i = findfirst(x -> x isa SmallVector, bcflat.args)
+    i = findfirst(x -> x isa AbstractSmallVector, bcflat.args)
     n = length(bcflat.args[i])
     _map(bcflat.f, n, bcflat.args...)
 end
@@ -529,10 +538,10 @@ end
 _eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
 _eltype(x::T) where T = T
 
-_capacity(v::SmallVector) = capacity(v)
+_capacity(v::AbstractSmallVector) = capacity(v)
 _capacity(_) = typemax(Int)
 
-_getindex(v::SmallVector, i) = @inbounds v.b[i]
+_getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
 _getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
 _getindex(x, i) = x
 
@@ -551,7 +560,7 @@ function _map(f::F, n, vs::Vararg{Any,M}) where {F,M}
     else
         VT = map(vs) do v
             T = typeof(v)
-            T <: SmallVector ? AbstractVector{eltype(T)} : T
+            T <: AbstractSmallVector ? AbstractVector{eltype(T)} : T
         end
         w = invoke(map, Tuple{F,VT...}, f, vs...)
         SmallVector{N}(w)
@@ -560,16 +569,16 @@ end
 
 _map(f::Union{typeof.(
         (&, round, floor, ceil, trunc, abs, abs2, sign, sqrt)
-    )...}, n, vs::SmallVector{N}...) where N = map_fast(f, n, vs...)
+    )...}, n, vs::AbstractSmallVector{N}...) where N = map_fast(f, n, vs...)
 
-_map(::typeof(*), n, vs::SmallVector{N,<:Integer}...) where N = map_fast(*, n, vs...)
-_map(::typeof(signbit), n, v::SmallVector{N,<:Integer}) where N = map_fast(signbit, n, v)
+_map(::typeof(*), n, vs::AbstractSmallVector{N,<:Integer}...) where N = map_fast(*, n, vs...)
+_map(::typeof(signbit), n, v::AbstractSmallVector{N,<:Integer}) where N = map_fast(signbit, n, v)
 
 _map(f::Union{typeof.(
         (+, -, *, ~, |, xor, nand, nor, ==, !=, <, >, <=, >=, ===, isequal, signbit)
-    )...}, n, vs::SmallVector{N}...) where N = map_fast_pad(f, n, vs...)
+    )...}, n, vs::AbstractSmallVector{N}...) where N = map_fast_pad(f, n, vs...)
 
 _map(::typeof(/), n,
-        v::SmallVector{N,<:Union{Integer,AbstractFloat}},
-        w::SmallVector{N,<:Union{Integer,AbstractFloat}}) where N =
+        v::AbstractSmallVector{N,<:Union{Integer,AbstractFloat}},
+        w::AbstractSmallVector{N,<:Union{Integer,AbstractFloat}}) where N =
     map_fast_pad(/, n, v, w)
