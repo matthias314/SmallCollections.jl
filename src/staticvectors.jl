@@ -3,8 +3,11 @@
 #
 
 using Base: BitInteger, @assume_effects
+import Base: setindex
 
-@inline function _setindex(v::Values{N,T}, x, i::Integer) where {N,T}
+export setindex
+
+@inline function setindex(v::Values{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
     t = ntuple(Val(N)) do j
         ifelse(j == i, convert(T, x), v[j])
