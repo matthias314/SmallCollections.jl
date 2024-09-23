@@ -179,7 +179,7 @@ end
 
 @inline function setindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
-    SmallVector((@inbounds _setindex(v.b, x, i)), length(v))
+    SmallVector((@inbounds setindex(v.b, x, i)), length(v))
 end
 
 @inline function addindex(v::AbstractSmallVector, x, i::Integer)
@@ -226,7 +226,7 @@ function SmallVector{N,T}(iter) where {N,T}
     n = 0
     for (i, x) in enumerate(iter)
         (n = i) <= N || error("vector cannot have more than $N elements")
-        b = @inbounds _setindex(b, x, i)
+        b = @inbounds setindex(b, x, i)
     end
     SmallVector{N,T}(b, n)
 end
@@ -372,13 +372,13 @@ end
 @inline function push(v::AbstractSmallVector{N}, x) where N
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
-    @inbounds SmallVector(_setindex(v.b, x, n+1), n+1)
+    @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
 end
 
 @inline function pop(v::AbstractSmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
-    @inbounds SmallVector(_setindex(v.b, default(T), n), n-1), v[n]
+    @inbounds SmallVector(setindex(v.b, default(T), n), n-1), v[n]
 end
 
 @inline function pushfirst(v::AbstractSmallVector{N}, xs...) where N
