@@ -289,7 +289,7 @@ end
     @inbounds V(@inbounds(v[i]) for i in ii)
 end
 
-@inline function setindex(v::PackedVector{U,M,T}, x, i::Int) where {U,M,T}
+@inline function setindex(v::PackedVector{U,M,T}, x, i::Integer) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
         checkbounds(v, i)
