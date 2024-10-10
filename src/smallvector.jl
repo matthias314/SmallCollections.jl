@@ -9,6 +9,8 @@ import Base: ==, Tuple, empty,
     zero, map,
     +, -, *, sum, prod, maximum, minimum, extrema
 
+import Base.FastMath: mul_fast
+
 """
     AbstractSmallVector{N,T} <: AbstractVector{T}
 
@@ -189,13 +191,13 @@ Return an empty `SmallVector` with the same capacity as `v` and element type `U`
 
 See also [`empty(v::AbstractCapacityVector)`](@ref).
 """
-empty(v::SmallVector, ::Type)
+empty(v::AbstractSmallVector, ::Type)
 
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
 
-default(::Type{SmallVector{N,T}}) where {N,T} = SmallVector{N,T}()
+default(::Type{V}) where V <: AbstractSmallVector = V()
 
-zero(v::SmallVector) = SmallVector(zero(v.b), length(v))
+@inline zero(v::V) where V <: AbstractSmallVector = V(zero(v.b), length(v))
 
 function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     n <= N || error("vector cannot have more than $N elements")
@@ -210,9 +212,9 @@ function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
     SmallVector{N,T}(Values{N,T}(t), n)
 end
 
-SmallVector{N,T}() where {N,T} = SmallVector{N,T}(default(Values{N,T}), 0)
+(::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(Values{N,T}), 0)
 
-function SmallVector{N,T}(v::SmallVector{M}) where {N,T,M}
+function SmallVector{N,T}(v::AbstractSmallVector{M}) where {N,T,M}
     M <= N || length(v) <= N || error("vector cannot have more than $N elements")
     t = ntuple(i -> i <= M ? convert(T, v.b[i]) : default(T), Val(N))
     SmallVector{N,T}(t, length(v))
@@ -273,7 +275,8 @@ end
     SmallVector(padded_sub(v.b, w.b), length(v))
 end
 
-Base.FastMath.mul_fast(c, v::AbstractSmallVector) = SmallVector(c*v.b, length(v))
+@inline mul_fast(c::Number, v::AbstractSmallVector) = SmallVector(c*v.b, length(v))
+mul_fast(v::AbstractSmallVector, c::Number) = mul_fast(c, v)
 
 *(c::Integer, v::AbstractSmallVector{N}) where N = @fastmath c*v
 
