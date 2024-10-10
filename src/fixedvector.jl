@@ -6,20 +6,23 @@ import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     sum, prod, minimum, maximum, extrema, count, any, all, in, reverse,
     mapfoldl, mapfoldr, vcat, copy, copyto!, convert,
-    strides, elsize, unsafe_convert
+    strides, elsize, unsafe_convert, muladd
 
 abstract type AbstractFixedVector{N,T} <: AbstractVector{T} end
 
 struct FixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
-    FixedVector{N,T}(t::NTuple{N,T}) where {N,T} = new{N,T}(t)
+    FixedVector{N,T}(t::NTuple{N}) where {N,T} = new{N,T}(t)
 end
 
 mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
-    MutableFixedVector{N,T}(t::NTuple{N,T}) where {N,T} = new{N,T}(t)
+    MutableFixedVector{N,T}(t::NTuple{N}) where {N,T} = new{N,T}(t)
     MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
+
+(::Type{V})(v::AbstractFixedVector{N}) where {N,T,V<:AbstractFixedVector{N,T}} = V(v.t)
+# to avoid (possibly allocating) NTuple in other constructor
 
 function (::Type{V})(t) where {N,T,V<:AbstractFixedVector{N,T}}
     isconcretetype(V) || error("constructor type must be concrete")
@@ -80,11 +83,11 @@ iterate(v::AbstractFixedVector, state...) = iterate(v.t, state...)
 zero(::Type{V}) where {N,T,V<:AbstractFixedVector{N,T}} = V(ntuple(Returns(zero(T)), Val(N)))
 zero(::V) where V <: AbstractFixedVector = zero(V)
 
--(v::AbstractFixedVector) = FixedVector(.- v.t)
+@inline -(v::AbstractFixedVector) = FixedVector(.- v.t)
 
-+(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .+ w.t)
+@inline +(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .+ w.t)
 
--(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .- w.t)
+@inline -(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .- w.t)
 
 #=
 function +(v::AbstractFixedVector{N,T1}, w::AbstractFixedVector{N,T2}) where {N,T1,T2}
@@ -98,8 +101,13 @@ function -(v::AbstractFixedVector{N,T1}, w::AbstractFixedVector{N,T2}) where {N,
 end
 =#
 
-*(c::Number, v::AbstractFixedVector) = FixedVector(c .* v.t)
+@inline *(c::Number, v::AbstractFixedVector) = FixedVector(c .* v.t)
 *(v::AbstractFixedVector, c::Number) = c*v
+
+@inline muladd(c::Number, v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N =
+    FixedVector(muladd.(c, Tuple(v), Tuple(w)))
+
+muladd(v::AbstractFixedVector{N}, c::Number, w::AbstractFixedVector{N}) where N = muladd(c, v, w)
 
 function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
     FixedVector(map(f, map(Tuple, vs)...))
