@@ -6,7 +6,7 @@ export AbstractSmallVector, SmallVector, sum_fast
 
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
-    zero, map,
+    zero, map, reverse,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 import Base.FastMath: mul_fast
@@ -384,6 +384,12 @@ end
 
 extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     (minimum(v; init = init[1]), maximum(v; init = init[2]))
+
+@inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
+    @boundscheck checkbounds(v, start:stop)
+    @inbounds b = reverse(v.b, start, stop)
+    SmallVector(b, length(v))
+end
 
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
