@@ -132,6 +132,31 @@ end
     end
 end
 
+@testset "SmallVector reverse" begin
+    for N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        u = rand(T, m)
+        v = @inferred SmallVector{N,T}(u)
+        for i in 0:m+2
+            if 1 <= i <= m+1
+                @test_inferred reverse(v, i) reverse(u, i) v
+            elseif isempty(i:m)
+                @test_inferred reverse(v, i) v
+            else
+                @test_throws Exception reverse(v, i)
+            end
+            for j in i-2:m+1
+                if 1 <= i <= m+1 && i-1 <= j <= m
+                    @test_inferred reverse(v, i, j) reverse(u, i, j) v
+                elseif isempty(i:j)
+                    @test_inferred reverse(v, i, j) v
+                else
+                    @test_throws Exception reverse(v, i, j)
+                end
+            end
+        end
+    end
+end
+
 @testset "SmallVector push/pop" begin
     for N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
