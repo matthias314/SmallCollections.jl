@@ -72,6 +72,15 @@ IndexStyle(::Type{<:AbstractFixedVector}) = IndexLinear()
 
 @propagate_inbounds getindex(v::AbstractFixedVector, i::Int) = v.t[i]
 
+@inline function unsafe_getindex(v::MutableFixedVector, i::Int)
+    GC.@preserve v unsafe_load(pointer(v, i))
+end
+
+@inline function getindex(v::MutableFixedVector{N,T}, i::Int) where {N,T}
+    @boundscheck checkbounds(v, i)
+    isbits(T) ? unsafe_getindex(v, i) : @inbounds v.t[i]
+end
+
 @propagate_inbounds function setindex!(v::MutableFixedVector{N,T}, x, i::Int) where {N,T}
     @boundscheck checkbounds(v, i)
     isbitstype(T) || error("setindex! is only supported for isbits element types, not for $T")
