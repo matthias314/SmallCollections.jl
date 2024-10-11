@@ -12,12 +12,12 @@ abstract type AbstractFixedVector{N,T} <: AbstractVector{T} end
 
 struct FixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
-    FixedVector{N,T}(t::NTuple{N}) where {N,T} = new{N,T}(t)
+    FixedVector{N,T}(t::NTuple{N,Any}) where {N,T} = new{N,T}(t)
 end
 
 mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
-    MutableFixedVector{N,T}(t::NTuple{N}) where {N,T} = new{N,T}(t)
+    MutableFixedVector{N,T}(t::NTuple{N,Any}) where {N,T} = new{N,T}(t)
     MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
 
