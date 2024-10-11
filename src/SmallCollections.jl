@@ -34,9 +34,6 @@ const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigne
 const FastInteger = Union{BitInteger,Complex{<:BitInteger}}
 const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
 
-include("fixedvector.jl")
-include("staticvectors.jl")
-
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
@@ -45,6 +42,10 @@ fasthash(x) = fasthash(x, UInt(0))
 
 include("bits.jl")
 include("smallbitset.jl")
+
+include("fixedvector.jl")
+include("staticvectors.jl")
+
 include("abstractsmallvector.jl")
 include("smallvector.jl")
 include("packedvector.jl")
