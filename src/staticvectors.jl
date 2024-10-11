@@ -15,8 +15,6 @@ export setindex
     Values{N,T}(t)
 end
 
-@propagate_inbounds _reverse(v::Values{N,T}, inds...) where {N,T} = Values(reverse(v, inds...))
-
 function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
     t = ntuple(Val(N)) do j
         ifelse(j <= i, v[j], convert(T, x))

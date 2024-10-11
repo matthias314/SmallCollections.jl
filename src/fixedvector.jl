@@ -195,7 +195,13 @@ all(f::Function, v::AbstractFixedVector; kw...) = !any(!f, v; kw...)
 
 in(x, v::AbstractFixedVector) = any(==(x), v)
 
-reverse(v::AbstractFixedVector{N,T}) where {N,T} = AbstractFixedVector{N,T}(reverse(v.t))
+@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
+    @boundscheck checkbounds(v, start:stop)
+    t = ntuple(Val(N)) do i
+        @inbounds v.t[start <= i <= stop ? start+stop-i : i]
+    end
+    FixedVector{N,T}(t)
+end
 
 vcat(v::AbstractFixedVector) = v
 

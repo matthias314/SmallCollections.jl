@@ -362,7 +362,7 @@ extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
 
 @inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
     @boundscheck checkbounds(v, start:stop)
-    @inbounds b = _reverse(v.b, start, stop)
+    @inbounds b = reverse(v.b, start, stop)
     SmallVector(b, length(v))
 end
 
