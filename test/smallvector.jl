@@ -137,9 +137,7 @@ end
         u = rand(T, m)
         v = @inferred SmallVector{N,T}(u)
         for i in 0:m+2
-            if i == 0 || i == m+2 || !isbitstype(T)
-                @test_broken reverse(v, i) == reverse(u, i)
-            elseif 1 <= i <= m+1
+            if 1 <= i <= m+1
                 @test_inferred reverse(v, i) reverse(u, i) v
             elseif isempty(i:m)
                 @test_inferred reverse(v, i) v
@@ -147,9 +145,7 @@ end
                 @test_throws Exception reverse(v, i)
             end
             for j in i-2:m+1
-                if i < 1 || i > m+1 || j < 0 ||j > m || !isbitstype(T)
-                    @test_broken reverse(v, i, j) == reverse(u, i, j)
-                elseif 1 <= i <= m+1 && i-1 <= j <= m
+                if 1 <= i <= m+1 && i-1 <= j <= m
                     @test_inferred reverse(v, i, j) reverse(u, i, j) v
                 elseif isempty(i:j)
                     @test_inferred reverse(v, i, j) v
