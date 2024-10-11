@@ -133,7 +133,8 @@ function fasthash(v::AbstractSmallVector{N,T}, h0::UInt) where {N,T}
     end
 end
 
-convert(::Type{V}, v::AbstractVector) where {N, V <: AbstractSmallVector{N}} = V(v)
+convert(::Type{V}, v::V) where V <: AbstractSmallVector = v
+convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractSmallVector = V(v)
 
 Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 # this seems to be fast for length(v) <= 10
