@@ -48,7 +48,8 @@ function (::Type{V})(t) where {V<:AbstractFixedVector}
     end
 end
 
-convert(::Type{V}, v) where V <: AbstractFixedVector = V(v)
+convert(::Type{V}, v::V) where V <: AbstractFixedVector = v
+convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractFixedVector = V(v)
 
 copy(v::V) where V <: AbstractFixedVector = V(v)
 
