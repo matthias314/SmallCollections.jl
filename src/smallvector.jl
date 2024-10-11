@@ -450,7 +450,8 @@ end
 
 prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
-support(v::AbstractSmallVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v.b)))
+support(v::AbstractSmallVector) = support(v.b)
+# here we assume that the padding is via zeros
 
 """
     map(f, v::AbstractSmallVector...) -> SmallVector

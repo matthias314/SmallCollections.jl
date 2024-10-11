@@ -374,6 +374,8 @@ end
 
 =#
 
+support(v::AbstractFixedVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v)))
+
 #
 # broadcast
 #
