@@ -11,6 +11,13 @@ import Base: ==, Tuple, empty,
 
 import Base.FastMath: mul_fast
 
+"""
+    AbstractSmallVector{N,T} <: AbstractVector{T}
+
+`AbstractSmallVector{N,T}` is the supertype of `SmallVector{N,T}` and `MutableSmallVector{N,T}`.
+
+See also [`SmallVector{N,T}`](@ref), [`MutableSmallVector{N,T}`](@ref).
+"""
 abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
 
 """
