@@ -215,6 +215,8 @@ end
 
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(Values{N,T}), 0)
 
+(::Type{V})(v::AbstractSmallVector{N}) where {N,T,V<:AbstractSmallVector{N,T}} = V(v.b, v.n)
+
 function SmallVector{N,T}(v::AbstractSmallVector{M}) where {N,T,M}
     M <= N || length(v) <= N || error("vector cannot have more than $N elements")
     t = ntuple(i -> i <= M ? convert(T, v.b[i]) : default(T), Val(N))
@@ -248,18 +250,15 @@ function SmallVector{N,T}(iter) where {N,T}
     SmallVector(b, n)
 end
 
-function SmallVector{N}(iter::I) where {N,I}
-    if Base.IteratorEltype(I) isa Base.HasEltype
-        T = eltype(iter)
-        SmallVector{N,T}(iter)
+function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
+    if I <: Tuple
+        T = promote_type(fieldtypes(I)...)
+    elseif Base.IteratorEltype(I) isa Base.HasEltype
+        T = eltype(I)
     else
         error("cannot determine element type")
     end
-end
-
-function SmallVector{N}(v::V) where {N, V <: Tuple}
-    T = promote_type(fieldtypes(V)...)
-    SmallVector{N,T}(v)
+    V{T}(iter)
 end
 
 +(v::AbstractSmallVector) = v
