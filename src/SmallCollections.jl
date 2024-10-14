@@ -1,9 +1,10 @@
 """
     $(@__MODULE__)
 
-This packages provides several immutable collections that don't allocate
-and are therefore faster than the usual types. The number of elements
-that these collections can hold is necessarily limited. At present
+This packages provides several mutable and immutable collections that
+can hold a limited (small) number of elements and are much more efficient
+than `Set` and `Vector`, for example. This applies in particular
+to the immutable variants because they don't allocate. At present
 `SmallBitSet` and subtypes of `AbstractCapacityVector` are defined.
 
 If the package `BangBang.jl` is loaded, then many functions defined by
@@ -46,6 +47,7 @@ include("bits.jl")
 include("smallbitset.jl")
 include("abstractsmallvector.jl")
 include("smallvector.jl")
+include("mutablesmallvector.jl")
 include("packedvector.jl")
 
 if VERSION > v"1.11-alpha"

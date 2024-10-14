@@ -14,6 +14,8 @@ using Base: BitInteger, @assume_effects
     Values{N,T}(t)
 end
 
+@propagate_inbounds _reverse(v::Values{N,T}, inds...) where {N,T} = Values(reverse(v, inds...))
+
 function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
     t = ntuple(Val(N)) do j
         ifelse(j <= i, v[j], convert(T, x))
@@ -68,13 +70,12 @@ end
     $(@__MODULE__).default(::Type{T}) where T -> T
     $(@__MODULE__).default(::T) where T -> T
 
-Return the default value of type `T` used for filling unused elements of a `SmallVector`.
+Return the default value of type `T` used for filling unused elements of an `AbstractSmallVector`.
 This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
 be any value of type `T`.
 
-This function has methods for number types, bits types (including `Char`, `SmallVector`
-and `SmallBitSet` types), `String` and `Symbol`. Methods for other types must be defined
-explicitly.
+This function has methods for number types, bits types (including `Char` and `SmallBitSet` types),
+`String`, `Symbol` and `AbstractSmallVector`. Methods for other types must be defined explicitly.
 
 See also `Base.isbitstype`.
 """

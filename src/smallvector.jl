@@ -16,7 +16,7 @@ import Base.FastMath: mul_fast
 
 `AbstractSmallVector{N,T}` is the supertype of `SmallVector{N,T}` and `MutableSmallVector{N,T}`.
 
-See also [`SmallVector{N,T}`](@ref), [`MutableSmallVector{N,T}`](@ref).
+See also [`SmallVector`](@ref), [`MutableSmallVector`](@ref).
 """
 abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
 
@@ -27,6 +27,7 @@ abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
     SmallVector{N,T}(iter)
     SmallVector{N}(iter)
     SmallVector(v::PackedVector{T})
+    SmallVector(v::AbstractSmallVector)
 
 `SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
@@ -36,8 +37,8 @@ The element type `T` can be omitted when creating the `SmallVector` from an iter
 that has an element type, for example from an `AbstractVector` or a tuple.
 In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
-If the `SmallVector` is created from a `PackedVector` `v` and the parameter `N` is omitted,
-then it is set to capacity of `v`.
+If the `SmallVector` is created from an `AbstractSmallVector` or `PackedVector` `v`
+and the parameter `N` is omitted, then it is set to capacity of `v`.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
 predefined for several types including `Number`. Default values for other types must be defined
@@ -47,7 +48,8 @@ Addition and subtraction of two `SmallVector`s is possible even if the vectors h
 capacity. (Of course, their lengths must agree.) The capacity of the result is the smaller
 of the arguments' capacities in this case.
 
-See also [`capacity`](@ref), [`$(@__MODULE__).default`](@ref), `Base.IteratorEltype`, `promote_type`.
+See also [`MutableSmallVector`](@ref), [`capacity`](@ref), [`$(@__MODULE__).default`](@ref),
+`Base.IteratorEltype`, `promote_type`.
 
 # Examples
 ```jldoctest
@@ -186,9 +188,10 @@ end
 end
 
 """
-    empty(v::SmallVector{N}, S::Type) where {N,S} -> SmallVector{N,S}
+    empty(v::AbstractSmallVector{N}, S::Type) where {N,S} -> AbstractSmallVector{N,S}
 
-Return an empty `SmallVector` with the same capacity as `v` and element type `U`.
+Return an empty `AbstractSmallVector` with the same capacity as `v` and element type `U`.
+The resulting vector is mutable if and only if `v` is so.
 
 See also [`empty(v::AbstractCapacityVector)`](@ref).
 """
@@ -215,39 +218,17 @@ end
 
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(Values{N,T}), 0)
 
-(::Type{V})(v::AbstractSmallVector{N}) where {N,T,V<:AbstractSmallVector{N,T}} = V(v.b, v.n)
-
-function SmallVector{N,T}(v::AbstractSmallVector{M}) where {N,T,M}
-    M <= N || length(v) <= N || error("vector cannot have more than $N elements")
-    t = ntuple(i -> i <= M ? convert(T, v.b[i]) : default(T), Val(N))
-    SmallVector{N,T}(t, length(v))
-end
-
-function SmallVector{N,T}(v::Union{AbstractVector,Tuple}) where {N,T}
-    n = length(v)
-    n <= N || error("vector cannot have more than $N elements")
-    i1 = firstindex(v)
-    t = ntuple(i -> i <= n ? convert(T, @inbounds(v[i+i1-1])) : default(T), Val(N))
-    SmallVector{N,T}(t, n)
-end
-
-function SmallVector{N,T}(g::Base.Generator{<:Union{AbstractVector,Tuple}}) where {N,T}
-    v = g.iter
-    n = length(v)
-    n <= N || error("vector cannot have more than $N elements")
-    i1 = firstindex(v)
-    t = ntuple(i -> i <= n ? convert(T, g.f(@inbounds(v[i+i1-1]))) : default(T), Val(N))
-    SmallVector{N,T}(t, n)
-end
+SmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = SmallVector{N,T}(v.b, v.n)
 
 function SmallVector{N,T}(iter) where {N,T}
+    isbitstype(T) && return SmallVector(MutableSmallVector{N,T}(iter))
     b = default(Values{N,T})
     n = 0
     for (i, x) in enumerate(iter)
         (n = i) <= N || error("vector cannot have more than $N elements")
         b = @inbounds _setindex(b, x, i)
     end
-    SmallVector(b, n)
+    SmallVector{N,T}(b, n)
 end
 
 function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
@@ -386,7 +367,7 @@ extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
 
 @inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
     @boundscheck checkbounds(v, start:stop)
-    @inbounds b = reverse(v.b, start, stop)
+    @inbounds b = _reverse(v.b, start, stop)
     SmallVector(b, length(v))
 end
 
@@ -529,7 +510,7 @@ import Base.Broadcast: BroadcastStyle
 
 The broadcasting style used for `AbstractSmallVector`.
 
-See also [`SmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
+See also [`AbstractSmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
 """
 struct SmallVectorStyle <: AbstractArrayStyle{1} end
 

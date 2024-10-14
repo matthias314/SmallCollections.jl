@@ -10,13 +10,18 @@ for f in (:push, :pop, :delete)
     @eval NoBang.$f(v::SmallBitSet, args...) = $f(v, args...)
 end
 
-BangBang.implements(::Mutator, ::Type{<:AbstractCapacityVector}) = false
+const CapacityVector = Union{SmallVector,PackedVector}
+
+BangBang.implements(::Mutator, ::Type{<:CapacityVector}) = false
 
 for f in (:push, :pop, :pushfirst, :popfirst, :deleteat, :append)
-    @eval NoBang.$f(v::AbstractCapacityVector, args...) = $f(v, args...)
+    @eval NoBang.$f(v::CapacityVector, args...) = $f(v, args...)
 end
 
-BangBang.NoBang._setindex(v::AbstractCapacityVector, args...) = setindex(v, args...)
-BangBang.add!!(v::AbstractCapacityVector, w::AbstractVector) = v+w
+BangBang.NoBang._setindex(v::CapacityVector, args...) = Base.setindex(v, args...)
+# otherwise a Vector is returned
+
+BangBang.add!!(v::CapacityVector, w::AbstractVector) = v+w
+# faster than without this line
 
 end # module
