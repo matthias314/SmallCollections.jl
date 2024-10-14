@@ -14,16 +14,16 @@ import Base: ==, Tuple, empty,
 
     SmallVector{N,T}()
     SmallVector{N,T}(iter)
-    SmallVector{N}(v::AbstractVector{T})
-    SmallVector{N}(t::Tuple)
+    SmallVector{N}(iter)
     SmallVector(v::PackedVector{T})
 
 `SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
 and hardware float types, one usually takes `N` to be a power of `2`.
 
-The element type `T` can be omitted when creating the `SmallVector` from an `AbstractVector`
-or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
+The element type `T` can be omitted when creating the `SmallVector` from an iterator
+that has an element type, for example from an `AbstractVector` or a tuple.
+In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
 If the `SmallVector` is created from a `PackedVector` `v` and the parameter `N` is omitted,
 then it is set to capacity of `v`.
@@ -36,7 +36,7 @@ Addition and subtraction of two `SmallVector`s is possible even if the vectors h
 capacity. (Of course, their lengths must agree.) The capacity of the result is the smaller
 of the arguments' capacities in this case.
 
-See also [`capacity`](@ref), [`$(@__MODULE__).default`](@ref), `promote_type`.
+See also [`capacity`](@ref), [`$(@__MODULE__).default`](@ref), `Base.IteratorEltype`, `promote_type`.
 
 # Examples
 ```jldoctest
@@ -236,7 +236,14 @@ function SmallVector{N,T}(iter) where {N,T}
     SmallVector(b, n)
 end
 
-SmallVector{N}(v::AbstractVector{T}) where {N,T} = SmallVector{N,T}(v)
+function SmallVector{N}(iter::I) where {N,I}
+    if Base.IteratorEltype(I) isa Base.HasEltype
+        T = eltype(iter)
+        SmallVector{N,T}(iter)
+    else
+        error("cannot determine element type")
+    end
+end
 
 function SmallVector{N}(v::V) where {N, V <: Tuple}
     T = promote_type(fieldtypes(V)...)
