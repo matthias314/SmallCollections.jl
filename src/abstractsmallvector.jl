@@ -12,12 +12,11 @@ import Base: setindex, empty, zeros, ones, filter
     AbstractCapacityVector{T} <: AbstractVector{T}
 
 `AbstractCapacityVector` is the supertype of the vector types provided
-by this module. At present, these are `SmallVector` and `PackedVector`.
-Both are read-only ans can hold a variable number of elements up to
-a predefined maximal capacity. If the element type `T` is concrete,
-then these vector types do not allocate.
+by this module. At present, these are `AbstractSmallVector` and `PackedVector`.
+Both can hold a variable number of elements up to a predefined maximal capacity.
+If the element type `T` is concrete, then the immutable vector types do not allocate.
 
-See also [`SmallVector`](@ref), [`PackedVector`](@ref).
+See also [`AbstractSmallVector`](@ref), [`PackedVector`](@ref).
 """
 abstract type AbstractCapacityVector{T} <: AbstractVector{T} end
 
@@ -57,7 +56,7 @@ See also [`setindex`](@ref).
 
 Return an empty `AbstractCapacityVector` of the same type as `v`.
 
-See also [`empty(v::SmallVector, ::Type)`](@ref),  [`empty(v::PackedVector, ::Type)`](@ref).
+See also [`empty(v::AbstractSmallVector, ::Type)`](@ref),  [`empty(v::PackedVector, ::Type)`](@ref).
 """
 empty(v::AbstractCapacityVector)
 

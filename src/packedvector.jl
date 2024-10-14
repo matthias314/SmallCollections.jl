@@ -14,7 +14,7 @@ export PackedVector, bits
     PackedVector{U,M,T}(iter)
     PackedVector{U,M}(v::AbstractVector{T})
     PackedVector{U,M}(t::Tuple)
-    PackedVector(v::SmallVector{M,T})
+    PackedVector(v::AbstractSmallVector{M,T})
 
 This type of immutable vector stores the elements in a common bit mask of type `U`
 with `M` bits for each entry. The range of allowed values is `-2^(M-1):2^(M-1)-1`
@@ -26,7 +26,7 @@ by `bitsize(U)÷M`.
 The element type `T` can be omitted when creating the `PackedVector` from an `AbstractVector`
 or from a tuple. In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
-If the `PackedVector` is created from a `SmallVector` `v` and the parameters `U` and `M`
+If the `PackedVector` is created from a `AbstractSmallVector` `v` and the parameters `U` and `M`
 are omitted, then `M` is set to `bitsize(T)` and `U` is chosen such that the capacity
 of the resulting vector is at least the capacity of `v`.
 
@@ -109,7 +109,7 @@ function PackedVector{U,M}(v::V) where {U, M, V <: Tuple}
     PackedVector{U,M,T}(v)
 end
 
-@propagate_inbounds function PackedVector{U,M,S}(v::SmallVector{N,T}) where {U,M,S,N, T <: BitInteger}
+@propagate_inbounds function PackedVector{U,M,S}(v::AbstractSmallVector{N,T}) where {U,M,S,N, T <: BitInteger}
     if bitsize(T) == M && (T <: Signed) == (S <: Signed)
         @boundscheck begin
             c = capacity(PackedVector{U,M,S})
@@ -121,7 +121,7 @@ end
     end
 end
 
-function PackedVector(v::SmallVector{N,T}) where {N, T <: BitInteger}
+function PackedVector(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
     m = bits(v.b)
     M = bitsize(T)
     U = typeof(m)
@@ -156,7 +156,7 @@ or with `fasthash` for a `PackedVector` having a different bit size.
 However, using `fasthash` for two `PackedVector`s with the same `M`, but
 both signed and unsigned element types `T` may lead to hash collisions.
 
-See also [`fasthash(::SmallVector, ::UInt)`](@ref), `Base.hash`.
+See also [`fasthash(::AbstractSmallVector, ::UInt)`](@ref), `Base.hash`.
 
 # Examples
 ```jldoctest
