@@ -2,10 +2,11 @@
     $(@__MODULE__)
 
 This packages provides several mutable and immutable collections that
-can hold a limited (small) number of elements and are much more efficient
+can hold a fixed or limited (small) number of elements and are much more efficient
 than `Set` and `Vector`, for example. This applies in particular
 to the immutable variants because they don't allocate. At present
-`SmallBitSet` and subtypes of `AbstractCapacityVector` are defined.
+`SmallBitSet` and subtypes of `AbstractFixedVector` and `AbstractCapacityVector`
+are defined.
 
 If the package `BangBang.jl` is loaded, then many functions defined by
 this package are also available in `!!`-form. For example, `setindex!!`
@@ -14,8 +15,8 @@ with a `SmallVector` as first argument calls [`setindex`](@ref).
 Bounds checking can be skipped for the functions defined in this package
 by using the `@inbounds` macro.
 
-See [`SmallBitSet`](@ref), [`AbstractCapacityVector`](@ref), `Base.@inbounds`,
-[Section "BangBang support"](@ref sec-bangbang).
+See [`SmallBitSet`](@ref), [`AbstractFixedVector`](@ref), [`AbstractCapacityVector`](@ref),
+`Base.@inbounds`, [Section "BangBang support"](@ref sec-bangbang).
 """
 module SmallCollections
 
@@ -80,7 +81,7 @@ include("mutablesmallvector.jl")
 include("packedvector.jl")
 
 if VERSION > v"1.11-alpha"
-    eval(Expr(:public, :default, :bitsize, :SmallVectorStyle))
+    eval(Expr(:public, :default, :bitsize, :FixedVectorStyle, :SmallVectorStyle))
 end
 
 end

@@ -13,7 +13,7 @@ import Base: Tuple, ==, isequal, size,
 
 `AbstractFixedVector{N,T}` is the supertype of `FixedVector{N,T}` and `MutableFixedVector{N,T}`.
 
-See also [`FixedVector{N,T}`](@ref), [`MutableFixedVector{N,T}`](@ref).
+See also [`FixedVector`](@ref), [`MutableFixedVector`](@ref).
 """
 abstract type AbstractFixedVector{N,T} <: AbstractVector{T} end
 
@@ -33,7 +33,7 @@ If the element type `T` or the size `N` are omitted, they are determined from th
 given as argument. Performance degrades if this is not possible at compile time.
 As a rule of thumb, the size should only be omitted for `Tuple` arguments.
 
-See also [`MutableFixedVector{N,T}`](@ref).
+See also [`MutableFixedVector`](@ref).
 """
 struct FixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
@@ -63,7 +63,7 @@ element types.
 
 The special form `MutableFixedVector{N,T}(undef)` returns a non-initialized vector.
 
-See also [`FixedVector{N,T}`](@ref), `Base.isbits`.
+See also [`FixedVector`](@ref), `Base.isbits`.
 """
 mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
@@ -298,6 +298,13 @@ using Base.Broadcast:
 import Base.Broadcast: BroadcastStyle
 import Base: copy, copyto!
 
+"""
+    $(@__MODULE__).FixedVectorStyle <: Broadcast.AbstractArrayStyle{1}
+
+The broadcasting style used for `AbstractFixedVector`.
+
+See also [`AbstractFixedVector`](@ref), `Broadcast.AbstractArrayStyle`.
+"""
 struct FixedVectorStyle <: AbstractArrayStyle{1} end
 
 BroadcastStyle(::Type{<:AbstractFixedVector}) = FixedVectorStyle()
