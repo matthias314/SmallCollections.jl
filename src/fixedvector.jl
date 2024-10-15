@@ -31,9 +31,10 @@ and hardware float types, one usually takes `N` to be a power of `2`.
 
 If the element type `T` or the size `N` are omitted, they are determined from the iterator
 given as argument. Performance degrades if this is not possible at compile time.
+(For tuples, the element type is determined via `promote_type`.)
 As a rule of thumb, the size should only be omitted for `Tuple` arguments.
 
-See also [`MutableFixedVector`](@ref).
+See also [`MutableFixedVector`](@ref), `Base.promote_type`.
 """
 struct FixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
@@ -82,7 +83,7 @@ end
 
 function (::Type{V})(t) where {N,V<:AbstractFixedVector{N}}
     if Base.IteratorEltype(t) isa Base.HasEltype
-        T = eltype(t)
+        T = element_type(t)
         V{T}(t)
     else
         V(NTuple{N}(t))

@@ -232,13 +232,8 @@ function SmallVector{N,T}(iter) where {N,T}
 end
 
 function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
-    if I <: Tuple
-        T = promote_type(fieldtypes(I)...)
-    elseif Base.IteratorEltype(I) isa Base.HasEltype
-        T = eltype(I)
-    else
-        error("cannot determine element type")
-    end
+    Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
+    T = element_type(I)
     V{T}(iter)
 end
 
