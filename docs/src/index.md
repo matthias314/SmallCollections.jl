@@ -16,6 +16,8 @@ SmallCollections
 AbstractFixedVector
 FixedVector
 MutableFixedVector
+setindex(::AbstractFixedVector, ::Any, ::Integer)
+addindex(::AbstractFixedVector, ::Any, ::Integer)
 ```
 
 ## [`AbstractCapacityVector`](@id sec-abstractsmallvector)
@@ -26,8 +28,8 @@ capacity(::Type{<:AbstractCapacityVector})
 empty(::AbstractCapacityVector)
 zeros
 ones
-setindex
-addindex
+setindex(::AbstractCapacityVector, ::Any, i::Integer)
+addindex(::AbstractCapacityVector, ::Any, i::Integer)
 push(::AbstractCapacityVector, ::Vararg)
 pop(::AbstractCapacityVector)
 pushfirst

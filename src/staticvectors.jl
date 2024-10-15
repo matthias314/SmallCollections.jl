@@ -7,13 +7,34 @@ import Base: setindex
 
 export setindex
 
-@inline function setindex(v::Values{N,T}, x, i::Integer) where {N,T}
+"""
+    setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T} -> FixedVector{N,T}
+
+Substitute `x` for the `i`-th component of `v` and return the result. The vector `v` is not modified.
+
+See also `Base.setindex`,  [`addindex`](@ref addindex(::AbstractFixedVector, ::Any, ::Integer)).
+"""
+setindex(::AbstractFixedVector, ::Any, ::Integer)
+
+@inline function setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
     t = ntuple(Val(N)) do j
         ifelse(j == i, convert(T, x), v[j])
     end
-    Values{N,T}(t)
+    FixedVector{N,T}(t)
 end
+
+"""
+    addindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T} -> FixedVector{N,T}
+
+Add `x` to the `i`-th component of `v` and return the result. The vector `v` is not modified.
+
+See also [`setindex`](@ref setindex(::AbstractFixedVector, ::Any, ::Integer)).
+"""
+@propagate_inbounds function addindex(v::AbstractFixedVector, x, i::Integer)
+    v + setindex(zero(v), x, i)
+end
+
 
 function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
     t = ntuple(Val(N)) do j
