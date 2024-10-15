@@ -59,7 +59,7 @@ element types.
 
 The special form `MutableSmallVector{N,T}(undef, n)` returns a non-initialized vector of length `n`.
 
-See also [`SmallVector`](@ref).
+See also [`SmallVector`](@ref), `Base.isbitstype`.
 """
 mutable struct MutableSmallVector{N,T} <: AbstractSmallVector{N,T}
     b::FixedVector{N,T}
@@ -81,7 +81,7 @@ end
 MutableSmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
 
 function MutableSmallVector{N,T}(itr) where {N,T}
-    isbits(T) || return MutableSmallVector(SmallVector{N,T}(itr))
+    isbitstype(T) || return MutableSmallVector(SmallVector{N,T}(itr))
     v = MutableSmallVector{N,T}()
     i = 0
     for ix in enumerate(itr)
@@ -102,7 +102,7 @@ end
 
 @inline function getindex(v::MutableSmallVector{N,T}, i::Int) where {N,T}
     @boundscheck checkbounds(v, i)
-    isbits(T) ? unsafe_getindex(v, i) : @inbounds v.b[i]
+    isbitstype(T) ? unsafe_getindex(v, i) : @inbounds v.b[i]
 end
 
 @inline function unsafe_setindex!(v::MutableSmallVector{N,T}, x, i) where {N,T}

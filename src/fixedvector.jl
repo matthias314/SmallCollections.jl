@@ -64,7 +64,7 @@ element types.
 
 The special form `MutableFixedVector{N,T}(undef)` returns a non-initialized vector.
 
-See also [`FixedVector`](@ref), `Base.isbits`.
+See also [`FixedVector`](@ref), `Base.isbitstype`.
 """
 mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     t::NTuple{N,T}
@@ -129,7 +129,7 @@ end
 
 @inline function getindex(v::MutableFixedVector{N,T}, i::Int) where {N,T}
     @boundscheck checkbounds(v, i)
-    isbits(T) ? unsafe_getindex(v, i) : @inbounds v.t[i]
+    isbitstype(T) ? unsafe_getindex(v, i) : @inbounds v.t[i]
 end
 
 @propagate_inbounds function setindex!(v::MutableFixedVector{N,T}, x, i::Int) where {N,T}
