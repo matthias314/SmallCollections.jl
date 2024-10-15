@@ -11,6 +11,13 @@ DocTestSetup = quote
 SmallCollections
 ```
 
+## [`AbstractFixedVector`](@id sec-abstractfixedvector)
+```@docs
+AbstractFixedVector
+FixedVector
+MutableFixedVector
+```
+
 ## [`AbstractCapacityVector`](@id sec-abstractsmallvector)
 
 ```@docs
@@ -57,16 +64,19 @@ SmallCollections.unsafe_add
 SmallCollections.unsafe_sub
 ```
 
-### [Broadcasting](@id sec-broadcasting)
+## [Broadcasting](@id sec-broadcasting)
 
-Broadcasting is supported for `AbstractSmallVector`, including broadcasted assignments
-to a `MutableSmallVector`. Without assignment, the result is a `SmallVector`
-if at least one argument is an `AbstractSmallVector` and all other arguments (if any) are
-`Tuple`s or scalars. The capacity of the result is the minimum of the capacities
-of the `AbstractSmallVector` arguments.
+All vector types defined by this package can participate in broadcasting.
+Efficient implementations exist for `AbstractFixedVector` and `AbstractSmallVector`,
+including broadcasted assignments to a `MutableFixedVector` or `MutableSmallVector`.
+Without assignment, the result is a `FixedVector` (or `SmallVector`) if at least
+one argument is an `AbstractFixedVector` (or `AbstractSmallVector`) and all other
+arguments (if any) are `Tuple`s or scalars. Otherwise Julia's generic broadcasting
+method applies. The capacity of a resulting `SmallVector` is the minimum of the
+capacities of the `AbstractSmallVector` arguments.
 
 See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractCapacityVector})),
-[`SmallCollections.SmallVectorStyle`](@ref).
+[`SmallCollections.FixedVectorStyle`](@ref), [`SmallCollections.SmallVectorStyle`](@ref).
 
 #### Examples
 ```jldoctest
@@ -82,7 +92,7 @@ julia> v .+= 3 .* w
  11
  15
 
-julia> v = SmallVector{8}(1:3); w = [2, 3, 4]; v .* w
+julia> v = FixedVector{3}(1:3); w = [2, 3, 4]; v .* w
 3-element Vector{Int64}:
   2
   6
@@ -165,6 +175,7 @@ adds up its arguments, mutating the first argument `v` if possible.
 ```@docs
 SmallCollections.bitsize
 SmallCollections.default
+SmallCollections.FixedVectorStyle
 SmallCollections.SmallVectorStyle
 ```
 
