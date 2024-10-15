@@ -43,6 +43,33 @@ capacity(::T) where T = capacity(T)
 
 fasthash(x) = fasthash(x, UInt(0))
 
+"""
+    $(@__MODULE__).element_type(itr) -> Type
+    $(@__MODULE__).element_type(::Type) -> Type
+
+Return the element type of an iterator or its type. This differs from `eltype`
+in that the element type of a `Tuple` or `NamedTuple` is determined via `promote_type`
+instead of `promote_typejoin`. For all other iterators there is no difference.
+
+See also `Base.eltype`, `Base.promote_type`, `Base.promote_typejoin`.
+
+# Example
+```jldoctest
+julia> eltype((1, 2, 3.0))
+Real
+
+julia> $(@__MODULE__).element_type((1, 2, 3.0))
+Float64
+```
+"""
+element_type(::I) where I = element_type(I)
+element_type(::Type{I}) where I = eltype(I)
+element_type(::Type{<:Tuple{Vararg{T}}}) where T = T
+
+Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Union{Tuple,NamedTuple}
+    promote_type(fieldtypes(I)...)
+end
+
 include("bits.jl")
 include("smallbitset.jl")
 include("abstractsmallvector.jl")

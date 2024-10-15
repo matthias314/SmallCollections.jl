@@ -173,6 +173,7 @@ SmallCollections.SmallVectorStyle
 These names are not public and may change in future versions.
 
 ```@docs
+SmallCollections.element_type
 SmallCollections.AbstractBitInteger
 SmallCollections.top_set_bit
 SmallCollections.unsafe_shl
