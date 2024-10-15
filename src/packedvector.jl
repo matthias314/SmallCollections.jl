@@ -178,8 +178,7 @@ julia> w = PackedVector{UInt64,5,UInt8}(v); fasthash(v) == fasthash(w)
 true
 ```
 """
-SmallCollections.fasthash(v::PackedVector, h0::UInt) =
-    Base.hash_integer(bits(v), hash(length(v), h0))
+fasthash(v::PackedVector, h0::UInt) = Base.hash_integer(bits(v), hash(length(v), h0))
 
 """
     empty(v::PackedVector{U,M}, S::Type) where {U,M,S} -> PackedVector{U,M,S}

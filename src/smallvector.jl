@@ -170,7 +170,7 @@ end
 
 @inline function addindex(v::SmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
-    @inbounds v += setindex(zero(v), x, i)
+    @inbounds v + setindex(zero(v), x, i)
 end
 
 """
