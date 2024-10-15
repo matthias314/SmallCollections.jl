@@ -34,12 +34,14 @@ prepend
 support
 ```
 
-### [`SmallVector`](@id sec-smallvector)
+### [`AbstractSmallVector`](@id sec-smallvector)
 
 ```@docs
+AbstractSmallVector
 SmallVector
-empty(::SmallVector, ::Type)
-fasthash(::SmallVector, ::UInt)
+MutableSmallVector
+empty(::AbstractSmallVector, ::Type)
+fasthash(::AbstractSmallVector, ::UInt)
 sum_fast
 map
 ```
@@ -57,22 +59,28 @@ SmallCollections.unsafe_sub
 
 ### [Broadcasting](@id sec-broadcasting)
 
-Broadcasting is supported for `SmallVector`. The result is again a `SmallVector`
-if at least one argument is a `SmallVector` and all other arguments (if any) are
+Broadcasting is supported for `AbstractSmallVector`, including broadcasted assignments
+to a `MutableSmallVector`. Without assignment, the result is a `SmallVector`
+if at least one argument is an `AbstractSmallVector` and all other arguments (if any) are
 `Tuple`s or scalars. The capacity of the result is the minimum of the capacities
-of the `SmallVector` arguments. Broadcasted assignments to a `SmallVector` are
-of course not possible.
+of the `AbstractSmallVector` arguments.
 
 See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractCapacityVector})),
 [`SmallCollections.SmallVectorStyle`](@ref).
 
 #### Examples
 ```jldoctest
-julia> v = SmallVector{8}(1:3); w = SmallVector{6}(2:4); v .* w .- 1.0
+julia> v = MutableSmallVector{8}(1:3); w = SmallVector{6}(2:4); v .* w .- 1.0
 3-element SmallVector{6, Float64}:
   1.0
   5.0
  11.0
+
+julia> v .+= 3 .* w
+3-element MutableSmallVector{8, Int64}:
+  7
+ 11
+ 15
 
 julia> v = SmallVector{8}(1:3); w = [2, 3, 4]; v .* w
 3-element Vector{Int64}:
@@ -131,9 +139,9 @@ is loaded, then the functions
 `symdiff`
 for `SmallBitSet` as well as
 [`setindex`](@ref),
-[`push`](@ref push(::SmallVector, ::Vararg)),
+[`push`](@ref push(::AbstractSmallVector, ::Vararg)),
 [`pushfirst`](@ref),
-[ `pop`](@ref pop(::SmallVector)),
+[ `pop`](@ref pop(::AbstractSmallVector)),
 [`popfirst`](@ref),
 [`deleteat`](@ref) and
 [`append`](@ref)
