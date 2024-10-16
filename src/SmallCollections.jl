@@ -69,6 +69,9 @@ Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Union
     promote_type(fieldtypes(I)...)
 end
 
+ntuple(f, n) = Base.ntuple(f, n)
+@generated ntuple(f, ::Val{N}) where N = :(Base.Cartesian.@ntuple $N i -> f(i))
+
 include("bits.jl")
 include("smallbitset.jl")
 
