@@ -498,7 +498,7 @@ end
 #
 
 using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, flatten
-import Base.Broadcast: BroadcastStyle
+import Base.Broadcast: BroadcastStyle, instantiate
 
 """
     $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
@@ -513,10 +513,16 @@ BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
 
+instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
+
 function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
     i = findfirst(x -> x isa AbstractSmallVector, bcflat.args)
     n = length(bcflat.args[i])
+    foreach(bcflat.args) do x
+        x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&
+            error("vectors must have the same length")
+    end
     _map(bcflat.f, n, bcflat.args...)
 end
 
