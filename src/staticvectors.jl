@@ -151,9 +151,9 @@ end
 @generated function bits(v::TupleVector{N,T}) where {N, T <: Union{Int128,UInt128}}
     n = nextpow(2, N)
     U = Symbol(:UInt, n*128)
-    z = ntuple(Returns(zero(T)), n-N)
+    z = ntuple(Returns(zero(T)), Val(n-N))
     quote
-        t = (v.v..., $z...)
+        t = (Tuple(v)..., $z...)
         reinterpret($U, t)
     end
 end
