@@ -170,8 +170,14 @@ end
 
 muladd(v::AbstractFixedVector{N}, c::Number, w::AbstractFixedVector{N}) where N = muladd(c, v, w)
 
+@generated function map_tuple(f, xs::Tuple...)
+    M = length(xs)
+    N = minimum(fieldcount, xs)
+    Expr(:tuple, (Expr(:call, :f, (:(xs[$j][$i]) for j in 1:M)...) for i in 1:N)...)
+end
+
 function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
-    FixedVector(map(f, map(Tuple, vs)...))
+    FixedVector(map_tuple(f, map(Tuple, vs)...))
 end
 
 function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) where {F,N}
