@@ -184,80 +184,50 @@ function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) wh
     copyto!(w, map(f, map(Tuple, vs)...))
 end
 
-for f in (:sum, :prod, :minimum, :maximum)
-    ff = Symbol('_', f)
-    @eval $f(v::AbstractFixedVector; kw...) = $f(identity, v; kw...)
-    @eval function $f(g, v::AbstractFixedVector; dims = :, kw...)
-        if dims isa Colon
-            $f(g, Tuple(v); kw...)
+@generated function Base.mapfoldl_impl(f, op, init, v::AbstractFixedVector{N}) where N
+    ex, start = init <: Base._InitialValue ? (:(f(v[1])), 2) : (:init, 1)
+    for i in start:N
+        ex = :(op($ex, f(v[$i])))
+    end
+    ex
+end
+
+@generated function Base.mapfoldr_impl(f, op, init, v::AbstractFixedVector{N}) where N
+    ex, start = init <: Base._InitialValue ? (:(f(v[N])), N-1) : (:init, N)
+    for i in start:-1:1
+        ex = :(op(f(v[$i]), $ex))
+    end
+    ex
+end
+
+for f in [:(==), :isequal]
+    @eval $f(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = all(map($f, v, w))
+end
+
+for (g, op) in ((:_sum, :+), (:_prod, :*))
+    @eval function Base.$g(f, v::AbstractFixedVector, ::Colon; kw...)
+        w = map(f, v)
+        T = eltype(w)
+        if !(T <: Integer) || bitsize(T) >= bitsize(Int)
+            foldl($op, w; kw...)
+        elseif T <: Unsigned
+            foldl($op, w; init = UInt(0), kw...)
         else
-            invoke($f, Tuple{typeof(g),AbstractVector}, g, v; dims, kw...)
+            foldl($op, w; init = Int(0), kw...)
         end
     end
 end
 
-extrema(v::AbstractFixedVector; kw...) = extrema(identity, v; kw...)
+sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
-function extrema(g, v::AbstractFixedVector; init::Union{Missing,Tuple{Any,Any}} = missing)
-    if init === missing
-        (minimum(g, v), maximum(g, v))
-    else
-        (minimum(g, v; init = init[1]), maximum(g, v; init = init[2]))
-    end
-end
+Base._any(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, |, v; kw...)
+Base._all(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, &, v; kw...)
 
-sum_fast(v::AbstractFixedVector) = sum(v)
-sum_fast(v::AbstractFixedVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, Tuple(v))
+Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Bool, v, :; init)
 
-for f in (:mapfoldl, :mapfoldr)
-    @eval $f(g, op, v::AbstractFixedVector; kw...) = $f(g, op, v.t; kw...)
-end
-
-count(v::AbstractFixedVector{N,Bool}; kw...) where N = sum(v; kw...)
-
-#=
-_or(x, y) = x | y
-@inline _or(x, ::Missing) = x ? true : missing
-@inline _or(::Missing, x) = x ? true : missing
-_or(::Missing, ::Missing) = missing
-=#
-
-#=
-function _any(f::F, v::AbstractFixedVector{N,T}) where {F,N,T}
-    if Missing <: Core.Compiler.return_type(f, Tuple{T})
-        any(f, v.t)
-    else
-        reduce((b, x) -> b | f(x), v.t; init = false)
-    end
-end
-=#
-
-any(v::AbstractFixedVector; kw...) = any(identity, v; kw...)
-any(f, v::AbstractFixedVector; dims = :) = _any(f, v, dims)
-any(f::Function, v::AbstractFixedVector; dims = :) = _any(f, v, dims)
-
-# TODO: Function should be replaced by Any in Julia 1.12
-# _any(f::Function, v::AbstractFixedVector, dims) = invoke(any, Tuple{Function, AbstractArray}, f, v; dims)
-# TODO: replace Function
-_any(f, v::AbstractFixedVector, dims) = invoke(any, Tuple{Function, AbstractArray}, f, v; dims)
-
-_any(f, v::AbstractFixedVector, dims::Colon) = reduce(v.t; init = false) do b, x
-    c = f(x)
-    (b === missing && c) || (c === missing && b) ? true : b | c
-end
-
-#=
-any_tuple(t) = any(t)
-any_tuple(t::Tuple{Vararg{Bool}}) = reduce(|, t; init = false)
-
-any(v::AbstractFixedVector) = any_tuple(v.t)
-any(f, v::AbstractFixedVector) = any_tuple(map(f, v.t))
-any(f::Function, v::AbstractFixedVector) = any_tuple(map(f, v.t))
-=#
-
-all(v::AbstractFixedVector; kw...) = all(identity, v; kw...)
-all(f, v::AbstractFixedVector; kw...) = !any(!f, v; kw...)
-all(f::Function, v::AbstractFixedVector; kw...) = !any(!f, v; kw...)
+Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; kw...)
+Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
+Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)
 
 in(x, v::AbstractFixedVector) = any(==(x), v)
 
@@ -275,12 +245,6 @@ function vcat(v1::AbstractFixedVector{N1,T1}, v2::AbstractFixedVector{N2,T2}, vs
     T = promote_type(T1, T2)
     vcat(AbstractFixedVector{N1+N2,T}((v1..., v2...)), vs...)
  end
-
-# equality
-
-for f in [:(==), :isequal]
-    @eval $f(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = all(FixedVector(map($f, v.t, w.t)))
-end
 
 import Base: findfirst, findlast
 
