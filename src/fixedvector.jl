@@ -72,7 +72,7 @@ mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
 
-(::Type{V})(v::AbstractFixedVector{N}) where {N,T,V<:AbstractFixedVector{N,T}} = V(v.t)
+(::Type{V})(v::AbstractFixedVector{N}) where {N,T,V<:AbstractFixedVector{N,T}} = V(Tuple(v))
 # to avoid (possibly allocating) NTuple in other constructor
 
 function (::Type{V})(t) where {N,T,V<:AbstractFixedVector{N,T}}
@@ -234,7 +234,7 @@ in(x, v::AbstractFixedVector) = any(==(x), v)
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
     @boundscheck checkbounds(v, start:stop)
     t = ntuple(Val(N)) do i
-        @inbounds v.t[start <= i <= stop ? start+stop-i : i]
+        @inbounds v[start <= i <= stop ? start+stop-i : i]
     end
     FixedVector{N,T}(t)
 end
