@@ -221,7 +221,7 @@ end
 SmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = SmallVector{N,T}(v.b, v.n)
 
 function SmallVector{N,T}(iter) where {N,T}
-    isbitstype(T) && return SmallVector(MutableSmallVector{N,T}(iter))
+    isbitstype(T) && return @inline SmallVector(MutableSmallVector{N,T}(iter))
     b = default(Values{N,T})
     n = 0
     for (i, x) in enumerate(iter)
