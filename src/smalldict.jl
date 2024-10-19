@@ -36,19 +36,37 @@ SmallDict{8, Char, Int64} with 3 entries:
 ```
 """
 struct SmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
-    v::SmallVector{N,Pair{K,V}}
-    SmallDict(v::AbstractSmallVector{N,Pair{K,V}}) where {N,K,V} = new{N,K,V}(v)
+    keys::SmallVector{N,K}
+    vals::SmallVector{N,V}
+    SmallDict{N,K,V}(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
+    SmallDict(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
 end
 
-SmallDict(d::AbstractSmallDict) = SmallDict(d.v)
+SmallDict(d::AbstractSmallDict) = SmallDict(d.keys, d.vals)
 
-SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,Pair{K,V}}())
+SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,K}(), SmallVector{N,V}())
+
+@inline function keys_vals_unique(::Val{N}, ::Type{K}, ::Type{V}, itr) where {N,K,V}
+    keys = MutableSmallVector{N,K}()
+    vals = MutableSmallVector{N,V}()
+    i = 0
+    for ikv::Tuple{Int,Pair} in enumerate(itr)
+        i, (key, val) = ikv
+        i <= N || error("dictionary cannot have more than $N elements")
+        unsafe_setindex!(keys, key, i)
+        unsafe_setindex!(vals, val, i)
+    end
+    vals.n = keys.n = i
+    keys, vals
+end
 
 function SmallDict{N,K,V}(itr; unique = false) where {N,K,V}
     if unique
-        SmallDict(SmallVector{N,Pair{K,V}}(itr))
+        SmallDict(keys_vals_unique(Val(N), K, V, itr)...)
+    elseif N <= 32
+        foldl(push, itr; init = SmallDict{N,K,V}())
     else
-        SmallDict(MutableSmallDict{N,K,V}(itr))
+        SmallDict(MutableSmallDict{N,K,V}(itr))   # allocates
     end
 end
 
@@ -78,17 +96,19 @@ MutableSmallDict{8, Char, Int64} with 2 entries:
 ```
 """
 struct MutableSmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
-    v::MutableSmallVector{N,Pair{K,V}}
-    MutableSmallDict(v::AbstractSmallVector{N,Pair{K,V}}) where {N,K,V} = new{N,K,V}(v)
+    keys::MutableSmallVector{N,K}
+    vals::MutableSmallVector{N,V}
+    MutableSmallDict{N,K,V}(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
+    MutableSmallDict(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
 end
 
-MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(d.v)
+MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(d.keys, d.vals)
 
-MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(MutableSmallVector{N,Pair{K,V}}())
+MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(MutableSmallVector{N,K}(), MutableSmallVector{N,V}())
 
 function MutableSmallDict{N,K,V}(itr; unique = false) where {N,K,V}
     if unique
-        MutableSmallDict(MutableSmallVector{N,Pair{K,V}}(itr))
+        MutableSmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     else
         foldl(push!, itr; init = MutableSmallDict{N,K,V}())
     end
@@ -96,14 +116,22 @@ end
 
 capacity(::Type{<:AbstractSmallDict{N}}) where N = N
 
-copy(d::D) where D <: AbstractSmallDict = D(d.v)
+copy(d::SmallDict) = d
+copy(d::MutableSmallDict) = MutableSmallDict(copy(d.keys), copy(d.vals))
 
-length(d::AbstractSmallDict) = length(d.v)
+length(d::AbstractSmallDict) = length(d.keys)
 
-iterate(d::AbstractSmallDict, state...) = iterate(d.v, state...)
+function iterate(d::AbstractSmallDict{N,K,V}, i = 1) where {N,K,V}
+    i <= length(d) ? (@inbounds Pair{K,V}(d.keys[i], d.vals[i]), i+1) : nothing
+end
 
-@inline function token(d::AbstractSmallDict{N,K}, key) where {N,K}
-    findfirst(kv -> kv.first == convert(K, key), d.v)
+@inline function token(d::AbstractSmallDict, key)
+    findfirst(==(key), d.keys)
+end
+
+@inline function token(d::AbstractSmallDict{N,K}, key) where {N, K <: Union{Base.HWReal, Char}}
+    i = findfirst(map(==(convert(K, key)), d.keys.b))  # TODO: implement elsewhere
+    i === nothing || i > length(d) ? nothing : i
 end
 
 haskey(d::AbstractSmallDict, key) = token(d, key) !== nothing
@@ -113,85 +141,97 @@ function getindex(d::AbstractSmallDict, key)
     if i === nothing
         error("key not found")
     else
-        @inbounds d.v[i].second
+        @inbounds d.vals[i]
     end
 end
 
 function get(d::AbstractSmallDict, key, default)
     i = token(d, key)
-    i === nothing ? default : @inbounds d.v[i].second
+    i === nothing ? default : @inbounds d.vals[i]
 end
 
-@propagate_inbounds function push(d::AbstractSmallDict, kv::Pair)
-    i = token(d, kv.first)
+@propagate_inbounds function push(d::AbstractSmallDict, (key, val)::Pair)
+    i = token(d, key)
     if i === nothing
-        v = push(d.v, kv)
+        keys = push(d.keys, key)
+        vals = push(d.vals, val)
     else
-        v = @inbounds setindex(d.v, kv, i)
+        keys = @inbounds setindex(d.keys, key, i)
+        vals = @inbounds setindex(d.vals, val, i)
     end
-    SmallDict(v)
+    SmallDict(keys, vals)
 end
 
 @propagate_inbounds function setindex(d::AbstractSmallDict{N,K,V}, val, key) where {N,K,V}
-    push(d, Pair{K,V}(key, val))
+    push(d, key => val)
 end
 
 function delete(d::AbstractSmallDict, key)
     i = token(d, key)
-    i === nothing ? SmallDict(d) : (@inbounds v = deleteat(d.v, i); SmallDict(v))
+    if i === nothing
+        SmallDict(d)
+    else
+        @inbounds keys = deleteat(d.keys, i)
+        @inbounds vals = deleteat(d.vals, i)
+        SmallDict(keys, vals)
+    end
 end
 
 @propagate_inbounds function pop(d::AbstractSmallDict)
-    v, kv = pop(d.v)
-    SmallDict(v), kv.second
+    keys, _ = pop(d.keys)
+    @inbounds vals, val = pop(d.vals)
+    SmallDict(keys, vals), val
 end
 
 function pop(d::AbstractSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    @inbounds v, kv = popat(d.v, i)
-    SmallDict(v), kv.second
+    @inbounds keys, _ = popat(d.keys, i)
+    @inbounds vals, val = popat(d.vals, i)
+    SmallDict(keys, vals), val
 end
 
 function pop(d::AbstractSmallDict, key, default)
     i = token(d, key)
     i === nothing && return SmallDict(d), default
-    @inbounds v, kv = popat(d.v, i)
-    SmallDict(v), kv.second
+    @inbounds keys, _ = popat(d.keys, i)
+    @inbounds vals, val = popat(d.vals, i)
+    SmallDict(keys, vals), val
 end
 
-function setindex!(d::MutableSmallDict{N,K,V}, val, key) where {N,K,V}
+function setindex!(d::MutableSmallDict, val, key)
     i = token(d, key)
     if i === nothing
-        push!(d.v, Pair{K,V}(key, val))
+        push!(d.keys, key)
+        @inbounds push!(d.vals, val)
     else
-        @inbounds d.v[i] = Pair{K,V}(key, val)
+        @inbounds d.vals[i] = val
     end
     d
 end
 
-empty!(d::MutableSmallDict) = (empty!(d.v); d)
+empty!(d::MutableSmallDict) = (empty!(d.keys); empty!(d.vals); d)
 
 function delete!(d::MutableSmallDict, key)
     i = token(d, key)
-    i === nothing ? d : (@inbounds deleteat!(d.v, i); d)
+    i === nothing ? d : (@inbounds deleteat!(d.keys, i), deleteat!(d.vals, i); d)
 end
 
 @propagate_inbounds function pop!(d::MutableSmallDict)
-    kv = pop!(d.v)
-    kv.second
+    pop!(d.keys)
+    @inbounds pop!(d.vals)
 end
 
 function pop!(d::MutableSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    @inbounds kv = popat!(d.v, i)
-    kv.second
+    @inbounds popat!(d.keys, i)
+    @inbounds popat!(d.vals, i)
 end
 
 function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
-    @inbounds kv = popat!(d.v, i)
-    kv.second
+    @inbounds popat!(d.keys, i)
+    @inbounds popat!(d.vals, i)
 end
