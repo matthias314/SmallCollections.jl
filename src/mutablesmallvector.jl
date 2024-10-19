@@ -162,9 +162,10 @@ end
 
 @inline function pop!(v::MutableSmallVector{N,T}) where {N,T}
     @boundscheck isempty(v) && error("vector must not be empty")
-    @inbounds v[length(v)] = default(T)
+    n = length(v)
+    @inbounds x, v[n] = v[n], default(T)
     v.n -= 1
-    v
+    x
 end
 
 @propagate_inbounds popfirst!(v::MutableSmallVector) = popat!(v, 1)
