@@ -2,9 +2,11 @@
 # small dictionaries
 #
 
-export AbstractSmallDict, SmallDict, MutableSmallDict, capacity
+export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
+    setindex, push, delete, pop
 
-import Base: copy, length, iterate, haskey, getindex, get, setindex!, empty!, delete!, pop!
+import Base: copy, length, iterate, haskey, getindex, get,
+    setindex, setindex!, empty!, delete!, pop!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -37,6 +39,8 @@ struct SmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
     v::SmallVector{N,Pair{K,V}}
     SmallDict(v::AbstractSmallVector{N,Pair{K,V}}) where {N,K,V} = new{N,K,V}(v)
 end
+
+SmallDict(d::AbstractSmallDict) = SmallDict(d.v)
 
 SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,Pair{K,V}}())
 
@@ -79,6 +83,8 @@ struct MutableSmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
     MutableSmallDict(v::AbstractSmallVector{N,Pair{K,V}}) where {N,K,V} = new{N,K,V}(v)
 end
 
+MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(d.v)
+
 MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(MutableSmallVector{N,Pair{K,V}}())
 
 function MutableSmallDict{N,K,V}(itr; unique = false) where {N,K,V}
@@ -115,6 +121,44 @@ end
 function get(d::AbstractSmallDict, key, default)
     i = token(d, key)
     i === nothing ? default : @inbounds d.v[i].second
+end
+
+@propagate_inbounds function push(d::AbstractSmallDict, kv::Pair)
+    i = token(d, kv.first)
+    if i === nothing
+        v = push(d.v, kv)
+    else
+        v = @inbounds setindex(d.v, kv, i)
+    end
+    SmallDict(v)
+end
+
+@propagate_inbounds function setindex(d::AbstractSmallDict{N,K,V}, val, key) where {N,K,V}
+    push(d, Pair{K,V}(key, val))
+end
+
+function delete(d::AbstractSmallDict, key)
+    i = token(d, key)
+    i === nothing ? SmallDict(d) : (@inbounds v = deleteat(d.v, i); SmallDict(v))
+end
+
+@propagate_inbounds function pop(d::AbstractSmallDict)
+    v, kv = pop(d.v)
+    SmallDict(v), kv.second
+end
+
+function pop(d::AbstractSmallDict, key)
+    i = token(d, key)
+    i === nothing && error("key not found")
+    @inbounds v, kv = popat(d.v, i)
+    SmallDict(v), kv.second
+end
+
+function pop(d::AbstractSmallDict, key, default)
+    i = token(d, key)
+    i === nothing && return SmallDict(d), default
+    @inbounds v, kv = popat(d.v, i)
+    SmallDict(v), kv.second
 end
 
 function setindex!(d::MutableSmallDict{N,K,V}, val, key) where {N,K,V}
