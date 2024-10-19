@@ -48,8 +48,7 @@ function SmallDict{N,K,V}(itr; unique = false) where {N,K,V}
     if unique
         SmallDict(SmallVector{N,Pair{K,V}}(itr))
     else
-        d = MutableSmallDict{N,K,V}(itr)
-        SmallDict(SmallVector(d.v))
+        SmallDict(MutableSmallDict{N,K,V}(itr))
     end
 end
 
