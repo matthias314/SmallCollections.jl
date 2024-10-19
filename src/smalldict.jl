@@ -5,7 +5,7 @@
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
     setindex, push, delete, pop
 
-import Base: copy, length, iterate, haskey, getindex, get,
+import Base: keys, values, copy, length, iterate, haskey, getindex, get, getkey,
     setindex, setindex!, empty!, delete!, pop!
 
 """
@@ -114,6 +114,10 @@ function MutableSmallDict{N,K,V}(itr; unique = false) where {N,K,V}
     end
 end
 
+keys(d::AbstractSmallDict) = SmallVector(d.keys)
+
+values(d::AbstractSmallDict) = SmallVector(d.vals)
+
 capacity(::Type{<:AbstractSmallDict{N}}) where N = N
 
 copy(d::SmallDict) = d
@@ -148,6 +152,11 @@ end
 function get(d::AbstractSmallDict, key, default)
     i = token(d, key)
     i === nothing ? default : @inbounds d.vals[i]
+end
+
+function getkey(d::AbstractSmallDict, key, default)
+    i = token(d, key)
+    i === nothing ? default : @inbounds d.keys[i]
 end
 
 @propagate_inbounds function push(d::AbstractSmallDict, (key, val)::Pair)
