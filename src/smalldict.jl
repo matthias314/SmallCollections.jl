@@ -131,21 +131,24 @@ empty!(d::MutableSmallDict) = (empty!(d.v); d)
 
 function delete!(d::MutableSmallDict, key)
     i = token(d, key)
-    i === nothing ? d : (deleteat!(d.v, i); d)
+    i === nothing ? d : (@inbounds deleteat!(d.v, i); d)
+end
+
+@propagate_inbounds function pop!(d::MutableSmallDict)
+    kv = pop!(d.v)
+    kv.second
 end
 
 function pop!(d::MutableSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    val = @inbounds d.v[i].second
-    deleteat!(d.v, i)
-    val
+    @inbounds kv = popat!(d.v, i)
+    kv.second
 end
 
 function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
-    val = @inbounds d.v[i].second
-    deleteat!(d.v, i)
-    val
+    @inbounds kv = popat!(d.v, i)
+    kv.second
 end
