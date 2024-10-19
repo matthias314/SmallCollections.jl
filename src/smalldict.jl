@@ -12,6 +12,8 @@ import Base: keys, values, copy, length, iterate, haskey, getindex, get, getkey,
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
 
 This is the supertype of `SmallDict{N,K,V}` and `MutableSmallDict{N,K,V}`.
+
+See also [`SmallDict`](@ref), [`MutableSmallDict`](@ref).
 """
 abstract type AbstractSmallDict{N,K,V} <: AbstractDict{K,V} end
 
@@ -20,14 +22,25 @@ abstract type AbstractSmallDict{N,K,V} <: AbstractDict{K,V} end
 
     SmallDict{N,K,V}()
     SmallDict{N,K,V}(itr; unique = false)
+    SmallDict{N,K,V}(key1 => val1, key2 => val2, ...; unique = false)
 
 An immutable dictionary with key type `K` and value type `V` that can store up to `N` entries.
-All entries come from the key-value iterator `itr` provided at construction time.
+All entries come from the key-value iterator `itr` provided at construction time or from the
+explicitly given pairs.
 
-If `unique` is set to `true`, then the elements of `itr` are assumed to have distinct keys.
+If the key and value types are omitted, they will be inferred from the pairs or, if possible,
+from the iterator. If `unique` is set to `true`, then the elements of `itr` are assumed to have
+distinct keys.
 
-# Example
+See also [`AbstractSmallDict`](@ref), [`MutableSmallDict`](@ref).
+
+# Examples
 ```jldoctest
+julia> SmallDict{8}(Int16(1) => 2, Int32(3) => 4.0)
+SmallDict{8, Int32, Float64} with 2 entries:
+  1 => 2.0
+  3 => 4.0
+
 julia> SmallDict{8,Char,Int}('a'+k => k^2 for k in 0:2; unique = true)
 SmallDict{8, Char, Int64} with 3 entries:
   'a' => 0
@@ -61,9 +74,9 @@ SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,K}(), SmallVector{N,V
 end
 
 function SmallDict{N,K,V}(itr; unique = false) where {N,K,V}
-    if unique
+    if unique && isbitstype(Tuple{K,V})
         SmallDict(keys_vals_unique(Val(N), K, V, itr)...)
-    elseif N <= 32
+    elseif N <= 32 || !isbitstype(Tuple{K,V})
         foldl(push, itr; init = SmallDict{N,K,V}())
     else
         SmallDict(MutableSmallDict{N,K,V}(itr))   # allocates
@@ -75,15 +88,20 @@ end
 
     MutableSmallDict{N,K,V}()
     MutableSmallDict{N,K,V}(itr; unique = false)
+    MutableSmallDict{N,K,V}(key1 => val1, key2 => val2, ...; unique = false)
 
 An dictionary with key type `K` and value type `V` that can store up to `N` entries.
 The dictionary is mutable and implements Julia's dictionary interface.
 
-If `unique` is set to `true`, then the elements of `itr` are assumed to have distinct keys.
+If the key and value types are omitted, they will be inferred from the pairs or, if possible,
+from the iterator. If `unique` is set to `true`, then the elements of `itr` are assumed to have
+distinct keys.
 
-# Example
+See also [`AbstractSmallDict`](@ref), [`SmallDict`](@ref).
+
+# Examples
 ```jldoctest
-julia> d = MutableSmallDict{8,Char,Int}('a'+k => k^2 for k in 0:2)
+julia> d = MutableSmallDict{8}('a' => 0, 'b' => 1, 'c' => 4)
 MutableSmallDict{8, Char, Int64} with 3 entries:
   'a' => 0
   'b' => 1
@@ -113,6 +131,14 @@ function MutableSmallDict{N,K,V}(itr; unique = false) where {N,K,V}
         foldl(push!, itr; init = MutableSmallDict{N,K,V}())
     end
 end
+
+function (::Type{D})(itr::I; kw...) where {N, D <: AbstractSmallDict{N}, I}
+    Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
+    KV = element_type(I)
+    D{fieldtypes(KV)...}(itr; kw...)
+end
+
+(::Type{D})(kv::Pair...; kw...) where D <: AbstractSmallDict = D(kv; kw...)
 
 keys(d::AbstractSmallDict) = SmallVector(d.keys)
 
