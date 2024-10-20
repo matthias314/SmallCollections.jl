@@ -247,9 +247,17 @@ end
 
 empty!(d::MutableSmallDict) = (empty!(d.keys); empty!(d.vals); d)
 
+@inline function unsafe_pop!(d::MutableSmallDict, i::Int)
+    @inbounds unsafe_setindex!(d.keys, pop!(d.keys), i)
+    @inbounds val = d.vals[i]
+    @inbounds unsafe_setindex!(d.vals, pop!(d.vals), i)
+    val
+end
+
 function delete!(d::MutableSmallDict, key)
     i = token(d, key)
-    i === nothing ? d : (@inbounds deleteat!(d.keys, i), deleteat!(d.vals, i); d)
+    i === nothing || unsafe_pop!(d, i)
+    d
 end
 
 @propagate_inbounds function pop!(d::MutableSmallDict)
@@ -260,13 +268,11 @@ end
 function pop!(d::MutableSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    @inbounds popat!(d.keys, i)
-    @inbounds popat!(d.vals, i)
+    unsafe_pop!(d, i)
 end
 
 function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
-    @inbounds popat!(d.keys, i)
-    @inbounds popat!(d.vals, i)
+    unsafe_pop!(d, i)
 end
