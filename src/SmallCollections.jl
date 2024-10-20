@@ -64,9 +64,16 @@ Float64
 element_type(::I) where I = element_type(I)
 element_type(::Type{I}) where I = eltype(I)
 element_type(::Type{<:Tuple{Vararg{T}}}) where T = T
+element_type(::Type{<:Tuple{Vararg{T}}}) where T <: Pair = T
 
 Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Union{Tuple,NamedTuple}
     promote_type(fieldtypes(I)...)
+end
+
+Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Tuple{Vararg{Pair}}
+    K = promote_type(map(first∘fieldtypes, fieldtypes(I))...)
+    V = promote_type(map(last∘fieldtypes, fieldtypes(I))...)
+    Pair{K,V}
 end
 
 ntuple(f, n) = Base.ntuple(f, n)
