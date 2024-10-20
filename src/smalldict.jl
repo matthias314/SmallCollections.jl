@@ -155,14 +155,7 @@ function iterate(d::AbstractSmallDict{N,K,V}, i = 1) where {N,K,V}
     i <= length(d) ? (@inbounds Pair{K,V}(d.keys[i], d.vals[i]), i+1) : nothing
 end
 
-@inline function token(d::AbstractSmallDict, key)
-    findfirst(==(key), d.keys)
-end
-
-@inline function token(d::AbstractSmallDict{N,K}, key) where {N, K <: Union{Base.HWReal, Char}}
-    i = findfirst(map(==(convert(K, key)), d.keys.b))  # TODO: implement elsewhere
-    i === nothing || i > length(d) ? nothing : i
-end
+@inline token(d::AbstractSmallDict, key) = findfirst(isequal(key), d.keys)
 
 haskey(d::AbstractSmallDict, key) = token(d, key) !== nothing
 
