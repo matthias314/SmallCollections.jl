@@ -6,7 +6,7 @@ export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
     setindex, push, delete, pop
 
 import Base: keys, values, copy, length, iterate, haskey, getindex, get, getkey,
-    setindex, setindex!, empty!, delete!, pop!
+    setindex, mergewith, setindex!, empty!, delete!, pop!, mergewith!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -234,6 +234,18 @@ function pop(d::AbstractSmallDict, key, default)
     SmallDict(keys, vals), val
 end
 
+function mergewith(op, d::AbstractSmallDict{N,K,V}, e::AbstractDict) where {N,K,V}
+    foldl(e; init = SmallDict(d)) do d, (key, val)
+        i = token(d, key)
+        newval = i === nothing ? val : op(@inbounds(d.vals[i]), val)
+        setindex(d, newval, key)
+    end::SmallDict{N,K,V}
+end
+
+function mergewith(op, d::AbstractSmallDict, es::AbstractDict...)
+    foldl((d, e) -> mergewith(op, d, e), es; init = SmallDict(d))
+end
+
 function setindex!(d::MutableSmallDict, val, key)
     i = token(d, key)
     if i === nothing
@@ -275,4 +287,18 @@ function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
     unsafe_pop!(d, i)
+end
+
+function mergewith!(op, d::MutableSmallDict, e::AbstractDict)
+    for (key, val) in e
+        i = token(d, key)
+        if i === nothing
+            d[key] = val
+            # push!(d.keys, key)
+            # @inbounds push!(d.vals, val)
+        else
+            @inbounds d.vals[i] = op(d.vals[i], val)
+        end
+    end
+    d
 end
