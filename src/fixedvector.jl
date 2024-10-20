@@ -5,7 +5,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     sum, prod, minimum, maximum, extrema, count, any, all, in, reverse,
-    mapfoldl, mapfoldr, vcat, copy, copyto!, convert,
+    findfirst, findlast, mapfoldl, mapfoldr, vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd
 
 """
@@ -246,8 +246,6 @@ function vcat(v1::AbstractFixedVector{N1,T1}, v2::AbstractFixedVector{N2,T2}, vs
     vcat(AbstractFixedVector{N1+N2,T}((v1..., v2...)), vs...)
  end
 
-import Base: findfirst, findlast
-
 function findfirst(v::AbstractFixedVector{N,Bool}) where N
     m = bits(v)
     iszero(m) ? nothing : trailing_zeros(m)+1
@@ -256,6 +254,20 @@ end
 function findlast(v::AbstractFixedVector{N,Bool}) where N
     m = bits(v)
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
+end
+
+const FastTestType = Union{Base.HWReal, Bool, Char}
+
+const FastTest = Union{
+    Base.Fix2{<:Union{typeof.((==, !=, <=, >=, <, >, isequal))...}, <:FastTestType},
+    typeof.((!, iszero, isone, isfinite, isnan, signbit))...,
+    ComposedFunction{typeof(!), <:Union{Base.Fix2{typeof(isequal), <:FastTestType}, typeof.((iszero, isone, isfinite, isnan, signbit))...}}
+}
+
+for f in (:findfirst, :findlast)
+    @eval function $f(pred::FastTest, v::AbstractFixedVector{<:Any,<:FastTestType})
+        $f(map(pred, v))
+    end
 end
 
 support(v::AbstractFixedVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v)))
