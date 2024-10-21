@@ -123,7 +123,7 @@ default(::Type{Char}) = Char(0)
 default(::Type{String}) = ""
 default(::Type{Symbol}) = Symbol()
 
-default(::Type{Values{N,T}}) where {N,T} = Values(ntuple(Returns(default(T)), Val(N)))
+default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(ntuple(Returns(default(T)), Val(N)))
 
 function padded_add(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
     T = promote_type(T1, T2)
