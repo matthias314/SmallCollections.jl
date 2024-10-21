@@ -206,9 +206,9 @@ function delete(d::AbstractSmallDict, key)
 end
 
 @propagate_inbounds function pop(d::AbstractSmallDict)
-    keys, _ = pop(d.keys)
+    keys, key = pop(d.keys)
     @inbounds vals, val = pop(d.vals)
-    SmallDict(keys, vals), val
+    SmallDict(keys, vals), key => val
 end
 
 function pop(d::AbstractSmallDict, key)
@@ -266,8 +266,9 @@ function delete!(d::MutableSmallDict, key)
 end
 
 @propagate_inbounds function pop!(d::MutableSmallDict)
-    pop!(d.keys)
-    @inbounds pop!(d.vals)
+    key = pop!(d.keys)
+    val = @inbounds pop!(d.vals)
+    key => val
 end
 
 function pop!(d::MutableSmallDict, key)
