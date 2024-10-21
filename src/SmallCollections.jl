@@ -90,6 +90,7 @@ include("smallvector.jl")
 include("mutablesmallvector.jl")
 include("packedvector.jl")
 include("smalldict.jl")
+include("smallset.jl")
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :bitsize, :FixedVectorStyle, :SmallVectorStyle))
