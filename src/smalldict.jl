@@ -6,7 +6,7 @@ export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
     setindex, push, delete, pop
 
 import Base: keys, values, copy, length, iterate, haskey, getindex, get, getkey,
-    setindex, mergewith, setindex!, empty!, delete!, pop!, mergewith!
+    setindex, mergewith, setindex!, empty!, delete!, pop!, filter!, mergewith!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -281,6 +281,22 @@ function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
     unsafe_pop!(d, i)
+end
+
+function filter!(f, d::MutableSmallDict{N,K,V}) where {N,K,V}
+    j = 0
+    n = length(d)
+    for i in 1:n
+        key, val = @inbounds d.keys[i], d.vals[i]
+        f(key => val) || continue
+        j += 1
+        @inbounds d.keys[j], d.vals[j] = key, val
+    end
+    for i in j+1:n
+        @inbounds d.keys[i], d.vals[i] = default(K), default(V)
+    end
+    d.vals.n = d.keys.n = j
+    d
 end
 
 function mergewith!(op, d::MutableSmallDict, e::AbstractDict)
