@@ -4,7 +4,7 @@
 
 export AbstractSmallSet, MutableSmallSet
 
-import Base: copy, length, iterate, in, push!, pop!, delete!
+import Base: copy, length, iterate, in, push!, pop!, delete!, filter!, setdiff!
 
 abstract type AbstractSmallSet{N,T} <: AbstractSet{T} end
 
@@ -38,7 +38,7 @@ length(s::AbstractSmallSet) = length(s.d)
 
 iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
 
-in(s::AbstractSmallSet, x) = haskey(s.d, x)
+in(x, s::AbstractSmallSet) = haskey(s.d, x)
 
 push!(s::MutableSmallSet, x) = (setindex!(s.d, nothing, x); s)
 
@@ -58,4 +58,17 @@ function pop!(s::MutableSmallSet, x, default)
     i === nothing && return default
     unsafe_pop!(s.d, i)
     x
+end
+
+filter!(f, s::MutableSmallSet) = (filter!(f∘first, s.d); s)
+
+setdiff!(s::MutableSmallSet, t) = _setdiff!(s, t)
+setdiff!(s::MutableSmallSet, t::AbstractSet) = _setdiff!(s, t)
+
+function _setdiff!(s::MutableSmallSet, t)
+    if Base.hasfastin(t) && length(s) < 2*length(t)
+        filter!(!in(t), s)
+    else
+        foldl(delete!, t; init = s)
+    end
 end
