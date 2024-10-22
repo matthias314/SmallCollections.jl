@@ -6,7 +6,7 @@ export AbstractSmallVector, SmallVector, sum_fast
 
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
-    zero, map, reverse, findfirst, findlast,
+    zero, map, reverse, findfirst, findlast, in,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 import Base.FastMath: mul_fast
@@ -379,6 +379,10 @@ function findlast(pred::FastTest, v::AbstractSmallVector{<:Any,<:FastTestType})
     m &= unsafe_shl(one(m), length(v)) - one(m)
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
 end
+
+Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
+
+in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
 
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
