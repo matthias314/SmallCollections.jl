@@ -229,8 +229,6 @@ Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; k
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
 Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)
 
-in(x, v::AbstractFixedVector) = any(==(x), v)
-
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
     @boundscheck checkbounds(v, start:stop)
     t = ntuple(Val(N)) do i
@@ -269,6 +267,10 @@ for f in (:findfirst, :findlast)
         $f(map(pred, v))
     end
 end
+
+Base.hasfastin(::Type{<:AbstractFixedVector{<:Any,<:FastTestType}}) = true
+
+in(x, v::AbstractFixedVector) = any(==(x), v)
 
 support(v::AbstractFixedVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v)))
 
