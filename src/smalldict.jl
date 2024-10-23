@@ -159,6 +159,8 @@ end
 
 haskey(d::AbstractSmallDict, key) = token(d, key) !== nothing
 
+Base.hasfastin(::Type{D}) where D <: AbstractSmallDict = Base.hasfastin(fieldtype(D, :keys))
+
 function getindex(d::AbstractSmallDict, key)
     i = token(d, key)
     if i === nothing
