@@ -380,6 +380,9 @@ function findlast(pred::FastTest, v::AbstractSmallVector{<:Any,<:FastTestType})
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
 end
 
+Base._any(f, v::AbstractSmallVector, ::Colon) = findfirst(f, v) !== nothing
+Base._all(f, v::AbstractSmallVector, ::Colon) = findfirst((!)∘f, v) === nothing
+
 Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
 
 in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
