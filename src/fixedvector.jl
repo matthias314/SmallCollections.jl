@@ -258,13 +258,17 @@ const FastTestType = Union{Base.HWReal, Bool, Char}
 
 const FastTest = Union{
     Base.Fix2{<:Union{typeof.((==, !=, <=, >=, <, >, isequal))...}, <:FastTestType},
-    typeof.((!, iszero, isone, isfinite, isnan, signbit))...,
-    ComposedFunction{typeof(!), <:Union{Base.Fix2{typeof(isequal), <:FastTestType}, typeof.((iszero, isone, isfinite, isnan, signbit))...}}
+    typeof.((identity, !, iszero, isone, iseven, isodd, isfinite, isnan, signbit))...,
+    ComposedFunction{typeof(!),<:Union{
+        Base.Fix2{<:Union{typeof.((==, !=, <=, >=, <, >, isequal))...}, <:FastTestType},
+        typeof.((identity, iszero, isone, iseven, isodd, isfinite, isnan, signbit))...}
+    }
 }
+# TODO: are "iseven" and "isodd" a good idea?
 
 for f in (:findfirst, :findlast)
     @eval function $f(pred::FastTest, v::AbstractFixedVector{<:Any,<:FastTestType})
-        $f(map(pred, v))
+        $f(map(x -> pred(x)::Bool, v))
     end
 end
 
