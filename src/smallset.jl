@@ -38,6 +38,8 @@ length(s::AbstractSmallSet) = length(s.d)
 
 iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
 
+Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype(S, :d))
+
 in(x, s::AbstractSmallSet) = haskey(s.d, x)
 
 push!(s::MutableSmallSet, x) = (setindex!(s.d, nothing, x); s)
