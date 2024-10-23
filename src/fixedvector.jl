@@ -5,7 +5,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     sum, prod, minimum, maximum, extrema, count, any, all, in, reverse,
-    findfirst, findlast, mapfoldl, mapfoldr, vcat, copy, copyto!, convert,
+    findfirst, findlast, vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd
 
 """
@@ -220,8 +220,8 @@ end
 
 sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
-Base._any(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, |, v; kw...)
-Base._all(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, &, v; kw...)
+Base._any(f, v::AbstractFixedVector, ::Colon) = mapfoldl(f, |, v; init = false)
+Base._all(f, v::AbstractFixedVector, ::Colon) = mapfoldl(f, &, v; init = true)
 
 Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Bool, v, :; init)
 
