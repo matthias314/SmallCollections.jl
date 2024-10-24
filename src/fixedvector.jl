@@ -220,8 +220,8 @@ end
 
 sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
-Base._any(f, v::AbstractFixedVector, ::Colon) = mapfoldl(f, |, v; init = false)
-Base._all(f, v::AbstractFixedVector, ::Colon) = mapfoldl(f, &, v; init = true)
+Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
+Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
 Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Bool, v, :; init)
 
