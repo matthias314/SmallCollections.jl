@@ -1,4 +1,5 @@
-export AbstractFixedVector, FixedVector, MutableFixedVector
+export AbstractFixedVector, FixedVector, MutableFixedVector,
+    minimum_fast, maximum_fast, extrema_fast
 
 using Base: @propagate_inbounds, tail, haslength, BitInteger
 
@@ -228,6 +229,21 @@ Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Boo
 Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; kw...)
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
 Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)
+
+minimum_fast(v::AbstractFixedVector; kw...) = minimum_fast(identity, v; kw...)
+maximum_fast(v::AbstractFixedVector; kw...) = maximum_fast(identity, v; kw...)
+extrema_fast(v::AbstractFixedVector; kw...) = extrema_fast(identity, v; kw...)
+
+minimum_fast(f, v::AbstractFixedVector; kw...) = @fastmath mapfoldl(f, min, v; kw...)
+maximum_fast(f, v::AbstractFixedVector; kw...) = @fastmath mapfoldl(f, max, v; kw...)
+
+function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (missing, missing)) where F
+    if init === (missing, missing)
+        (minimum_fast(f, v), maximum_fast(f, v))
+    else
+        (minimum_fast(f, v; init = init[1]), maximum_fast(f, v; init = init[2]))
+    end
+end
 
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
     @boundscheck checkbounds(v, start:stop)
