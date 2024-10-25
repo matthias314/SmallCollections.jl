@@ -237,7 +237,14 @@ maximum_fast(v::AbstractFixedVector; kw...) = maximum_fast(identity, v; kw...)
 extrema_fast(v::AbstractFixedVector; kw...) = extrema_fast(identity, v; kw...)
 
 minimum_fast(f, v::AbstractFixedVector; kw...) = @fastmath mapfoldl(f, min, v; kw...)
-maximum_fast(f, v::AbstractFixedVector; kw...) = @fastmath mapfoldl(f, max, v; kw...)
+
+function maximum_fast(f::F, v::AbstractFixedVector{N,T}; kw...) where {F,N,T}
+    if T <: AbstractFloat && T <: Base.HWReal
+        -minimum_fast(-map(f, v); kw...)   # work around LLVM bug for max_fast, see julia#56341
+    else
+        @fastmath mapfoldl(f, max, v; kw...)
+    end
+end
 
 function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (missing, missing)) where F
     if init === (missing, missing)
