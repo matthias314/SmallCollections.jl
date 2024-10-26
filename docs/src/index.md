@@ -18,6 +18,12 @@ FixedVector
 MutableFixedVector
 setindex(::AbstractFixedVector, ::Any, ::Integer)
 addindex(::AbstractFixedVector, ::Any, ::Integer)
+minimum_fast(::AbstractFixedVector)
+minimum_fast(::Any, ::AbstractFixedVector)
+maximum_fast(::AbstractFixedVector)
+maximum_fast(::Any, ::AbstractFixedVector)
+extrema_fast(::AbstractFixedVector)
+extrema_fast(::Any, ::AbstractFixedVector)
 ```
 
 ## [`AbstractCapacityVector`](@id sec-abstractsmallvector)
