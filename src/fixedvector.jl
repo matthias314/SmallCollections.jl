@@ -208,7 +208,7 @@ for f in [:(==), :isequal]
 end
 
 for (g, op) in ((:_sum, :+), (:_prod, :*))
-    @eval function Base.$g(f, v::AbstractFixedVector, ::Colon; kw...)
+    @eval function Base.$g(f::F, v::AbstractFixedVector, ::Colon; kw...) where F
         w = map(f, v)
         T = eltype(w)
         if !(T <: Integer) || bitsize(T) >= bitsize(Int)
