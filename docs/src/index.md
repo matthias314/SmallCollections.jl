@@ -18,6 +18,7 @@ FixedVector
 MutableFixedVector
 setindex(::AbstractFixedVector, ::Any, ::Integer)
 addindex(::AbstractFixedVector, ::Any, ::Integer)
+sum_fast(::AbstractFixedVector)
 minimum_fast(::AbstractFixedVector)
 minimum_fast(::Any, ::AbstractFixedVector)
 maximum_fast(::AbstractFixedVector)

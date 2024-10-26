@@ -1,5 +1,5 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector,
-    minimum_fast, maximum_fast, extrema_fast
+    sum_fast, minimum_fast, maximum_fast, extrema_fast
 
 using Base: @propagate_inbounds, tail, haslength, BitInteger
 
@@ -221,6 +221,14 @@ for (g, op) in ((:_sum, :+), (:_prod, :*))
     end
 end
 
+"""
+    sum_fast(v::AbstractFixedVector)
+
+Return the `@fastmath` sum of the elements of `t`.
+Unlike for `sum`, the return value always is of the element type of `v`, even for small bit integers.
+
+See also `Base.sum`, `Base.@fastmath`.
+"""
 sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
 Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
