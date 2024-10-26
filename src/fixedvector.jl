@@ -177,6 +177,8 @@ muladd(v::AbstractFixedVector{N}, c::Number, w::AbstractFixedVector{N}) where N 
     Expr(:tuple, (Expr(:call, :f, (:(xs[$j][$i]) for j in 1:M)...) for i in 1:N)...)
 end
 
+map_tuple(::typeof(identity), x::Tuple) = x
+
 function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
     FixedVector(map_tuple(f, map(Tuple, vs)...))
 end
