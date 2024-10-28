@@ -290,7 +290,7 @@ end
 Return the sum of the elements of `v` using `@fastmath` arithmetic
 if `T` is `Float32` or `Float64`. Otherwise return `sum(v)`.
 
-See also `Base.@fastmath`.
+See also `Base.sum`, `Base.@fastmath`.
 
 # Example
 ```jldoctest
@@ -390,6 +390,14 @@ end
 extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
+"""
+    extrema_fast(v::AbstractSmallVector; [init])
+
+Return the `@fastmath` minimum and maximum of the elements of `v`.
+The `init` keyword argument may not be used.
+
+See also `Base.extrema`, `Base.@fastmath`.
+"""
 extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     @fastmath (minimum(v; init = init[1]), maximum(v; init = init[2]))
 

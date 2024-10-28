@@ -228,7 +228,7 @@ end
 """
     sum_fast(v::AbstractFixedVector)
 
-Return the `@fastmath` sum of the elements of `t`.
+Return the `@fastmath` sum of the elements of `v`.
 Unlike for `sum`, the return value always is of the element type of `v`, even for small bit integers.
 
 See also `Base.sum`, `Base.@fastmath`.
@@ -249,7 +249,7 @@ Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.Extrema
 """
     extrema_fast(v::AbstractFixedVector; [init])
 
-Return the `@fastmath` minimum and maximum of the elements of `t`.
+Return the `@fastmath` minimum and maximum of the elements of `v`.
 The `init` keyword argument may not be used.
 
 See also `Base.extrema`, `Base.@fastmath`.
@@ -267,7 +267,7 @@ end
 """
     extrema_fast(f, v::AbstractFixedVector; [init])
 
-Return the `@fastmath` minimum and maximum of the values of `f` applied to the elements of `t`.
+Return the `@fastmath` minimum and maximum of the values of `f` applied to the elements of `v`.
 The `init` keyword argument may not be used.
 
 See also `Base.extrema`, `Base.@fastmath`.

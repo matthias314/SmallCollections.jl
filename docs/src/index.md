@@ -54,7 +54,8 @@ SmallVector
 MutableSmallVector
 empty(::AbstractSmallVector, ::Type)
 fasthash(::AbstractSmallVector, ::UInt)
-sum_fast
+sum_fast(::AbstractSmallVector)
+extrema_fast(::AbstractSmallVector)
 map
 ```
 
