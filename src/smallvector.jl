@@ -2,8 +2,7 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, sum_fast,
-    minimum_fast, maximum_fast, extrema_fast
+export AbstractSmallVector, SmallVector, sum_fast, extrema_fast
 
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
@@ -344,7 +343,7 @@ function maximum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     end
 end
 
-function maximum_fast(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
+@fastmath function maximum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     if isempty(v)
         if init === missing
             error("collection must be non-empty unless `init` is given")
@@ -352,9 +351,9 @@ function maximum_fast(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
             return init
         end
     elseif T <: Unsigned && T <: Base.HWReal
-        maximum_fast(v.b)
+        maximum(v.b)
     elseif T <: Base.HWReal
-        @inbounds maximum_fast(padtail(v.b, length(v), typemin(T)))
+        @inbounds maximum(padtail(v.b, length(v), typemin(T)))
     else
         invoke(maximum, Tuple{AbstractVector}, v)
     end
@@ -374,7 +373,7 @@ function minimum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     end
 end
 
-function minimum_fast(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
+@fastmath function minimum(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
     if isempty(v)
         if init === missing
             error("collection must be non-empty unless `init` is given")
@@ -382,7 +381,7 @@ function minimum_fast(v::AbstractSmallVector{N,T}; init = missing) where {N,T}
             return init
         end
     elseif T <: Base.HWReal
-        @inbounds minimum_fast(padtail(v.b, length(v), typemax(T)))
+        @inbounds minimum(padtail(v.b, length(v), typemax(T)))
     else
         invoke(minimum, Tuple{AbstractVector}, v)
     end
@@ -392,7 +391,7 @@ extrema(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
 extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
-    (minimum_fast(v; init = init[1]), maximum_fast(v; init = init[2]))
+    @fastmath (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
 @inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
     @boundscheck checkbounds(v, start:stop)

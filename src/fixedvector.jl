@@ -1,5 +1,5 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector,
-    sum_fast, minimum_fast, maximum_fast, extrema_fast
+    sum_fast, extrema_fast
 
 using Base: @propagate_inbounds, tail, haslength, BitInteger
 
@@ -244,29 +244,7 @@ Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; k
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
 Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)
 
-"""
-    minimum_fast(v::AbstractFixedVector; [init])
-
-Return the `@fastmath` minimum of the elements of `t`.
-The `init` keyword argument may not be used.
-
-See also [`maximum_fast`](@ref maximum_fast(::AbstractFixedVector)),
-[`extrema_fast`](@ref extrema_fast(::AbstractFixedVector)),
-`Base.@fastmath`.
-"""
-minimum_fast(v::AbstractFixedVector; kw...) = minimum_fast(identity, v; kw...)
-
-"""
-    maximum_fast(v::AbstractFixedVector; [init])
-
-Return the `@fastmath` maximum of the elements of `t`.
-The `init` keyword argument may not be used.
-
-See also [`minimum_fast`](@ref minimum_fast(::AbstractFixedVector)),
-[`extrema_fast`](@ref extrema_fast(::AbstractFixedVector)),
-`Base.@fastmath`.
-"""
-maximum_fast(v::AbstractFixedVector; kw...) = maximum_fast(identity, v; kw...)
+@fastmath maximum(v::AbstractFixedVector; kw...) = maximum(identity, v; kw...)
 
 """
     extrema_fast(v::AbstractFixedVector; [init])
@@ -274,43 +252,15 @@ maximum_fast(v::AbstractFixedVector; kw...) = maximum_fast(identity, v; kw...)
 Return the `@fastmath` minimum and maximum of the elements of `t`.
 The `init` keyword argument may not be used.
 
-See also [`maximum_fast`](@ref maximum_fast(::AbstractFixedVector)),
-[`minimum_fast`](@ref minimum_fast(::AbstractFixedVector)),
-`Base.extrema`, `Base.@fastmath`.
+See also `Base.extrema`, `Base.@fastmath`.
 """
 extrema_fast(v::AbstractFixedVector; kw...) = extrema_fast(identity, v; kw...)
 
-"""
-    minimum_fast(f, v::AbstractFixedVector; [init])
-
-Return the `@fastmath` minimum of the values of `f` applied to the elements of `t`.
-The `init` keyword argument may not be used.
-
-See also [`maximum_fast`](@ref maximum_fast(::Any, ::AbstractFixedVector)),
-[`extrema_fast`](@ref extrema_fast(::Any, ::AbstractFixedVector)),
-`Base.@fastmath`.
-"""
-minimum_fast(::Any, ::AbstractFixedVector)
-
-minimum_fast(f, v::AbstractFixedVector; kw...) = @fastmath mapfoldl(f, min, v; kw...)
-
-"""
-    maximum_fast(f, v::AbstractFixedVector; [init])
-
-Return the `@fastmath` maximum of the values of `f` applied to the elements of `t`.
-The `init` keyword argument may not be used.
-
-See also [`minimum_fast`](@ref minimum_fast(::Any, ::AbstractFixedVector)),
-[`extrema_fast`](@ref extrema_fast(::Any, ::AbstractFixedVector)),
-`Base.@fastmath`.
-"""
-maximum_fast(::Any, ::AbstractFixedVector)
-
-function maximum_fast(f::F, v::AbstractFixedVector{N,T}; kw...) where {F,N,T}
+@fastmath function maximum(f::F, v::AbstractFixedVector{N,T}; kw...) where {F,N,T}
     if T <: AbstractFloat && T <: Base.HWReal
-        -minimum_fast(-map(f, v); kw...)   # work around LLVM bug for max_fast, see julia#56341
+        -minimum(-map(f, v); kw...)   # work around LLVM bug for max_fast, see julia#56341
     else
-        @fastmath mapfoldl(f, max, v; kw...)
+        invoke(maximum, Tuple{F,AbstractVector}, f, v; kw...)
     end
 end
 
@@ -320,15 +270,13 @@ end
 Return the `@fastmath` minimum and maximum of the values of `f` applied to the elements of `t`.
 The `init` keyword argument may not be used.
 
-See also [`maximum_fast`](@ref maximum_fast(::Any, ::AbstractFixedVector)),
-[`minimum_fast`](@ref minimum_fast(::Any, ::AbstractFixedVector)),
-`Base.extrema`, `Base.@fastmath`.
+See also `Base.extrema`, `Base.@fastmath`.
 """
 function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (missing, missing)) where F
     if init === (missing, missing)
-        (minimum_fast(f, v), maximum_fast(f, v))
+        @fastmath (minimum(f, v), maximum(f, v))
     else
-        (minimum_fast(f, v; init = init[1]), maximum_fast(f, v; init = init[2]))
+        @fastmath (minimum(f, v; init = init[1]), maximum(f, v; init = init[2]))
     end
 end
 
