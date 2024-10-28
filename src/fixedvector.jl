@@ -203,6 +203,10 @@ end
     ex
 end
 
+function Base._mapreduce_dim(f, op, init::Base._InitialValue, v::AbstractFixedVector, ::Colon)
+    Base.mapfoldl_impl(f, op, init, v)
+end
+
 for f in [:(==), :isequal]
     @eval $f(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = all(map($f, v, w))
 end
