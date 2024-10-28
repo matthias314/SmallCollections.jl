@@ -331,7 +331,7 @@ end
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
     @boundscheck checkbounds(v, start:stop)
     t = ntuple(Val(N)) do i
-        @inbounds v[start <= i <= stop ? start+stop-i : i]
+        @inbounds start <= i <= stop ? v[start+stop-i] : v[i]
     end
     FixedVector{N,T}(t)
 end
