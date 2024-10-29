@@ -191,22 +191,16 @@ function getkey(d::AbstractSmallDict, key, default)
 end
 
 """
-    push(d::AbstractSmallDict{N,K,V}, (key, val)::Pair) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+    push(d::AbstractSmallDict{N,K,V}, key1 => val1, key2 => val2, ...) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
 
-Return the dictionary that is obtained from `d` by adding the mapping `key => val`.
+Return the dictionary that is obtained from `d` by adding the mappings given as arguments.
 
 See also `Base.push!`, [`setindex`](@ref setindex(::AbstractSmallDict, ::Any, ::Any)).
 """
-@propagate_inbounds function push(d::AbstractSmallDict, (key, val)::Pair)
-    i = token(d, key)
-    if i === nothing
-        keys = push(d.keys, key)
-        vals = push(d.vals, val)
-    else
-        keys = @inbounds setindex(d.keys, key, i)
-        vals = @inbounds setindex(d.vals, val, i)
+@propagate_inbounds function push(d::AbstractSmallDict, kvs::Pair...)
+    foldl(kvs; init = d) do d, (key, val)
+        setindex(d, val, key)
     end
-    SmallDict(keys, vals)
 end
 
 """
@@ -216,10 +210,16 @@ Return the dictionary that is obtained from `d` by adding the mapping `key => va
 
 See also `Base.setindex!`, [`push`](@ref push(::AbstractSmallDict, ::Pair)).
 """
-setindex(::AbstractSmallDict, ::Any, ::Any)
-
-@propagate_inbounds function setindex(d::AbstractSmallDict{N,K,V}, val, key) where {N,K,V}
-    push(d, key => val)
+@propagate_inbounds function setindex(d::AbstractSmallDict, val, key)
+    i = token(d, key)
+    if i === nothing
+        keys = push(d.keys, key)
+        vals = push(d.vals, val)
+    else
+        keys = @inbounds setindex(d.keys, key, i)
+        vals = @inbounds setindex(d.vals, val, i)
+    end
+    SmallDict(keys, vals)
 end
 
 """
