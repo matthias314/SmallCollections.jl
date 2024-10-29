@@ -222,6 +222,12 @@ See also `Base.setindex!`, [`push`](@ref push(::AbstractSmallDict, ::Pair)).
     SmallDict(keys, vals)
 end
 
+@inline function unsafe_pop(d::AbstractSmallDict, i::Int)
+    @inbounds keys, key = popat(d.keys, i)
+    @inbounds vals, val = popat(d.vals, i)
+    SmallDict(keys, vals), key => val
+end
+
 """
     delete(d::AbstractSmallDict{N,K,V}, key) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
 
@@ -231,13 +237,7 @@ See also `Base.delete!`, [`pop`](@ref pop(::AbstractSmallDict, ::Any)).
 """
 function delete(d::AbstractSmallDict, key)
     i = token(d, key)
-    if i === nothing
-        SmallDict(d)
-    else
-        @inbounds keys = deleteat(d.keys, i)
-        @inbounds vals = deleteat(d.vals, i)
-        SmallDict(keys, vals)
-    end
+    i === nothing ? SmallDict(d) : first(unsafe_pop(d, i))
 end
 
 """
@@ -264,9 +264,8 @@ See also `Base.pop!`, [`delete`](@ref delete(::AbstractSmallDict, ::Any)).
 function pop(d::AbstractSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    @inbounds keys, _ = popat(d.keys, i)
-    @inbounds vals, val = popat(d.vals, i)
-    SmallDict(keys, vals), val
+    e, kv = unsafe_pop(d, i)
+    e, last(kv)
 end
 
 """
@@ -280,9 +279,8 @@ See also `Base.pop!`.
 function pop(d::AbstractSmallDict, key, default)
     i = token(d, key)
     i === nothing && return SmallDict(d), default
-    @inbounds keys, _ = popat(d.keys, i)
-    @inbounds vals, val = popat(d.vals, i)
-    SmallDict(keys, vals), val
+    e, kv = unsafe_pop(d, i)
+    e, last(kv)
 end
 
 function mergewith(op, d::AbstractSmallDict{N,K,V}, e::AbstractDict) where {N,K,V}
@@ -311,10 +309,11 @@ end
 empty!(d::MutableSmallDict) = (empty!(d.keys); empty!(d.vals); d)
 
 @inline function unsafe_pop!(d::MutableSmallDict, i::Int)
+    @inbounds key = d.keys[i]
     @inbounds unsafe_setindex!(d.keys, pop!(d.keys), i)
     @inbounds val = d.vals[i]
     @inbounds unsafe_setindex!(d.vals, pop!(d.vals), i)
-    val
+    key => val
 end
 
 function delete!(d::MutableSmallDict, key)
@@ -332,13 +331,13 @@ end
 function pop!(d::MutableSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
-    unsafe_pop!(d, i)
+    last(unsafe_pop!(d, i))
 end
 
 function pop!(d::MutableSmallDict, key, default)
     i = token(d, key)
     i === nothing && return default
-    unsafe_pop!(d, i)
+    last(unsafe_pop!(d, i))
 end
 
 function filter!(f, d::MutableSmallDict{N,K,V}) where {N,K,V}

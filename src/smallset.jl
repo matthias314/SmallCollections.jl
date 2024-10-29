@@ -2,18 +2,35 @@
 # small sets
 #
 
-export AbstractSmallSet, MutableSmallSet
+export AbstractSmallSet, SmallSet, MutableSmallSet, push, pop, delete
 
 import Base: copy, length, iterate, in, push!, pop!, delete!, filter!, setdiff!
 
 abstract type AbstractSmallSet{N,T} <: AbstractSet{T} end
+
+struct SmallSet{N,T} <: AbstractSmallSet{N,T}
+    d::SmallDict{N,T,Nothing}
+    SmallSet(::Nothing, d::AbstractSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
+end
 
 struct MutableSmallSet{N,T} <: AbstractSmallSet{N,T}
     d::MutableSmallDict{N,T,Nothing}
     MutableSmallSet(::Nothing, d::MutableSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
 end
 
+_SmallSet(d) = SmallSet(nothing, d)
 _MutableSmallSet(d) = MutableSmallSet(nothing, d)
+
+function SmallSet{N,T}(itr; unique = false) where {N,T}
+    if unique
+        keys = SmallVector{N,T}(itr)
+        vals = SmallVector{N,Nothing}(undef, length(keys))
+        d = SmallDict(keys, vals)
+    else
+        d = SmallDict{N,T,Nothing}(x => nothing for x in itr)
+    end
+    _SmallSet(d)
+end
 
 function MutableSmallSet{N,T}(itr; unique = false) where {N,T}
     if unique
@@ -26,10 +43,10 @@ function MutableSmallSet{N,T}(itr; unique = false) where {N,T}
     _MutableSmallSet(d)
 end
 
-function MutableSmallSet{N}(itr::I; kw...) where {N,I}
+function (::Type{S})(itr::I; kw...) where {N,S<:AbstractSmallSet{N},I}
     Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
     T = element_type(I)
-    MutableSmallSet{N,T}(itr; kw...)
+    S{T}(itr; kw...)
 end
 
 copy(s::MutableSmallSet) = MutableSmallSet(nothing, copy(s.d))
@@ -41,6 +58,31 @@ iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
 Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype(S, :d))
 
 in(x, s::AbstractSmallSet) = haskey(s.d, x)
+
+function push(s::AbstractSmallSet, xs...)
+    _SmallSet(push(s.d, map(x -> x => nothing, xs)...))
+end
+
+delete(s::AbstractSmallSet, x) = _SmallSet(delete(s.d, x))
+
+function pop(s::AbstractSmallSet)
+    d, kv = pop(s.d)
+    _SmallSet(d), first(kv)
+end
+
+function pop(s::AbstractSmallSet, x)
+    i = token(s.d, x)
+    i === nothing && error("key not found")
+    d, kv = delete_token(s.d, i)
+    _SmallSet(d), first(kv)
+end
+
+function pop(s::AbstractSmallSet, x, default)
+    i = token(s.d, x)
+    i === nothing && return default
+    d, kv = delete_token(s.d, i)
+    _SmallSet(d), first(kv)
+end
 
 function push!(s::MutableSmallSet, xs...)
     push!(s.d, map(x -> x => nothing, xs)...)
@@ -54,15 +96,13 @@ pop!(s::MutableSmallSet) = first(pop!(s.d))
 function pop!(s::MutableSmallSet, x)
     i = token(s.d, x)
     i === nothing && error("key not found")
-    unsafe_pop!(s.d, i)
-    x
+    first(unsafe_pop!(s.d, i))
 end
 
 function pop!(s::MutableSmallSet, x, default)
     i = token(s.d, x)
     i === nothing && return default
-    unsafe_pop!(s.d, i)
-    x
+    first(unsafe_pop!(s.d, i))
 end
 
 filter!(f, s::MutableSmallSet) = (filter!(f∘first, s.d); s)
