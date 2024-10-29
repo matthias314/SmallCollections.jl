@@ -107,6 +107,7 @@ MutableSmallDict{8, Char, Int64} with 3 entries:
   'b' => 1
   'c' => 4
 
+
 julia> delete!(d, 'b')
 MutableSmallDict{8, Char, Int64} with 2 entries:
   'a' => 0
@@ -144,6 +145,15 @@ keys(d::AbstractSmallDict) = SmallVector(d.keys)
 
 values(d::AbstractSmallDict) = SmallVector(d.vals)
 
+"""
+    capacity(::Type{<:AbstractSmallDict}) -> Int
+    capacity(d::AbstractSmallDict) -> Int
+
+Return the largest number of elements the given dictionary type can hold.
+"""
+capacity(::Type{<:AbstractSmallDict}),
+capacity(::AbstractSmallDict)
+
 capacity(::Type{<:AbstractSmallDict{N}}) where N = N
 
 copy(d::SmallDict) = d
@@ -180,6 +190,13 @@ function getkey(d::AbstractSmallDict, key, default)
     i === nothing ? default : @inbounds d.keys[i]
 end
 
+"""
+    push(d::AbstractSmallDict{N,K,V}, (key, val)::Pair) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+Return the dictionary that is obtained from `d` by adding the mapping `key => val`.
+
+See also `Base.push!`, [`setindex`](@ref setindex(::AbstractSmallDict, ::Any, ::Any)).
+"""
 @propagate_inbounds function push(d::AbstractSmallDict, (key, val)::Pair)
     i = token(d, key)
     if i === nothing
@@ -192,10 +209,26 @@ end
     SmallDict(keys, vals)
 end
 
+"""
+    setindex(d::AbstractSmallDict{N,K,V}, val, key) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+Return the dictionary that is obtained from `d` by adding the mapping `key => val`.
+
+See also `Base.setindex!`, [`push`](@ref push(::AbstractSmallDict, ::Pair)).
+"""
+setindex(::AbstractSmallDict, ::Any, ::Any)
+
 @propagate_inbounds function setindex(d::AbstractSmallDict{N,K,V}, val, key) where {N,K,V}
     push(d, key => val)
 end
 
+"""
+    delete(d::AbstractSmallDict{N,K,V}, key) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+Remove the mapping for `key` from `d` (if it exists) and return the new dictionary.
+
+See also `Base.delete!`, [`pop`](@ref pop(::AbstractSmallDict, ::Any)).
+"""
 function delete(d::AbstractSmallDict, key)
     i = token(d, key)
     if i === nothing
@@ -207,12 +240,27 @@ function delete(d::AbstractSmallDict, key)
     end
 end
 
+"""
+    pop(d::AbstractSmallDict{N,K,V}) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+Remove a mapping `key => val` from `d` and return the new dictionary together with `val`.
+The dictionary `d` must not be empty.
+
+See also `Base.pop!`.
+"""
 @propagate_inbounds function pop(d::AbstractSmallDict)
     keys, key = pop(d.keys)
     @inbounds vals, val = pop(d.vals)
     SmallDict(keys, vals), key => val
 end
 
+"""
+    pop(d::AbstractSmallDict{N,K,V}, key) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+Remove the mapping for `key` from `d` and return the new dictionary together with the value `d[key]`.
+
+See also `Base.pop!`, [`delete`](@ref delete(::AbstractSmallDict, ::Any)).
+"""
 function pop(d::AbstractSmallDict, key)
     i = token(d, key)
     i === nothing && error("key not found")
@@ -221,6 +269,14 @@ function pop(d::AbstractSmallDict, key)
     SmallDict(keys, vals), val
 end
 
+"""
+    pop(d::AbstractSmallDict{N,K,V}, key, default) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+
+If `d` has the `key`, remove it and return the new dictionary together with `d[key]`.
+Otherwise return the tuple `(SmallDict(d), default)`.
+
+See also `Base.pop!`.
+"""
 function pop(d::AbstractSmallDict, key, default)
     i = token(d, key)
     i === nothing && return SmallDict(d), default

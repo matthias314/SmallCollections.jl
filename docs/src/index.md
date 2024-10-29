@@ -112,6 +112,21 @@ julia> v = SmallVector{8}('a':'c'); t = ('p', 'q', 'r'); uppercase.(v .* t .* 'x
  "CRX"
 ```
 
+## [`AbstractSmallDict`](@id sec-abstractsmalldict)
+
+```@docs
+AbstractSmallDict
+SmallDict
+MutableSmallDict
+capacity(::Type{<:AbstractSmallDict})
+setindex(::AbstractSmallDict, ::Any, ::Any)
+push(::AbstractSmallDict, ::Pair)
+pop(::AbstractSmallDict)
+pop(::AbstractSmallDict, ::Any)
+pop(::AbstractSmallDict, ::Any, Any)
+delete(::AbstractSmallDict, ::Any)
+```
+
 ## [`SmallBitSet`](@id sec-smallbitset)
 
 ```@docs
@@ -125,7 +140,7 @@ push(::SmallBitSet, ::Vararg)
 pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)
 pop(::SmallBitSet, ::Any, ::Any)
-delete
+delete(::SmallBitSet, ::Any)
 ```
 
 ### Subsets and shuffles
