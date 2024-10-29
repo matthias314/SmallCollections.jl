@@ -28,9 +28,8 @@ copy(v::AbstractCapacityVector) = v
 
 Return the largest number of elements this vector type can hold.
 """
-capacity(::Type{<:AbstractCapacityVector})
-
-capacity(::V) where V <: AbstractCapacityVector = capacity(V)
+capacity(::Type{<:AbstractCapacityVector}),
+capacity(::AbstractCapacityVector)
 
 """
     setindex(v::V, x, i::Integer) where V <: AbstractCapacityVector -> V
