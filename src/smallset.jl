@@ -42,7 +42,10 @@ Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype
 
 in(x, s::AbstractSmallSet) = haskey(s.d, x)
 
-push!(s::MutableSmallSet, x) = (setindex!(s.d, nothing, x); s)
+function push!(s::MutableSmallSet, xs...)
+    push!(s.d, map(x -> x => nothing, xs)...)
+    s
+end
 
 delete!(s::MutableSmallSet, x) = (delete!(s.d, x); s)
 
