@@ -14,18 +14,19 @@ struct SmallSet{N,T} <: AbstractSmallSet{N,T}
     SmallSet(::Nothing, d::AbstractSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
 end
 
+_SmallSet(d) = SmallSet(nothing, d)
+
 struct MutableSmallSet{N,T} <: AbstractSmallSet{N,T}
     d::MutableSmallDict{N,T,Nothing}
-    MutableSmallSet(::Nothing, d::MutableSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
+    MutableSmallSet(::Nothing, d::AbstractSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
 end
 
-_SmallSet(d) = SmallSet(nothing, d)
 _MutableSmallSet(d) = MutableSmallSet(nothing, d)
 
-function SmallSet{N,T}(itr; unique = false) where {N,T}
+function SmallSet{N,T}(itr; unique = itr isa AbstractSet) where {N,T}
     if unique
         keys = SmallVector{N,T}(itr)
-        vals = SmallVector{N,Nothing}(undef, length(keys))
+        vals = SmallVector(default(Values{N,Nothing}), length(keys))
         d = SmallDict(keys, vals)
     else
         d = SmallDict{N,T,Nothing}(x => nothing for x in itr)
@@ -33,7 +34,10 @@ function SmallSet{N,T}(itr; unique = false) where {N,T}
     _SmallSet(d)
 end
 
-function MutableSmallSet{N,T}(itr; unique = false) where {N,T}
+SmallSet{N,T}(s::AbstractSmallSet; unique = false) where {N,T} =
+    _SmallSet(SmallDict{N,T,Nothing}(s.d))
+
+function MutableSmallSet{N,T}(itr; unique = itr isa AbstractSet) where {N,T}
     if unique
         keys = MutableSmallVector{N,T}(itr)
         vals = MutableSmallVector{N,Nothing}(undef, length(keys))
@@ -44,11 +48,17 @@ function MutableSmallSet{N,T}(itr; unique = false) where {N,T}
     _MutableSmallSet(d)
 end
 
+MutableSmallSet{N,T}(s::AbstractSmallSet; unique = false) where {N,T} =
+    _MutableSmallSet(MutableSmallDict{N,T,Nothing}(s.d))
+
 function (::Type{S})(itr::I; kw...) where {N,S<:AbstractSmallSet{N},I}
     Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
     T = element_type(I)
     S{T}(itr; kw...)
 end
+
+SmallSet(s::AbstractSmallSet) = _SmallSet(s.d)
+MutableSmallSet(s::AbstractSmallSet) = _MutableSmallSet(s.d)
 
 function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
     get(io, :compact, false) || haskey(io, :SHOWN_SET) || invoke(show, Tuple{IO,AbstractSet}, io, s)
