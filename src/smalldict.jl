@@ -21,7 +21,7 @@ abstract type AbstractSmallDict{N,K,V} <: AbstractDict{K,V} end
     SmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
 
     SmallDict{N,K,V}()
-    SmallDict{N,K,V}(itr; unique = false)
+    SmallDict{N,K,V}(itr; unique = itr isa AbstractDict)
     SmallDict{N,K,V}(key1 => val1, key2 => val2, ...; unique = false)
 
 An immutable dictionary with key type `K` and value type `V` that can store up to `N` entries.
@@ -51,7 +51,7 @@ SmallDict{8, Char, Int64} with 3 entries:
 struct SmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
     keys::SmallVector{N,K}
     vals::SmallVector{N,V}
-    SmallDict{N,K,V}(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
+    SmallDict{N,K,V}(keys::AbstractSmallVector, vals::AbstractSmallVector) where {N,K,V} = new{N,K,V}(keys, vals)
     SmallDict(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
 end
 
@@ -73,7 +73,7 @@ SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,K}(), SmallVector{N,V
     keys, vals
 end
 
-function SmallDict{N,K,V}(itr; unique = false) where {N,K,V}
+function SmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
     if unique && isbitstype(Tuple{K,V})
         SmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     elseif N <= 32 || !isbitstype(Tuple{K,V})
@@ -83,11 +83,15 @@ function SmallDict{N,K,V}(itr; unique = false) where {N,K,V}
     end
 end
 
+function SmallDict{N,K,V}(d::AbstractSmallDict; unique = false) where {N,K,V}
+    SmallDict{N,K,V}(d.keys, d.vals)
+end
+
 """
     MutableSmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
 
     MutableSmallDict{N,K,V}()
-    MutableSmallDict{N,K,V}(itr; unique = false)
+    MutableSmallDict{N,K,V}(itr; unique = itr isa AbstractDict)
     MutableSmallDict{N,K,V}(key1 => val1, key2 => val2, ...; unique = false)
 
 An dictionary with key type `K` and value type `V` that can store up to `N` entries.
@@ -117,7 +121,7 @@ MutableSmallDict{8, Char, Int64} with 2 entries:
 struct MutableSmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
     keys::MutableSmallVector{N,K}
     vals::MutableSmallVector{N,V}
-    MutableSmallDict{N,K,V}(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
+    MutableSmallDict{N,K,V}(keys::AbstractSmallVector, vals::AbstractSmallVector) where {N,K,V} = new{N,K,V}(keys, vals)
     MutableSmallDict(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
 end
 
@@ -125,12 +129,16 @@ MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(d.keys, d.vals)
 
 MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(MutableSmallVector{N,K}(), MutableSmallVector{N,V}())
 
-function MutableSmallDict{N,K,V}(itr; unique = false) where {N,K,V}
+function MutableSmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
     if unique
         MutableSmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     else
         foldl(push!, itr; init = MutableSmallDict{N,K,V}())
     end
+end
+
+function MutableSmallDict{N,K,V}(d::AbstractSmallDict; unique = false) where {N,K,V}
+    MutableSmallDict{N,K,V}(d.keys, d.vals)
 end
 
 function (::Type{D})(itr::I; kw...) where {N, D <: AbstractSmallDict{N}, I}
