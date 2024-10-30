@@ -4,7 +4,8 @@
 
 export AbstractSmallSet, SmallSet, MutableSmallSet, push, pop, delete
 
-import Base: copy, length, iterate, in, push!, pop!, delete!, filter!, setdiff!
+import Base: show, copy, length, iterate, in,
+    push!, pop!, delete!, filter!, setdiff!
 
 abstract type AbstractSmallSet{N,T} <: AbstractSet{T} end
 
@@ -47,6 +48,16 @@ function (::Type{S})(itr::I; kw...) where {N,S<:AbstractSmallSet{N},I}
     Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
     T = element_type(I)
     S{T}(itr; kw...)
+end
+
+function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
+    get(io, :compact, false) || haskey(io, :SHOWN_SET) || invoke(show, Tuple{IO,AbstractSet}, io, s)
+    print(io, S <: SmallSet ? "SmallSet" : "MutableSmallSet")
+    print(io, '{', N)
+    isconcretetype(T) || get(io, :typeinfo, Any) == S || print(io, ", ", T)
+    print(io, "}([")
+    join(io, s, ", ")
+    print(io, "])")
 end
 
 copy(s::MutableSmallSet) = MutableSmallSet(nothing, copy(s.d))
