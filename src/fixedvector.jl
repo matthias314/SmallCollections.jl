@@ -292,7 +292,7 @@ vcat(v::AbstractFixedVector) = v
 
 function vcat(v1::AbstractFixedVector{N1,T1}, v2::AbstractFixedVector{N2,T2}, vs::AbstractFixedVector...) where {N1,T1,N2,T2}
     T = promote_type(T1, T2)
-    vcat(AbstractFixedVector{N1+N2,T}((v1..., v2...)), vs...)
+    vcat(FixedVector{N1+N2,T}((v1..., v2...)), vs...)
  end
 
 function findfirst(v::AbstractFixedVector{N,Bool}) where N
