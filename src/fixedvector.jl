@@ -1,5 +1,5 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector,
-    sum_fast, extrema_fast
+    sum_fast, extrema_fast, bits, fasthash
 
 using Base: @propagate_inbounds, tail, haslength, BitInteger
 
@@ -119,6 +119,29 @@ elsize(::Type{MutableFixedVector{N,T}}) where {N,T} = elsize(Vector{T})
 
 unsafe_convert(::Type{Ptr{T}}, v::MutableFixedVector{N,T}) where {N,T} =
     Ptr{T}(pointer_from_objref(v))
+
+"""
+    fasthash(v::AbstractFixedVector [, h0::UInt]) -> UInt
+
+Return a hash for `v` that may be computed faster than the standard `hash`
+for vectors. This new hash is consistent across all `AbstractFixedVector`s
+of the same element type, but it may not be compatible with `hash` or
+with `fasthash` for a `AbstractFixedVector` having a different element type.
+
+Currently, `fasthash` differs from `hash` only if the element type of `v`
+is a bit integer type with at most 32 bits, `Bool` or `Char`.
+
+See also `Base.hash`.
+"""
+fasthash(::AbstractFixedVector, ::UInt)
+
+function fasthash(v::AbstractFixedVector{N,T}, h0::UInt) where {N,T}
+    if (T <: BitInteger && bitsize(T) <= 32) || T == Bool || T == Char
+        Base.hash_integer(bits(v), h0)
+    else
+        hash(v, h0)
+    end
+end
 
 IndexStyle(::Type{<:AbstractFixedVector}) = IndexLinear()
 

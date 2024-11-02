@@ -125,11 +125,11 @@ julia> w = SmallVector{8,Int16}(v); fasthash(v) == fasthash(w)
 false
 ```
 """
-fasthash(v::AbstractSmallVector, h0::UInt)
+fasthash(::AbstractSmallVector, ::UInt)
 
 function fasthash(v::AbstractSmallVector{N,T}, h0::UInt) where {N,T}
     if (T <: BitInteger && bitsize(T) <= 32) || T == Bool || T == Char
-        Base.hash_integer(bits(v.b), hash(length(v), h0))
+        fasthash(v.b, hash(length(v), h0))
     else
         hash(v, h0)
     end
