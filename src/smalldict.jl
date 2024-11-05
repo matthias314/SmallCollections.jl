@@ -147,7 +147,9 @@ function (::Type{D})(itr::I; kw...) where {N, D <: AbstractSmallDict{N}, I}
     D{fieldtypes(KV)...}(itr; kw...)
 end
 
-(::Type{D})(kv::Pair...; kw...) where D <: AbstractSmallDict = D(kv; kw...)
+SmallDict{N,K,V}(kvs::Pair...; kw...) where {N,K,V} = SmallDict{N,K,V}(kvs; kw...)
+MutableSmallDict{N,K,V}(kvs::Pair...; kw...) where {N,K,V} = MutableSmallDict{N,K,V}(kvs; kw...)
+(::Type{D})(kvs::Pair...; kw...) where {N, D <: AbstractSmallDict{N}} = D(kvs; kw...)
 
 keys(d::AbstractSmallDict) = SmallVector(d.keys)
 
