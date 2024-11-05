@@ -20,6 +20,7 @@ abstract type AbstractSmallSet{N,T} <: AbstractSet{T} end
 """
     SmallSet{N,T} <: AbstractSmallSet{N,T}
 
+    SmallSet{N,T}()
     SmallSet{N,T}(itr; unique = itr isa AbstractSet)
 
 An immutable set with element type `T` that can store up to `N` entries.
@@ -40,6 +41,7 @@ _SmallSet(d) = SmallSet(nothing, d)
 """
     MutableSmallSet{N,T} <: AbstractSmallSet{N,T}
 
+    MutableSmallSet{N,T}()
     MutableSmallSet{N,T}(itr; unique = itr isa AbstractSet)
 
 A set with element type `T` that can store up to `N` entries.
@@ -90,6 +92,8 @@ function (::Type{S})(itr::I; kw...) where {N,S<:AbstractSmallSet{N},I}
     T = element_type(I)
     S{T}(itr; kw...)
 end
+
+(::Type{S})() where {N,T,S<:AbstractSmallSet{N,T}} = S((); unique = true)
 
 SmallSet(s::AbstractSmallSet) = _SmallSet(s.d)
 MutableSmallSet(s::AbstractSmallSet) = _MutableSmallSet(s.d)
