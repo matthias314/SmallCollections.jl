@@ -2,7 +2,8 @@
 # small sets
 #
 
-export AbstractSmallSet, SmallSet, MutableSmallSet, push, pop, delete
+export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
+    push, pop, delete
 
 import Base: show, copy, length, iterate, in,
     push!, pop!, delete!, filter!, setdiff!
@@ -69,6 +70,8 @@ function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
     join(io, s, ", ")
     print(io, "])")
 end
+
+capacity(::Type{<:AbstractSmallSet{N}}) where N = N
 
 copy(s::MutableSmallSet) = MutableSmallSet(nothing, copy(s.d))
 
