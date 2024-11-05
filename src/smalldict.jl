@@ -237,7 +237,7 @@ end
 end
 
 """
-    delete(d::AbstractSmallDict{N,K,V}, key) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+    delete(d::AbstractSmallDict{N,K,V}, key) where {N,K,V} -> SmallDict{N,K,V}
 
 Remove the mapping for `key` from `d` (if it exists) and return the new dictionary.
 
@@ -277,9 +277,9 @@ function pop(d::AbstractSmallDict, key)
 end
 
 """
-    pop(d::AbstractSmallDict{N,K,V}, key, default) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
+    pop(d::AbstractSmallDict{N,K,V}, key, default::U) where {N,K,V,U} -> Tuple{SmallDict{N,K,V}, Union{V,U}}
 
-If `d` has the `key`, remove it and return the new dictionary together with `d[key]`.
+If `d` has the key `key`, remove it and return the new dictionary together with `d[key]`.
 Otherwise return the tuple `(SmallDict(d), default)`.
 
 See also `Base.pop!`.
