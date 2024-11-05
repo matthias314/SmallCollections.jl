@@ -95,13 +95,20 @@ SmallSet(s::AbstractSmallSet) = _SmallSet(s.d)
 MutableSmallSet(s::AbstractSmallSet) = _MutableSmallSet(s.d)
 
 function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
-    get(io, :compact, false) || haskey(io, :SHOWN_SET) || invoke(show, Tuple{IO,AbstractSet}, io, s)
-    print(io, S <: SmallSet ? "SmallSet" : "MutableSmallSet")
-    print(io, '{', N)
-    isconcretetype(T) || get(io, :typeinfo, Any) == S || print(io, ", ", T)
-    print(io, "}([")
-    join(io, s, ", ")
-    print(io, "])")
+    if isempty(s) || get(io, :compact, false) || haskey(io, :SHOWN_SET)
+        print(io, S <: SmallSet ? "SmallSet" : "MutableSmallSet")
+        print(io, '{', N)
+        if isempty(s)
+            print(io, ", ", T, "}()")
+        else
+            isconcretetype(T) || get(io, :typeinfo, Any) == S || print(io, ", ", T)
+            print(io, "}([")
+            join(io, s, ", ")
+            print(io, "])")
+        end
+    else
+        invoke(show, Tuple{IO, AbstractSet}, io, s)
+    end
 end
 
 """
