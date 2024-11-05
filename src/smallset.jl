@@ -8,8 +8,28 @@ export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
 import Base: show, copy, length, iterate, in,
     push!, pop!, delete!, filter!, setdiff!
 
+"""
+    AbstractSmallSet{N,T} <: AbstractSet{T}
+
+This is the supertype of `SmallSet{N,T}` and `MutableSmallSet{N,T}`.
+
+See also [`SmallSet`](@ref), [`MutableSmallSet`](@ref).
+"""
 abstract type AbstractSmallSet{N,T} <: AbstractSet{T} end
 
+"""
+    SmallSet{N,T} <: AbstractSmallSet{N,T}
+
+    SmallSet{N,T}(itr; unique = itr isa AbstractSet)
+
+An immutable set with element type `T` that can store up to `N` entries.
+All entries come from the iterator `itr` provided at construction time.
+
+If the element type is omitted, it will be inferred from the iterator, if possible.
+If `unique` is set to `true`, then the elements of `itr` are assumed to be distinct.
+
+See also [`AbstractSmallSet`](@ref), [`MutableSmallSet`](@ref).
+"""
 struct SmallSet{N,T} <: AbstractSmallSet{N,T}
     d::SmallDict{N,T,Nothing}
     SmallSet(::Nothing, d::AbstractSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
@@ -17,6 +37,19 @@ end
 
 _SmallSet(d) = SmallSet(nothing, d)
 
+"""
+    MutableSmallSet{N,T} <: AbstractSmallSet{N,T}
+
+    MutableSmallSet{N,T}(itr; unique = itr isa AbstractSet)
+
+A set with element type `T` that can store up to `N` entries.
+The set is mutable and implements Julia's set interface.
+
+If the element type is omitted, it will be inferred from the iterator, if possible.
+If `unique` is set to `true`, then the elements of `itr` are assumed to be distinct.
+
+See also [`AbstractSmallSet`](@ref), [`SmallSet`](@ref).
+"""
 struct MutableSmallSet{N,T} <: AbstractSmallSet{N,T}
     d::MutableSmallDict{N,T,Nothing}
     MutableSmallSet(::Nothing, d::AbstractSmallDict{N,T,Nothing}) where {N,T} = new{N,T}(d)
@@ -71,6 +104,15 @@ function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
     print(io, "])")
 end
 
+"""
+    capacity(::Type{<:AbstractSmallSet}) -> Int
+    capacity(d::AbstractSmallSet) -> Int
+
+Return the largest number of elements the given dictionary type can hold.
+"""
+capacity(::Type{<:AbstractSmallSet}),
+capacity(::AbstractSmallSet)
+
 capacity(::Type{<:AbstractSmallSet{N}}) where N = N
 
 copy(s::MutableSmallSet) = MutableSmallSet(nothing, copy(s.d))
@@ -83,17 +125,46 @@ Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype
 
 in(x, s::AbstractSmallSet) = haskey(s.d, x)
 
+"""
+    push(s::AbstractSmallSet{N,T}, xs...) where {N,T} -> Tuple{SmallSet{N,T}, T}
+
+Return the set that is obtained from `s` by adding the elements given as arguments.
+
+See also `Base.push!`.
+"""
 function push(s::AbstractSmallSet, xs...)
     _SmallSet(push(s.d, map(x -> x => nothing, xs)...))
 end
 
+"""
+    delete(s::AbstractSmallSet{N,T}, x) where {N,T} -> SmallSet{N,T}
+
+Remove the element `x` from `s` (if it exists) and return the new set.
+
+See also `Base.delete!`, [`pop`](@ref pop(::AbstractSmallSet, ::Any)).
+"""
 delete(s::AbstractSmallSet, x) = _SmallSet(delete(s.d, x))
 
+"""
+    pop(s::AbstractSmallSet{N,T}) where {N,T} -> Tuple{SmallSet{N,T}, T}
+
+Remove an element `x` from `s` and return the new set together with `x`.
+The set `s` must not be empty.
+
+See also `Base.pop!`.
+"""
 function pop(s::AbstractSmallSet)
     d, kv = pop(s.d)
     _SmallSet(d), first(kv)
 end
 
+"""
+    pop(s::AbstractSmallSet{N,T}, x) where {N,T} -> Tuple{SmallSet{N,T}, T}
+
+Remove the element `x` from `s` and return the new set together with the stored element equal to `x`.
+
+See also `Base.pop!`, [`delete`](@ref delete(::AbstractSmallSet, ::Any)).
+"""
 function pop(s::AbstractSmallSet, x)
     i = token(s.d, x)
     i === nothing && error("key not found")
@@ -101,6 +172,14 @@ function pop(s::AbstractSmallSet, x)
     _SmallSet(d), first(kv)
 end
 
+"""
+    pop(s::AbstractSmallSet{N,T}, x, default::U) where {N,T,U} -> Tuple{SmallSet{N,T}, Union{T,U}}
+
+If `s` has the element `x`, remove it and return the new set together with the stored element equal to `x`.
+Otherwise return the tuple `(SmallSet(d), default)`.
+
+See also `Base.pop!`.
+"""
 function pop(s::AbstractSmallSet, x, default)
     i = token(s.d, x)
     i === nothing && return default
