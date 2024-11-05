@@ -4,13 +4,16 @@ using SmallCollections
 
 using BangBang: BangBang, NoBang, Mutator
 
-BangBang.implements(::Mutator, ::Type{<:SmallBitSet}) = false
+BangBang.implements(::Mutator, ::Type{<:Union{SmallDict, SmallSet, SmallBitSet}}) = false
 
 for f in (:push, :pop, :delete)
-    @eval NoBang.$f(v::SmallBitSet, args...) = $f(v, args...)
+    @eval NoBang.$f(c::SmallDict, x::Pair) = $f(c, x)
+    @eval NoBang.$f(c::Union{SmallSet, SmallBitSet}, x) = $f(c, x)
 end
 
-const CapacityVector = Union{SmallVector,PackedVector}
+NoBang.pop(c::Union{SmallDict, SmallSet, SmallBitSet}) = pop(c)
+
+const CapacityVector = Union{SmallVector, PackedVector}
 
 BangBang.implements(::Mutator, ::Type{<:CapacityVector}) = false
 

@@ -6,14 +6,15 @@ DocTestSetup = :(using SmallCollections)
 
 If the package [`BangBang.jl`](https://github.com/JuliaFolds2/BangBang.jl)
 is loaded, then the functions
-[`push`](@ref push(::SmallBitSet, ::Vararg)),
-[`pop`](@ref pop(::SmallBitSet)),
-[`delete`](@ref),
+`push`,
+`pop` and
+`delete`
+for `SmallDict`, `SmallSet` and `SmallBitSet`,
 `union`,
 `intersect`,
 `setdiff` and
 `symdiff`
-for `SmallBitSet` as well as
+for `SmallSet` and `SmallBitSet` as well as
 [`setindex`](@ref),
 [`push`](@ref push(::AbstractSmallVector, ::Vararg)),
 [`pushfirst`](@ref),
