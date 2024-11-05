@@ -85,7 +85,7 @@ include("smallbitset.jl")
 include("fixedvector.jl")
 include("staticvectors.jl")
 
-include("abstractsmallvector.jl")
+include("capacityvector.jl")
 include("smallvector.jl")
 include("mutablesmallvector.jl")
 include("packedvector.jl")
