@@ -151,6 +151,8 @@ empty(::AbstractSmallSet, ::Type)
 empty(s::SmallSet{N,T}, ::Type{U} = T) where {N,T,U} = SmallSet{N,U}()
 empty(s::MutableSmallSet{N,T}, ::Type{U} = T) where {N,T,U} = MutableSmallSet{N,U}()
 
+Base.emptymutable(s::AbstractSmallSet{N,T}, ::Type{U} = T) where {N,T,U} = MutableSmallSet{N,U}()
+
 """
     push(s::AbstractSmallSet{N,T}, xs...) where {N,T} -> Tuple{SmallSet{N,T}, T}
 
