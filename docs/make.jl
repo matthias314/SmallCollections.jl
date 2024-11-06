@@ -8,5 +8,16 @@ DocMeta.setdocmeta!(SmallCollections, :DocTestSetup, quote
 
 makedocs(sitename = "SmallCollections.jl",
     modules = [SmallCollections],
+    pages = [
+        "index.md",
+        "fixedvector.md",
+        "capacityvector.md",
+        "broadcast.md",
+        "smalldict.md",
+        "smallset.md",
+        "smallbitset.md",
+        "bangbang.md",
+        "nonexported.md",
+    ],
     format = Documenter.HTML(),
     warnonly = true)
