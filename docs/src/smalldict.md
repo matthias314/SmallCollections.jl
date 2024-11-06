@@ -9,6 +9,7 @@ AbstractSmallDict
 SmallDict
 MutableSmallDict
 capacity(::Type{<:AbstractSmallDict})
+empty(::AbstractSmallDict)
 setindex(::AbstractSmallDict, ::Any, ::Any)
 push(::AbstractSmallDict, ::Pair)
 pop(::AbstractSmallDict)

@@ -3,7 +3,7 @@
 #
 
 export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
-    push, pop, delete
+    empty, push, pop, delete
 
 import Base: show, copy, length, iterate, in,
     push!, pop!, delete!, filter!, setdiff!
@@ -135,6 +135,21 @@ iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
 Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype(S, :d))
 
 in(x, s::AbstractSmallSet) = haskey(s.d, x)
+
+"""
+    empty(d::AbstractSmallDict{N,K,V}) where {N,K,V,W} -> AbstractSmallVector{N,K,V}
+    empty(d::AbstractSmallDict{N,K,V}, W::Type) where {N,K,V,W} -> AbstractSmallVector{N,K,W}
+    empty(d::AbstractSmallDict{N,K,V}, L::Type, W::Type) where {N,K,V,L,W} -> AbstractSmallVector{N,L,W}
+
+Return an empty `AbstractSmallDictionary` with the same capacity as `d`,
+and with `valtype` changed to `W` and `keytype` changed to `L` if so specified.
+The resulting dictionary is mutable if and only if `d` is so.
+"""
+empty(::AbstractSmallSet),
+empty(::AbstractSmallSet, ::Type)
+
+empty(s::SmallSet{N,T}, ::Type{U} = T) where {N,T,U} = SmallSet{N,U}()
+empty(s::MutableSmallSet{N,T}, ::Type{U} = T) where {N,T,U} = MutableSmallSet{N,U}()
 
 """
     push(s::AbstractSmallSet{N,T}, xs...) where {N,T} -> Tuple{SmallSet{N,T}, T}
