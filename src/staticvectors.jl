@@ -94,8 +94,9 @@ Return the default value of type `T` used for filling unused elements of an `Abs
 This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwise it can
 be any value of type `T`.
 
-This function has methods for number types, bits types (including `Char` and `SmallBitSet` types),
-`String`, `Symbol` and `AbstractSmallVector`. Methods for other types must be defined explicitly.
+This function has methods for number types, bits types, `Symbol`, `AbstractChar`, `AbstractString`,
+`AbstractFixedVector`, `AbstractSmallVector` und `SmallBitSet`.
+Methods for other types must be defined explicitly.
 
 See also `Base.isbitstype`.
 """
@@ -119,8 +120,8 @@ Base.@assume_effects :total function default_bitstype(::Type{T}) where T
 end
 
 default(::Type{T}) where T <: Number = zero(T)
-default(::Type{Char}) = Char(0)
-default(::Type{String}) = ""
+default(::Type{T}) where T <: AbstractChar = T(0)
+default(::Type{<:AbstractString}) = ""
 default(::Type{Symbol}) = Symbol()
 
 default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(ntuple(Returns(default(T)), Val(N)))
