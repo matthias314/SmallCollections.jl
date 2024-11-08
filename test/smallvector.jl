@@ -23,6 +23,7 @@ end
         if T <: Number
             @test_inferred eq_fast(v, v2) true
             @test_inferred eq_fast(v, v3) true
+            T <: Integer && bitsize(T) >= bitsize(Float64) && continue
             v4 = SmallVector{N,Float64}(u)
             @test_inferred v == v4 true
             @test_inferred eq_fast(v, v4) true

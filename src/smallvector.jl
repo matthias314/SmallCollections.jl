@@ -9,7 +9,7 @@ import Base: ==, Tuple, empty,
     zero, map, reverse, findfirst, findlast, in,
     +, -, *, sum, prod, maximum, minimum, extrema
 
-import Base.FastMath: mul_fast
+import Base.FastMath: eq_fast, mul_fast
 
 """
     AbstractSmallVector{N,T} <: AbstractVector{T}
@@ -79,21 +79,10 @@ end
 
 capacity(::Type{<:AbstractSmallVector{N}}) where N = N
 
-function Base.FastMath.eq_fast(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where
-        {N1, T1<:Union{FastInteger,FastFloat}, N2, T2<:Union{FastInteger,FastFloat}}
-    length(v) == length(w) && iszero(padded_sub(v.b, w.b))
+for cmp in (:(==), :(eq_fast))
+    @eval $cmp(v::AbstractSmallVector, w::AbstractSmallVector) =
+        length(v) == length(w) && all(map($cmp, v.b, w.b))
 end
-
-function ==(v::AbstractSmallVector{N1}, w::AbstractSmallVector{N2}) where {N1,N2}
-    N = min(N1, N2)
-    length(v) == length(w) && all(ntuple(i -> v.b[i] == w.b[i], Val(N)))
-end
-
-==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastInteger} = @fastmath v == w
-
-==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastInteger,N2,T2<:FastFloat} = @fastmath v == w
-
-==(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1,T1<:FastFloat,N2,T2<:FastInteger} = @fastmath v == w
 
 """
     fasthash(v::AbstractSmallVector [, h0::UInt]) -> UInt
