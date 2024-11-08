@@ -126,18 +126,6 @@ default(::Type{Symbol}) = Symbol()
 
 default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(ntuple(Returns(default(T)), Val(N)))
 
-function padded_add(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
-    T = promote_type(T1, T2)
-    N = min(N1, N2)
-    Values{N,T}(ntuple(i -> v[i]+w[i], Val(N)))
-end
-
-function padded_sub(v::TupleVector{N1,T1}, w::TupleVector{N2,T2}) where {N1,T1,N2,T2}
-    T = promote_type(T1, T2)
-    N = min(N1, N2)
-    Values{N,T}(ntuple(i -> v[i]-w[i], Val(N)))
-end
-
 #
 # bit conversions
 #

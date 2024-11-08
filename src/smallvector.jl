@@ -227,17 +227,13 @@ function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
 end
 
 +(v::AbstractSmallVector) = v
-
-@inline function +(v::AbstractSmallVector, w::AbstractSmallVector)
-    @boundscheck length(v) == length(w) || error("vectors must have the same length")
-    SmallVector(padded_add(v.b, w.b), length(v))
-end
-
 -(v::AbstractSmallVector) = SmallVector(-v.b, length(v))
 
-@inline function -(v::AbstractSmallVector, w::AbstractSmallVector)
-    @boundscheck length(v) == length(w) || error("vectors must have the same length")
-    SmallVector(padded_sub(v.b, w.b), length(v))
+for op in (:+, :-)
+    @eval @inline function $op(v::AbstractSmallVector, w::AbstractSmallVector)
+        @boundscheck length(v) == length(w) || error("vectors must have the same length")
+        SmallVector(map($op, v.b, w.b), length(v))
+    end
 end
 
 @inline mul_fast(c::Number, v::AbstractSmallVector) = SmallVector(c*v.b, length(v))
