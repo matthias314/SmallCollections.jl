@@ -39,11 +39,13 @@ end
 
 @struct_equal_hash TestStruct
 
-Base.rand(::Type{String}) = string(rand(Char, 3)...)
-Base.rand(::Type{Symbol}) = Symbol(rand(Char, 3)...)
-Base.rand(::Type{T}) where T <: Enum = rand(instances(T))
-Base.rand(::Type{TestStruct}) = TestStruct(map(rand, fieldtypes(TestStruct))...)
-Base.rand(::Type{T}, n::Integer) where T <: Union{String,Symbol,TestEnum,TestStruct} = T[rand(T) for _ in 1:n]
+# custom rand function
+rand(args...) = Base.rand(args...)
+rand(::Type{String}) = string(rand(Char, 3)...)
+rand(::Type{Symbol}) = Symbol(rand(Char, 3)...)
+rand(::Type{T}) where T <: Enum = rand(instances(T))
+rand(::Type{TestStruct}) = TestStruct(map(rand, fieldtypes(TestStruct))...)
+rand(::Type{T}, n::Integer) where T <: Union{String,Symbol,TestEnum,TestStruct} = T[rand(T) for _ in 1:n]
 
 test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct)
 
