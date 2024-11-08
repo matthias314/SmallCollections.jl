@@ -147,11 +147,11 @@ vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
 unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 
 """
-    bits(v::$TupleVector{N,T}) where {N, T <: Union{Base.BitInteger,Bool,Char}} -> Unsigned
+    bits(v::$TupleVector{N,T}) where {N, T <: Union{Base.BitInteger,Bool,Char,Enum}} -> Unsigned
 
 Convert the given vector to an unsigned integer.
 
-For bit integers and `Char` this is the same as `reinterpret(U, Tuple(v))` provided that
+For bit integers, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))` provided that
 `U` is an unsigned integer type with `N*bitsize(T)` bits, possibly defined by the package
 `BitIntegers`. Otherwise the result will be zero-extended to the next unsigned integer type `U`
 whose bit length is a power of `2`.
@@ -181,7 +181,7 @@ julia> $Values{22}(map(isodd, 1:22)) |> bits
 """
 bits(v::TupleVector)
 
-@generated function bits(v::TupleVector{N,T}) where {N, T <: Union{BitInteger,Char}}
+@generated function bits(v::TupleVector{N,T}) where {N, T <: Union{BitInteger,Char,Enum}}
     s = bitsize(T)
     b = N*s
     c = nextpow(2, b)

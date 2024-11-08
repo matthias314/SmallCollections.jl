@@ -7,22 +7,6 @@ function isvalid(v::SmallVector{N,T}) where {N,T}
     0 <= n <= N && all(==(default(T)), view(v.b, n+1:N))
 end
 
-using StructEqualHash: @struct_equal_hash
-
-struct A
-    x::Char
-    y::Int
-end
-
-@struct_equal_hash A
-
-test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, A)
-
-Base.rand(::Type{String}) = string(rand(Char, 3)...)
-Base.rand(::Type{Symbol}) = Symbol(rand(Char, 3)...)
-Base.rand(::Type{A}) = A(map(rand, fieldtypes(A))...)
-Base.rand(::Type{T}, n::Integer) where T <: Union{String,Symbol,A} = T[rand(T) for _ in 1:n]
-
 @testset "SmallVector" begin
     for N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)

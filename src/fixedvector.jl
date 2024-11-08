@@ -328,7 +328,7 @@ function findlast(v::AbstractFixedVector{N,Bool}) where N
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
 end
 
-const FastTestType = Union{Base.HWReal, Bool, Char}
+const FastTestType = Union{Base.HWReal, Bool, Char, Enum}
 
 const FastTest = Union{
     Base.Fix2{<:Union{typeof.((==, !=, <=, >=, <, >, isequal))...}, <:FastTestType},
