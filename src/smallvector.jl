@@ -192,17 +192,17 @@ default(::Type{V}) where V <: AbstractSmallVector = V()
 
 @inline zero(v::V) where V <: AbstractSmallVector = V(zero(v.b), length(v))
 
-function zeros(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
-    SmallVector(zero(Values{N,T}), n)
+    V(zero(Values{N,T}), n)
 end
 
-function ones(::Type{SmallVector{N,T}}, n::Integer) where {N,T}
+function ones(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
     t = ntuple(Val(N)) do i
         i <= n ? one(T) : zero(T)
     end
-    SmallVector{N,T}(Values{N,T}(t), n)
+    V(Values{N,T}(t), n)
 end
 
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(Values{N,T}), 0)
