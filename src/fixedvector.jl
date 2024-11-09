@@ -5,7 +5,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
-    sum, prod, minimum, maximum, extrema, count, any, all, in, reverse,
+    minimum, maximum, extrema, count, any, all, in, reverse,
     findfirst, findlast, vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd
 
@@ -234,16 +234,16 @@ for f in [:(==), :isequal]
     @eval $f(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = all(map($f, v, w))
 end
 
-for (g, op) in ((:_sum, :+), (:_prod, :*))
+for (g, op, init) in ((:_sum, :+, 0), (:_prod, :*, 1))
     @eval function Base.$g(f::F, v::AbstractFixedVector, ::Colon; kw...) where F
         w = map(f, v)
         T = eltype(w)
         if !(T <: Integer) || bitsize(T) >= bitsize(Int)
             foldl($op, w; kw...)
         elseif T <: Unsigned
-            foldl($op, w; init = UInt(0), kw...)
+            foldl($op, w; init = UInt($init), kw...)
         else
-            foldl($op, w; init = Int(0), kw...)
+            foldl($op, w; init = Int($init), kw...)
         end
     end
 end
