@@ -15,4 +15,5 @@ addindex(::AbstractFixedVector, ::Any, ::Integer)
 sum_fast(::AbstractFixedVector)
 extrema_fast(::AbstractFixedVector)
 extrema_fast(::Any, ::AbstractFixedVector)
+support(::AbstractFixedVector)
 ```
