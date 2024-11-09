@@ -59,6 +59,7 @@ test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Sym
 
 include("bits.jl")
 include("smallbitset.jl")
+include("fixedvector.jl")
 include("smallvector.jl")
 include("packedvector.jl")
 include("bangbang.jl")
