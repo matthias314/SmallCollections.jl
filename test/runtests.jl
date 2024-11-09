@@ -1,27 +1,35 @@
 using Test, SmallCollections, BitIntegers
 
-macro test_inferred(cmd, good)
-    esc(quote
-        let result = @inferred($cmd), good = $good
-            @test isequal(result, good)
-            @test typeof(result) == typeof(good)
-            result
-        end
-    end)
-end
+macro test_inferred(expr, good, goodtype = missing)
+    msg = """
 
-macro test_inferred(cmd, good, type)
-    esc(quote
-        let result = @inferred($cmd), good = $good, type = $type
-            @test isequal(result, good)
-            if type isa Type
-                @test result isa type
-            else
-                @test result isa typeof(type)
+        expression:      $expr
+        expected result: $good
+        expected type:   $(goodtype === missing ? "type of expected result" : goodtype)
+        location:        $(something(__source__.file, :none)):$(__source__.line)
+
+        """
+    quote
+        let good = $good, goodtype = $goodtype,
+                result = try
+                    @inferred($expr)
+                catch e
+                    printstyled($msg; bold = true, color = :magenta)
+                    rethrow(e)
+                end
+            if goodtype === missing
+                goodtype = typeof(good)
+            elseif !(goodtype isa Type)
+                goodtype = typeof(goodtype)
             end
+            testresult = @test isequal(result, good)
+            if testresult isa Test.Pass
+                testresult = @test result isa goodtype
+            end
+            testresult isa Test.Pass || printstyled($msg; bold = true, color = :magenta)
             result
         end
-    end)
+    end |> esc
 end
 
 @enum TestEnum::Int16 begin
