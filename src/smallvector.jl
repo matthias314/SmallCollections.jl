@@ -470,9 +470,9 @@ end
     SmallVector(c, n-1), x
 end
 
-@propagate_inbounds append(v::AbstractSmallVector, ws...) = foldl(append, ws; init = v)
+@propagate_inbounds append(v::AbstractSmallVector, ws...) = foldl(append, ws; init = SmallVector(v))
 
-@propagate_inbounds append(v::AbstractSmallVector, w) = foldl(push, w; init = v)
+@propagate_inbounds append(v::AbstractSmallVector, w) = foldl(push, w; init = SmallVector(v))
 
 @inline function append(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
@@ -485,7 +485,7 @@ end
 end
 
 @propagate_inbounds function prepend(v::AbstractSmallVector, ws...)
-    foldr((w, v) -> prepend(v, w), ws; init = v)
+    foldr((w, v) -> prepend(v, w), ws; init = SmallVector(v))
 end
 
 @inline function prepend(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
