@@ -198,7 +198,7 @@ function filter(f::F, v::AbstractCapacityVector) where F
     w = empty(v)
     for x in v
         if f(x)
-            w = @inbounds push(w, x)
+            @inbounds w = ismutable(w) ? push!(w, x) : push(w, x)
         end
     end
     w
