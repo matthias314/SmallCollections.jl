@@ -196,7 +196,7 @@ See also `Base.pop!`, [`delete`](@ref delete(::AbstractSmallSet, ::Any)).
 function pop(s::AbstractSmallSet, x)
     i = token(s.d, x)
     i === nothing && error("key not found")
-    d, kv = delete_token(s.d, i)
+    d, kv = unsafe_pop(s.d, i)
     _SmallSet(d), first(kv)
 end
 
@@ -211,7 +211,7 @@ See also `Base.pop!`.
 function pop(s::AbstractSmallSet, x, default)
     i = token(s.d, x)
     i === nothing && return default
-    d, kv = delete_token(s.d, i)
+    d, kv = unsafe_pop(s.d, i)
     _SmallSet(d), first(kv)
 end
 
