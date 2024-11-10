@@ -565,7 +565,7 @@ instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
 
 function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
-    i = findfirst(x -> x isa AbstractSmallVector, bcflat.args)
+    i = findfirst(x -> x isa AbstractSmallVector, bcflat.args)::Int
     n = length(bcflat.args[i])
     foreach(bcflat.args) do x
         x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&

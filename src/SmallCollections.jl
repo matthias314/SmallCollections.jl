@@ -40,6 +40,7 @@ const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
+capacity(::Type{Union{}}) = error("not defined")   # for JET analysis
 
 fasthash(x) = fasthash(x, UInt(0))
 
@@ -63,6 +64,7 @@ Float64
 ```
 """
 element_type(::I) where I = element_type(I)
+element_type(::Type{Union{}}) = error("not defined")   # for JET analysis
 element_type(::Type{I}) where I = eltype(I)
 element_type(::Type{<:Tuple{Vararg{T}}}) where T = T
 element_type(::Type{<:Tuple{Vararg{T}}}) where T <: Pair = T
