@@ -650,7 +650,7 @@ SmallBitSet{UInt64}[]
 """
 function subsets(n::Integer, k::Integer)
     n >= 0 || error("first argument must be non-negative")
-    n <= bitsize(UInt) || error("at most $(bitsize(U)) elements supported")
+    n <= bitsize(UInt) || error("at most $(bitsize(UInt)) elements supported")
     Generator(first∘first, Shuffles(missing, (k, n-k)))
 end,
 function subsets(s::SmallBitSet, k::Integer)
