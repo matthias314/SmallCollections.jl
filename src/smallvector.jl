@@ -430,7 +430,7 @@ end
 
 @inline function pushfirst(v::AbstractSmallVector{N}, xs...) where N
     n = length(xs)+length(v)
-    @boundscheck n <= N || error("vector cannot have more $N elements")
+    @boundscheck n <= N || error("vector cannot have more than $N elements")
     SmallVector(pushfirst(v.b, xs...), n)
 end
 
