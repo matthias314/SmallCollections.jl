@@ -4,7 +4,7 @@ import Base:
     copy, copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
-    append!, prepend!, pushfirst!, empty, empty!, map!
+    append!, prepend!, pushfirst!, empty, empty!, map!, filter!
 
 export duplicate!
 
@@ -235,6 +235,16 @@ end
     GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
     v.n += 1
     v
+end
+
+function filter!(f, v::MutableSmallVector)
+    j = 1
+    @inbounds for i in eachindex(v)
+        f(v[i]) || continue
+        v[j] = v[i]
+        j += 1
+    end
+    @inbounds resize!(v, j-1)
 end
 
 function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,N}) where {F,N}
