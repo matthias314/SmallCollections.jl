@@ -210,7 +210,7 @@ See also `Base.pop!`.
 """
 function pop(s::AbstractSmallSet, x, default)
     i = token(s.d, x)
-    i === nothing && return default
+    i === nothing && return SmallSet(s), default
     d, kv = unsafe_pop(s.d, i)
     _SmallSet(d), first(kv)
 end
