@@ -63,8 +63,8 @@ See also [`SmallVector`](@ref), `Base.isbitstype`.
 """
 mutable struct MutableSmallVector{N,T} <: AbstractSmallVector{N,T}
     b::Values{N,T}
-    n::Int
-    MutableSmallVector{N,T}(v::Values{N}, n::Int) where {N,T} = new{N,T}(v, n)
+    n::SmallLength
+    MutableSmallVector{N,T}(v::Values{N}, n::Integer) where {N,T} = new{N,T}(v, n % SmallLength)
     global _MutableSmallVector(::Val{N}, ::Type{T}) where {N,T} = new{N,T}()
 end
 
@@ -74,7 +74,7 @@ function MutableSmallVector{N,T}(::UndefInitializer, n::Integer) where {N,T}
     for i in n+1:N
         unsafe_setindex!(v, default(T), i)
     end
-    v.n = n
+    v.n = n % SmallLength
     v
 end
 
@@ -89,7 +89,7 @@ function MutableSmallVector{N,T}(itr) where {N,T}
         i <= N || error("vector cannot have more than $N elements")
         unsafe_setindex!(v, x, i)
     end
-    v.n = i
+    v.n = i % SmallLength
     v
 end
 
@@ -138,7 +138,7 @@ empty!(v::MutableSmallVector) = resize!(v, 0)
 
 @inline function resize!(v::MutableSmallVector{N,T}, n::Integer) where {N,T}
     @boundscheck 0 <= n <= N || error("length must be between 0 and $N")
-    v.n = n
+    v.n = n % SmallLength
     for i in n+1:length(v)
         @inbounds v[i] = default(T)
     end
@@ -156,7 +156,7 @@ end
             unsafe_store!(pointer(v, j), default(T))
         end
     end
-    v.n -= n
+    v.n -= n % SmallLength
     v
 end
 
@@ -192,7 +192,7 @@ end
     n = length(v)+length(w)
     @boundscheck n <= N || error("vector cannot have more than $N elements")
     GC.@preserve v unsafe_copyto!(pointer(v, length(v)+1), pointer(w), length(w))
-    v.n = n
+    v.n = n % SmallLength
     v
 end
 
@@ -206,7 +206,7 @@ end
         unsafe_copyto!(pointer(v, length(w)+1), pointer(v), length(v))
         unsafe_copyto!(pointer(v), pointer(w), length(w))
     end
-    v.n = n
+    v.n = n % SmallLength
     v
 end
 
@@ -215,7 +215,7 @@ end
         n = length(v)+length(w)
         @boundscheck n <= N || error("vector cannot have more than $N elements")
         GC.@preserve v unsafe_copyto!(pointer(v, length(w)+1), pointer(v), length(v))
-        v.n = n
+        v.n = n % SmallLength
         for (i, x) in enumerate(w)
             @inbounds v[i] = x
         end

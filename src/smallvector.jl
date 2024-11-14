@@ -20,6 +20,8 @@ See also [`SmallVector`](@ref), [`MutableSmallVector`](@ref).
 """
 abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
 
+const SmallLength = Int16
+
 """
     SmallVector{N,T} <: AbstractSmallVector{N,T}
 
@@ -74,8 +76,10 @@ julia> v+w
 """
 struct SmallVector{N,T} <: AbstractSmallVector{N,T}
     b::Values{N,T}
-    n::Int
+    n::SmallLength
 end
+
+SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(v, n % SmallLength)
 
 capacity(::Type{<:AbstractSmallVector{N}}) where N = N
 
@@ -130,7 +134,7 @@ convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractSmallVecto
 Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 # this seems to be fast for length(v) <= 10
 
-length(v::AbstractSmallVector) = v.n
+length(v::AbstractSmallVector) = v.n % Int
 
 size(v::AbstractSmallVector) = (length(v),)
 
