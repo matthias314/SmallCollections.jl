@@ -138,10 +138,10 @@ length(v::AbstractSmallVector) = v.n % Int
 
 size(v::AbstractSmallVector) = (length(v),)
 
-rest(v::AbstractSmallVector, (r, i) = (Base.OneTo(length(v)), 0)) = @inbounds v[i+1:last(r)]
+rest(v::AbstractSmallVector, (r, i) = (eachindex(v), 0)) = @inbounds v[i+1:last(r)]
 
 if VERSION >= v"1.9"
-    @inline function split_rest(v::AbstractSmallVector, n::Int, (r, i) = (Base.OneTo(length(v)), 0))
+    @inline function split_rest(v::AbstractSmallVector, n::Int, (r, i) = (eachindex(v), 0))
         m = length(r)-n
         @boundscheck (n >= 0 && m >= i) || error("impossible number of elements requested")
         @inbounds v[i+1:m], v[m+1:end]
