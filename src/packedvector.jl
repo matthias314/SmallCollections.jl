@@ -656,7 +656,7 @@ function support(v::PackedVector{U,M}) where {U,M}
     mask = one(U) << M - one(U)
     m = zero(UInt)
     b = one(m)
-    for i in 1:length(v)
+    for i in eachindex(v)
         if !iszero(v.m & mask)
             m |= b
         end
