@@ -134,9 +134,7 @@ convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractSmallVecto
 Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 # this seems to be fast for length(v) <= 10
 
-length(v::AbstractSmallVector) = v.n % Int
-
-size(v::AbstractSmallVector) = (length(v),)
+size(v::AbstractSmallVector) = (v.n % Int,)
 
 rest(v::AbstractSmallVector, (r, i) = (eachindex(v), 0)) = @inbounds v[i+1:last(r)]
 
