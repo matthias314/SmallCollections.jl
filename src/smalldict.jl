@@ -77,7 +77,7 @@ function SmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
     if unique && isbitstype(Tuple{K,V})
         SmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     elseif N <= 32 || !isbitstype(Tuple{K,V})
-        foldl(push, itr; init = SmallDict{N,K,V}())
+        foldl(push, itr; init = SmallDict{N,K,V}())::SmallDict{N,K,V}   # type annotation needed for inference
     else
         SmallDict(MutableSmallDict{N,K,V}(itr))   # allocates
     end

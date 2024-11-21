@@ -67,7 +67,7 @@ function SmallSet{N,T}(itr; unique = itr isa AbstractSet) where {N,T}
     else
         d = SmallDict{N,T,Nothing}(x => nothing for x in itr)
     end
-    _SmallSet(d)::SmallSet{N,T}   # type annotation needed for inference
+    _SmallSet(d)
 end
 
 SmallSet{N,T}(s::AbstractSmallSet; unique = false) where {N,T} =
