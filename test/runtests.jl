@@ -55,6 +55,17 @@ rand(::Type{T}) where T <: Enum = rand(instances(T))
 rand(::Type{TestStruct}) = TestStruct(map(rand, fieldtypes(TestStruct))...)
 rand(::Type{T}, n::Integer) where T <: Union{String,Symbol,TestEnum,TestStruct} = T[rand(T) for _ in 1:n]
 
+function rand_notin(::Type{T}, c) where T
+    local x
+    while true
+        x = rand(T)
+        x in c || break
+    end
+    x
+end
+
+rand_unique(::Type{T}, m::Integer) where T = foldl((v, _) -> push!(v, rand_notin(T, v)), 1:m; init = T[])
+
 test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct)
 
 include("bits.jl")

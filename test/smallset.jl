@@ -57,11 +57,7 @@ end
         for x in v
             @test_inferred x in s true
         end
-        local y
-        while true
-            y = rand(T)
-            y in s || break
-        end
+        y = rand_notin(T, s)
         @test_inferred y in s false
     end
 
@@ -90,17 +86,8 @@ end
     for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
-        local v
-        while true
-            v = T[rand(T) for _ in 1:m]
-            allunique(v) && break
-        end
-        s = S{N,T}(v)
-        local x
-        while true
-            x = rand(T)
-            x in s || break
-        end
+        s = S{N,T}(rand_unique(T, m))
+        x = rand_notin(T, s)
         if m == N
             @test_throws Exception push(s, x)
         else
@@ -122,11 +109,7 @@ end
             @test_inferred pop(s, x) (t, x)
             @test_inferred delete(s, x) t
             T <: Union{Bool,Enum} && continue
-            local y
-            while true
-                y = rand(T)
-                y in s || break
-            end
+            y = rand_notin(T, s)
             @test_throws Exception pop(s, y)
             @test_inferred delete(s, y) SmallSet(s)
             @test_inferred pop(s, x, y) (t, x)
@@ -147,17 +130,8 @@ end
     for N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
-        local v
-        while true
-            v = T[rand(T) for _ in 1:m]
-            allunique(v) && break
-        end
-        s = MutableSmallSet{N,T}(v)
-        local x
-        while true
-            x = rand(T)
-            x in s || break
-        end
+        s = MutableSmallSet{N,T}(rand_unique(T, m))
+        x = rand_notin(T, s)
         if m == N
             @test_throws Exception push!(copy(s), x)
         else
@@ -184,11 +158,7 @@ end
             w = @test_inferred delete!(u, x) t
             @test w === u
             T <: Union{Bool,Enum} && continue
-            local y
-            while true
-                y = rand(T)
-                y in s || break
-            end
+            y = rand_notin(T, s)
             @test_throws Exception pop!(copy(s), y)
             u = copy(s)
             w = @test_inferred delete!(u, y) s
@@ -214,12 +184,7 @@ end
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= 5 && continue
         N = 8
-        local v
-        while true
-            v = T[rand(T) for _ in 1:5]
-            allunique(v) && break
-        end
-        v, w, x, y, z = v
+        v, w, x, y, z = rand_unique(T, 5)
         s = S{N,T}((v, w, x, y))
         t = S{N,T}((x, y, z))
         @test_inferred union(s, t) union(Set(s), Set(t)) MutableSmallSet{N,T}
@@ -234,12 +199,7 @@ end
     for T in test_types, S in [SmallSet{N,T}, MutableSmallSet{N,T}, Set{T}]
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= 5 && continue
-        local v
-        while true
-            v = T[rand(T) for _ in 1:5]
-            allunique(v) && break
-        end
-        v, w, x, y, z = v
+        v, w, x, y, z = rand_unique(T, 5)
         s = MutableSmallSet{N,T}((v, w, x, y))
         t = S((x, y, z))
         u = copy(s)
