@@ -208,7 +208,7 @@ Return the dictionary that is obtained from `d` by adding the mappings given as 
 See also `Base.push!`, [`setindex`](@ref setindex(::AbstractSmallDict, ::Any, ::Any)).
 """
 @propagate_inbounds function push(d::AbstractSmallDict, kvs::Pair...)
-    foldl(kvs; init = d) do d, (key, val)
+    foldl(kvs; init = SmallDict(d)) do d, (key, val)
         setindex(d, val, key)
     end
 end
