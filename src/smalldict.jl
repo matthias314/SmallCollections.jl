@@ -6,7 +6,7 @@ export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
     setindex, push, delete, pop
 
 import Base: keys, values, copy, length, iterate, haskey, getindex, get, getkey,
-    empty, setindex, mergewith, setindex!, empty!, delete!, pop!, filter!, mergewith!
+    empty, setindex, mergewith, setindex!, get!, empty!, delete!, pop!, filter!, mergewith!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -333,6 +333,18 @@ function setindex!(d::MutableSmallDict, val, key)
         @inbounds d.vals[i] = val
     end
     d
+end
+
+function get!(f::Base.Callable, d::MutableSmallDict{N,K,V}, key) where {N,K,V}
+    i = token(d, key)
+    if i === nothing
+        val::V = f()   # we convert to V because get! for Dict does so
+        push!(d.keys, key)
+        @inbounds push!(d.vals, val)
+        val
+    else
+        d.vals[i]
+    end
 end
 
 empty!(d::MutableSmallDict) = (empty!(d.keys); empty!(d.vals); d)
