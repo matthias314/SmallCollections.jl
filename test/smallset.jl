@@ -179,6 +179,34 @@ end
     @test_inferred pop!(copy(s), 1, 2.0) pop!(copy(s), 1.0, 2.0)
 end
 
+@testset "SmallSet filter" begin
+    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+        S == SmallSet || isbitstype(T) || continue
+        T == TestEnum && length(instances(T)) <= m && continue
+        s = S{N,T}(rand_unique(T, m))
+        if T <: Integer
+            @test_inferred filter(isodd, s) filter(isodd, Set(s)) SmallSet(s)
+        else
+            x = rand_notin(T, s)
+            @test_inferred filter(!=(x), s) SmallSet(s)
+            @test_inferred filter(==(x), s) empty(SmallSet(s))
+        end
+
+        S == MutableSmallSet || continue
+        if T <: Integer
+            t = copy(s)
+            u = @test_inferred filter!(isodd, t) filter!(isodd, Set(s)) t
+            @test u === t
+        else
+            x = rand_notin(T, s)
+            @test_inferred filter!(!=(x), s) s
+            t = copy(s)
+            u = @test_inferred filter!(==(x), t) empty(s)
+            @test u === t
+        end
+    end
+end
+
 @testset "SmallSet union etc" begin
     for S in SS, T in test_types
         isbitstype(T) || continue

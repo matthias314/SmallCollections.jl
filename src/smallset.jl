@@ -216,6 +216,8 @@ function pop(s::AbstractSmallSet, x, default)
     _SmallSet(d), first(kv)
 end
 
+filter(f::F, s::AbstractSmallSet) where F = _SmallSet(filter(f∘first, s.d))
+
 function push!(s::MutableSmallSet, xs...)
     push!(s.d, map(x -> x => nothing, xs)...)
     s
