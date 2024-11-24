@@ -224,7 +224,7 @@ See also `Base.setindex!`, [`push`](@ref push(::AbstractSmallDict, ::Pair)).
     i = token(d, key)
     if i === nothing
         keys = push(d.keys, key)
-        vals = push(d.vals, val)
+        vals = @inbounds push(d.vals, val)
     else
         keys = @inbounds setindex(d.keys, key, i)
         vals = @inbounds setindex(d.vals, val, i)
