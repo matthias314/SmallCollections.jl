@@ -239,7 +239,7 @@ function pop!(s::MutableSmallSet, x, default)
     first(unsafe_pop!(s.d, i))
 end
 
-filter!(f, s::MutableSmallSet) = (filter!(f∘first, s.d); s)
+filter!(f::F, s::MutableSmallSet) where F = (filter!(f∘first, s.d); s)
 
 setdiff!(s::MutableSmallSet, t) = _setdiff!(s, t)
 setdiff!(s::MutableSmallSet, t::AbstractSet) = _setdiff!(s, t)
