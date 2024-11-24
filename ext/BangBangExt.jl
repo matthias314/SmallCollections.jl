@@ -15,16 +15,16 @@ NoBang.pop(c::Union{SmallDict, SmallSet, SmallBitSet}) = pop(c)
 
 const CapacityVector = Union{SmallVector, PackedVector}
 
-BangBang.implements(::Mutator, ::Type{<:CapacityVector}) = false
+BangBang.implements(::Mutator, ::Type{<:Union{FixedVector,CapacityVector}}) = false
 
 for f in (:push, :pop, :pushfirst, :popfirst, :deleteat, :append)
     @eval NoBang.$f(v::CapacityVector, args...) = $f(v, args...)
 end
 
-BangBang.NoBang._setindex(v::CapacityVector, args...) = Base.setindex(v, args...)
+BangBang.NoBang._setindex(v::Union{FixedVector,CapacityVector}, args...) = Base.setindex(v, args...)
 # otherwise a Vector is returned
 
-BangBang.add!!(v::CapacityVector, w::AbstractVector) = v+w
+BangBang.add!!(v::Union{FixedVector,CapacityVector}, w::AbstractVector) = v+w
 # faster than without this line
 
 end # module
