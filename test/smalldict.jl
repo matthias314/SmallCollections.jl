@@ -190,15 +190,24 @@ end
     end
 end
 
-@testset "SmallDict filter!" begin
-    for D in (MutableSmallDict,), N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+@testset "SmallDict filter" begin
+    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         (isbitstype(K) && isbitstype(V)) || continue
         V == Bool && m >= 2 && continue
         kvs = [rand(K) => rand(V) for _ in 1:m]
         d = D{N,K,V}(kvs)
         if K <: Integer
+            @test_inferred filter(kv -> isodd(kv.first), d) filter(kv -> isodd(kv.first), Dict(d)) SmallDict(d)
+        else
+            v0 = rand_notin(V, values(d))
+            @test_inferred filter(kv -> kv.second != v0, d) SmallDict(d)
+            @test_inferred filter(kv -> kv.second == v0, d) empty(SmallDict(d))
+        end
+
+        D == MutableSmallDict || continue
+        if K <: Integer
             e = copy(d)
-            f = @test_inferred filter!(kv -> isodd(kv.first), e) filter!(kv -> isodd(kv.first), Dict(e)) e
+            f = @test_inferred filter!(kv -> isodd(kv.first), e) filter!(kv -> isodd(kv.first), Dict(d)) e
             @test f === e
         else
             v0 = rand_notin(V, values(d))
