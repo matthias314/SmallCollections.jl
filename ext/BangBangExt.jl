@@ -2,7 +2,7 @@ module BangBangExt
 
 using SmallCollections
 
-using BangBang: BangBang, NoBang, Mutator
+using BangBang: BangBang, NoBang, Mutator, Extras
 
 BangBang.implements(::Mutator, ::Type{<:Union{SmallDict, SmallSet, SmallBitSet}}) = false
 
@@ -12,6 +12,24 @@ for f in (:push, :pop, :delete)
 end
 
 NoBang.pop(c::Union{SmallDict, SmallSet, SmallBitSet}) = pop(c)
+
+function Extras.modify!!(f, d::SmallDict, key)
+    i = SmallCollections.token(d, key)
+    if i === nothing
+        ret = f(nothing)
+        if ret !== nothing
+            keys = push(d.keys, key)
+            vals = @inbounds push(d.vals, something(ret))
+        end
+    else
+        ret = f(Some(@inbounds(d.vals[i])))
+        if ret !== nothing
+            keys = @inbounds setindex(d.keys, key, i)
+            vals = @inbounds setindex(d.vals, something(ret), i)
+        end
+    end
+    SmallDict(keys, vals), ret
+end
 
 const CapacityVector = Union{SmallVector, PackedVector}
 
