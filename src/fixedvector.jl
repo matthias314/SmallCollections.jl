@@ -174,18 +174,6 @@ zero(::V) where V <: AbstractFixedVector = zero(V)
 
 @inline -(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .- w.t)
 
-#=
-function +(v::AbstractFixedVector{N,T1}, w::AbstractFixedVector{N,T2}) where {N,T1,T2}
-    T = promote_type(T1, T2)
-    AbstractFixedVector{N,T}(v.t .+ w.t)
-end
-
-function -(v::AbstractFixedVector{N,T1}, w::AbstractFixedVector{N,T2}) where {N,T1,T2}
-    T = promote_type(T1, T2)
-    AbstractFixedVector{N,T}(v.t .- w.t)
-end
-=#
-
 @inline *(c::Number, v::AbstractFixedVector) = FixedVector(c .* v.t)
 *(v::AbstractFixedVector, c::Number) = c*v
 
