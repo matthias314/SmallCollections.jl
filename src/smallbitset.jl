@@ -133,7 +133,13 @@ end
 
 SmallBitSet(args...) = SmallBitSet{UInt}(args...)
 
-SmallBitSet{U}(s::SmallBitSet) where U = _SmallBitSet(s.mask % U)
+@inline function SmallBitSet{U}(s::SmallBitSet) where U
+    mask = s.mask % U
+    @boundscheck if mask != s.mask
+        error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+    end
+    _SmallBitSet(mask)
+end
 
 SmallBitSet{U}() where U = _SmallBitSet(zero(U))
 
