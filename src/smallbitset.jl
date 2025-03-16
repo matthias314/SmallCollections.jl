@@ -121,17 +121,17 @@ convert(::Type{SmallBitSet{U}}, mask::Integer) where U = _SmallBitSet(U(mask))
 
 convert(::Type{SmallBitSet}, mask::Integer) = convert(SmallBitSet{UInt}, mask)
 
-@propagate_inbounds function _push(mask::U, iter) where U
+@inline function _push(mask::U, iter) where U
     for n in iter
         @boundscheck if !isinteger(n) || n <= 0 || n > bitsize(U)
                 error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
             end
-        mask |= one(U) << (Int(n)-1)
+        mask |= unsafe_shl(one(U), Integer(n-one(n)))
     end
     _SmallBitSet(mask)
 end
 
-SmallBitSet(args...) = SmallBitSet{UInt}(args...)
+@propagate_inbounds SmallBitSet(args...) = SmallBitSet{UInt}(args...)
 
 @inline function SmallBitSet{U}(s::SmallBitSet) where U
     mask = s.mask % U
