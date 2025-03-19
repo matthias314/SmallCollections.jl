@@ -6,7 +6,7 @@ export AbstractSmallVector, SmallVector, sum_fast, extrema_fast
 
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
-    zero, map, reverse, findfirst, findlast, in,
+    zero, map, reverse, findfirst, findlast, findmin, findmax, in,
     +, -, *, sum, prod, maximum, minimum, extrema
 
 import Base.FastMath: eq_fast, mul_fast
@@ -406,6 +406,18 @@ function findlast(pred::FastTest, v::AbstractSmallVector{<:Any,<:FastTestType})
     m = bits(map(pred, v.b))
     m &= unsafe_shl(one(m), length(v)) - one(m)
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
+end
+
+@inline function findmin(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
+    @boundscheck isempty(v) && error("vector must not be empty")
+    m = minimum(v)
+    m, findfirst(==(m), v.b)::Int
+end
+
+@inline function findmax(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
+    @boundscheck isempty(v) && error("vector must not be empty")
+    m = maximum(v)
+    m, findfirst(==(m), v.b)::Int
 end
 
 Base._any(f, v::AbstractSmallVector, ::Colon) = findfirst(f, v) !== nothing
