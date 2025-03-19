@@ -254,3 +254,75 @@ end
 # broadcast
 
 copyto!(v::MutableSmallVector, bc::Broadcasted{SmallVectorStyle}) = copyto!(v, copy(bc))
+
+# permutations
+
+export Permutations, permutations
+
+import Base: length, eltype, iterate
+
+struct Permutations
+    n::Int
+end
+
+const PermN = 16
+const PermElType = Int8
+
+"""
+    permutations(n::Integer)
+
+Return an iterator that yields all permutations of the integers from `1` to `n`,
+where `n` must be between `0` and `$PermN`.
+Each permutation is of type `AbstractSmallVector{$PermN,$PermElType}`.
+
+# Examples
+```
+julia> collect(permutations(3))
+6-element Vector{SmallVector{16, Int16}}:
+ [1, 2, 3]
+ [2, 1, 3]
+ [3, 1, 2]
+ [1, 3, 2]
+ [2, 3, 1]
+ [3, 2, 1]
+
+julia> collect(permutations(0))
+1-element Vector{SmallVector{16, Int16}}:
+ 0-element SmallVector{16, Int16}
+```
+"""
+function permutations(n::Integer)
+    0 <= n <= PermN || error("argument must be between 0 and $PermN")
+    Permutations(n)
+end
+
+length(perm::Permutations) = factorial(perm.n)
+
+eltype(::Type{Permutations}) = SmallVector{PermN,PermElType}
+
+# we use Heap's algorithm to iterate over all permutations
+
+@propagate_inbounds function swap!(v::AbstractVector, i, j)
+    v[i], v[j] = v[j], v[i]
+    v
+end
+
+@inline function iterate(perm::Permutations)
+    p = MutableSmallVector{PermN,PermElType}(1:perm.n)
+    SmallVector(p), (p, zero(p))
+end
+
+@inline function iterate(perm::Permutations, (p, c)::Tuple{AbstractSmallVector,MutableSmallVector})
+    i = 1
+    @inbounds while i < perm.n
+        if c[i] < i
+            iseven(i) ? swap!(p, 1, i+1) : swap!(p, c[i]+1, i+1)
+            c[i] += one(PermElType)
+            return SmallVector(p), (p, c)
+        else
+            c[i] = 0
+            i += 1
+        end
+    end
+    nothing
+end
