@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     minimum, maximum, extrema, count, any, all, in, reverse,
-    findfirst, findlast, vcat, copy, copyto!, convert,
+    findfirst, findlast, findmin, findmax, vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd
 
 """
@@ -314,6 +314,16 @@ end
 function findlast(v::AbstractFixedVector{N,Bool}) where N
     m = bits(v)
     iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
+end
+
+function findmin(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
+    m = minimum(v)
+    m, findfirst(==(m), v)::Int
+end
+
+function findmax(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
+    m = maximum(v)
+    m, findfirst(==(m), v)::Int
 end
 
 const FastTestType = Union{Base.HWReal, Bool, Char, Enum}
