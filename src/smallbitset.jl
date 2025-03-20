@@ -9,7 +9,8 @@ using Base: hasfastin
 import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
     length, issubset, maximum, minimum, extrema,
-    union, intersect, setdiff, symdiff, filter
+    union, intersect, setdiff, symdiff, filter,
+    replace
 
 isinteger(x) = x isa Number && Base.isinteger(x)
 
@@ -287,6 +288,18 @@ function delete(s::SmallBitSet{U}, n) where U
     else
         s
     end
+end
+
+@inline function replace(s::SmallBitSet{U}, ps::Vararg{Pair,N}) where {U,N}
+    @boundscheck all(ps) do p
+        p[1] isa Integer && p[2] isa Integer && 1 <= minimum(p) && maximum(p) <= bitsize(U)
+    end || error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+
+    v, u = foldl(ps; init = (bits(s), zero(U))) do (v, u), p
+        m = v & unsafe_shl(U(1), p[1]-1)
+        v & ~m, u | bitrotate(m, p[2]-p[1])
+    end
+    convert(SmallBitSet{U}, v | u)
 end
 
 """
