@@ -215,12 +215,7 @@ extrema(v::SmallBitSet; init::Tuple{Any,Any} = (missing, missing)) =
 # this is the default for AbstractSet
 
 function in(n, s::SmallBitSet{U}) where U <: Unsigned
-    if isinteger(n)
-        n = Int(n)
-        !iszero(s.mask & one(U) << (n-1))
-    else
-        false
-    end
+    isinteger(n) && 1 <= n <= bitsize(U) && !iszero(s.mask & unsafe_shl(one(U), Int(n)-1))
 end
 
 issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
