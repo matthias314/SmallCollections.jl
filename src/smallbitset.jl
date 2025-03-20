@@ -2,7 +2,7 @@
 # small sets
 #
 
-export SmallBitSet, bits, delete, pop, push
+export SmallBitSet, bits, delete, pop, push, exchange
 
 using Base: hasfastin
 
@@ -287,6 +287,43 @@ function delete(s::SmallBitSet{U}, n) where U
     else
         s
     end
+end
+
+"""
+    exchange(s::S, i::Integer, j::Integer) where S <: SmallBitSet -> S
+
+Return the set `s` with the element `i`, if present, replaced by `j` and vice versa.
+If `i` equals `j`, then the set is not modified.
+
+# Examples
+```jldoctest
+julia> s = SmallBitSet((1, 2)); exchange(s, 1, 2)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  2
+
+julia> s = SmallBitSet((1, 2)); exchange(s, 2, 3)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  3
+
+julia> s = SmallBitSet((1, 2)); exchange(s, 3, 4)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  2
+
+julia> s = SmallBitSet((1, 2)); exchange(s, 1, 1)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  2
+```
+"""
+@inline function exchange(s::SmallBitSet{U}, i::Integer, j::Integer) where U
+    @boundscheck (1 <= i <= bitsize(U) && 1 <= j <= bitsize(U)) ||
+        error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+    t = unsafe_shl(one(U), i-1) ⊻ unsafe_shl(one(U), j-1) # xor needed for the case i == j
+    m = bits(s)
+    convert(SmallBitSet{U}, ifelse(iszero(m & t) || m & t == t, m, m ⊻ t))
 end
 
 function filter(f::F, s::SmallBitSet) where F

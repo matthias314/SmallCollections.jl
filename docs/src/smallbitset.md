@@ -16,6 +16,7 @@ pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)
 pop(::SmallBitSet, ::Any, ::Any)
 delete(::SmallBitSet, ::Any)
+exchange
 ```
 
 ## Subsets and shuffles
