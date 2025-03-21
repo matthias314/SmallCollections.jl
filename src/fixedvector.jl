@@ -326,7 +326,7 @@ function findmax(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
     m, findfirst(==(m), v)::Int
 end
 
-const FastTestType = Union{Base.HWReal, Bool, Char, Enum}
+const FastTestType = Union{Base.HWReal, Bool, Char, Enum, SmallBitSet{<:Union{UInt8,UInt16,UInt32,UInt}}}
 
 const FastTest = Union{
     Base.Fix2{<:Union{typeof.((==, !=, <=, >=, <, >, isequal))...}, <:FastTestType},
