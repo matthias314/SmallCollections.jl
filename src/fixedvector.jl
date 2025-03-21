@@ -182,7 +182,7 @@ zero(::V) where V <: AbstractFixedVector = zero(V)
 
 muladd(v::AbstractFixedVector{N}, c::Number, w::AbstractFixedVector{N}) where N = muladd(c, v, w)
 
-@generated function map_tuple(f, xs::Tuple...)
+@inline @generated function map_tuple(f, xs::Tuple...)
     M = length(xs)
     N = minimum(fieldcount, xs)
     Expr(:tuple, (Expr(:call, :f, (:(xs[$j][$i]) for j in 1:M)...) for i in 1:N)...)
