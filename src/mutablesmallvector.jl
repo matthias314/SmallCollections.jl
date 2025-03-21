@@ -257,7 +257,7 @@ copyto!(v::MutableSmallVector, bc::Broadcasted{SmallVectorStyle}) = copyto!(v, c
 
 # permutations
 
-export Permutations, permutations
+export Permutations, permutations, permutations_sign_transposition
 
 import Base: length, eltype, iterate
 
@@ -273,10 +273,12 @@ const PermElType = Int8
 
 Return an iterator that yields all permutations of the integers from `1` to `n`,
 where `n` must be between `0` and `$PermN`.
-Each permutation is of type `AbstractSmallVector{$PermN,$PermElType}`.
+Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
+
+See also [`permutations_sign_transposition`](@ref).
 
 # Examples
-```
+```jldoctest
 julia> collect(permutations(3))
 6-element Vector{SmallVector{16, Int16}}:
  [1, 2, 3]
@@ -291,14 +293,49 @@ julia> collect(permutations(0))
  0-element SmallVector{16, Int16}
 ```
 """
-function permutations(n::Integer)
+permutations(n::Integer) = (p for (p, _, _) in permutations_sign_transposition(n))
+
+"""
+    permutations_sign_transposition(n::Integer)
+
+Return an iterator that yields all permutations `p` of the integers from `1` to `n`
+together with some extra data. The first element of the tuple returned is the permutation `p`.
+The second element is the sign of `p` (`+1` for even and `-1` for odd permutations).
+The third element is a pair that indicates the transposition `t` by which `p` differs
+from the previously returned permutation `q`. (More precisely, the new permutations `p` is
+obtained by first applying `t` and then `q`.)
+
+The argument `n` must be between `0` and `$PermN`.
+Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
+The identity permutation is the first element of the iterator;
+in this case the transposition pair is set to `(0, 0)`.
+
+See also [`permutations`](@ref), `Base.signbit`.
+
+# Examples
+```jldoctest
+julia> collect(permutations_sign_transposition(3))
+6-element Vector{Tuple{SmallVector{16, Int8}, Int64, Tuple{Int64, Int64}}}:
+ ([1, 2, 3], 1, (0, 0))
+ ([2, 1, 3], -1, (1, 2))
+ ([3, 1, 2], 1, (1, 3))
+ ([1, 3, 2], -1, (1, 2))
+ ([2, 3, 1], 1, (1, 3))
+ ([3, 2, 1], -1, (1, 2))
+
+julia> collect(SmallCollections.permutations_sign_transposition(0))
+1-element Vector{Tuple{SmallVector{16, Int8}, Int64, Tuple{Int64, Int64}}}:
+ ([], 1, (0, 0))
+```
+"""
+function permutations_sign_transposition(n::Integer)
     0 <= n <= PermN || error("argument must be between 0 and $PermN")
     Permutations(n)
 end
 
 length(perm::Permutations) = factorial(perm.n)
 
-eltype(::Type{Permutations}) = SmallVector{PermN,PermElType}
+eltype(::Type{Permutations}) = Tuple{SmallVector{PermN,PermElType},Int,NTuple{2,Int}}
 
 # we use Heap's algorithm to iterate over all permutations
 
@@ -309,16 +346,16 @@ end
 
 @inline function iterate(perm::Permutations)
     p = MutableSmallVector{PermN,PermElType}(1:perm.n)
-    SmallVector(p), (p, zero(p))
+    (SmallVector(p), 1, (0, 0)), (p, zero(p), 1)
 end
 
-@inline function iterate(perm::Permutations, (p, c)::Tuple{AbstractSmallVector,MutableSmallVector})
+@inline function iterate(perm::Permutations, (p, c, s)::Tuple{AbstractSmallVector,MutableSmallVector,Int})
     i = 1
     @inbounds while i < perm.n
         if c[i] < i
-            iseven(i) ? swap!(p, 1, i+1) : swap!(p, c[i]+1, i+1)
+            t = iseven(i) ? (swap!(p, 1, i+1); (1, i+1)) : (swap!(p, c[i]+1, i+1); (c[i]+1, i+1))
             c[i] += one(PermElType)
-            return SmallVector(p), (p, c)
+            return (SmallVector(p), -s, t), (p, c, -s)
         else
             c[i] = 0
             i += 1

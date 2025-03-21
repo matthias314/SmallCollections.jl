@@ -53,4 +53,5 @@ SmallCollections.unsafe_sub
 
 ```@docs
 permutations
+permutations_sign_transposition
 ```
