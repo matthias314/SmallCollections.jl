@@ -4,7 +4,7 @@ import Base:
     copy, copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
-    append!, prepend!, pushfirst!, empty, empty!, map!, filter!
+    append!, prepend!, pushfirst!, empty, empty!, map!, filter!, replace!
 
 export duplicate!
 
@@ -143,6 +143,15 @@ empty!(v::MutableSmallVector) = resize!(v, 0)
         @inbounds v[i] = default(T)
     end
     v
+end
+
+function replace!(v::MutableSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
+    if isempty(kw)
+        v.b = replace(v, ps...).b
+        v
+    else
+        invoke(replace!, Tuple{AbstractVector,Vararg{Pair,M}}, v, ps...; kw...)
+    end
 end
 
 @propagate_inbounds deleteat!(v::MutableSmallVector, i::Integer) = deleteat!(v, i, 1)

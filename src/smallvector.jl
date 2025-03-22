@@ -7,7 +7,7 @@ export AbstractSmallVector, SmallVector, sum_fast, extrema_fast
 import Base: ==, Tuple, empty,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, findfirst, findlast, findmin, findmax, in,
-    +, -, *, sum, prod, maximum, minimum, extrema
+    +, -, *, sum, prod, maximum, minimum, extrema, replace
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -426,6 +426,18 @@ Base._all(f, v::AbstractSmallVector, ::Colon) = findfirst((!)∘f, v) === nothin
 Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
 
 in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
+
+function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
+    if isempty(kw)
+        b = replace(v.b, ps...)
+        if default(T) in map(first, ps)
+            b = padtail(b, v.n)
+        end
+        SmallVector(b, v.n)
+    else
+        SmallVector(invoke(replace, Tuple{AbstractVector,Vararg{Pair,M}}, v, ps...; kw...))
+    end
+end
 
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
