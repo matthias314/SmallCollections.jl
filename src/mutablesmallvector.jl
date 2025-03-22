@@ -271,8 +271,10 @@ const PermElType = Int8
 """
     permutations(n::Integer)
 
-Return an iterator that yields all permutations of the integers from `1` to `n`,
-where `n` must be between `0` and `$PermN`.
+Return an iterator that yields all permutations of the integers from `1` to `n`.
+
+The argument `n` must be between `0` and `$PermN`.
+The identity permutation is returned first.
 Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
 
 See also [`permutations_sign_transposition`](@ref).
@@ -301,14 +303,15 @@ permutations(n::Integer) = (p for (p, _, _) in permutations_sign_transposition(n
 Return an iterator that yields all permutations `p` of the integers from `1` to `n`
 together with some extra data. The first element of the tuple returned is the permutation `p`.
 The second element is the sign of `p` (`+1` for even and `-1` for odd permutations).
-The third element is a pair that indicates the transposition `t` by which `p` differs
+The third element is a pair `(i, j)` that indicates the transposition `t` by which `p` differs
 from the previously returned permutation `q`. (More precisely, the new permutations `p` is
 obtained by first applying `t` and then `q`.)
 
 The argument `n` must be between `0` and `$PermN`.
-Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
-The identity permutation is the first element of the iterator;
+The iterator returns the identity permutation first;
 in this case the transposition pair is set to `(0, 0)`.
+The true transpositions `(i, j)` satisfy `i < j`.
+Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
 
 See also [`permutations`](@ref), `Base.signbit`.
 
