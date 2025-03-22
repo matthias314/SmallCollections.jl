@@ -303,6 +303,10 @@ end
 Return the set `s` with the element `i`, if present, replaced by `j` and vice versa.
 If `i` equals `j`, then the set is not modified.
 
+This function is faster than the equivalent `replace(s, i => j, j => i)`.
+
+See also `Base.replace`.
+
 # Examples
 ```jldoctest
 julia> s = SmallBitSet((1, 2)); exchange(s, 1, 2)
