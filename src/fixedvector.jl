@@ -7,7 +7,7 @@ import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     minimum, maximum, extrema, count, any, all, in, reverse,
     findfirst, findlast, findmin, findmax, vcat, copy, copyto!, convert,
-    strides, elsize, unsafe_convert, muladd
+    strides, elsize, unsafe_convert, muladd, replace, replace!
 
 """
     AbstractFixedVector{N,T} <: AbstractVector{T}
@@ -347,6 +347,28 @@ end
 Base.hasfastin(::Type{<:AbstractFixedVector{<:Any,<:FastTestType}}) = true
 
 in(x, v::AbstractFixedVector) = any(==(x), v)
+
+@inline replace_pair(v::AbstractFixedVector, w::AbstractFixedVector, p::Pair, ::Type{T}) where T =
+    map((x, y) -> isequal(x, p[1]) ? convert(T, p[2]) : convert(T, y), v, w)
+
+function replace(v::AbstractFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
+    if isempty(kw)
+        foldl(ps; init = FixedVector(v)) do w, p
+            U = promote_type(eltype(w), typeof(p[2]))
+            replace_pair(v, w, p, U)  # separate function for type stability
+        end
+    else
+        FixedVector(invoke(replace, Tuple{AbstractVector,Vararg{Pair,M}}, v, ps...; kw...))
+    end
+end
+
+function replace!(v::MutableFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
+    if isempty(kw)
+        v .= replace(v, ps...)
+    else
+        invoke(replace!, Tuple{AbstractVector,Vararg{Pair,M}}, v, ps...; kw...)
+    end
+end
 
 """
     support(v::AbstractFixedVector) -> SmallBitSet
