@@ -198,7 +198,11 @@ function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) wh
     copyto!(w, map(f, map(Tuple, vs)...))
 end
 
-@inline @generated function Base.mapfoldl_impl(f, op, init, v::AbstractFixedVector{N}) where N
+@inline Base.foldl(op::OP, v::AbstractFixedVector; kw...) where OP = mapfoldl(identity, op, v; kw...)
+@inline Base.foldr(op::OP, v::AbstractFixedVector; kw...) where OP = mapfoldr(identity, op, v; kw...)
+@inline Base.reduce(op::OP, v::AbstractFixedVector; kw...) where OP = mapreduce(identity, op, v; kw...)
+
+@inline @generated function Base.mapfoldl(f, op, v::AbstractFixedVector{N}; init = Void()) where N
     ex, start = init <: Void ? (:(f(v[1])), 2) : (:init, 1)
     for i in start:N
         ex = :(op($ex, f(v[$i])))
@@ -206,7 +210,7 @@ end
     ex
 end
 
-@inline @generated function Base.mapfoldr_impl(f, op, init, v::AbstractFixedVector{N}) where N
+@inline @generated function Base.mapfoldr(f, op, v::AbstractFixedVector{N}; init = Void()) where N
     ex, start = init <: Void ? (:(f(v[N])), N-1) : (:init, N)
     for i in start:-1:1
         ex = :(op(f(v[$i]), $ex))
@@ -214,8 +218,12 @@ end
     ex
 end
 
-function Base._mapreduce_dim(f, op, init::Void, v::AbstractFixedVector, ::Colon)
-    Base.mapfoldl_impl(f, op, init, v)
+@inline function Base.mapreduce(f::F, op::OP, v::AbstractFixedVector; dims = :, kw...) where {F,OP}
+    if dims isa Colon
+        mapfoldl(f, op, v; kw...)
+    else
+        invoke(mapreduce, Tuple{F,OP,AbstractVector}, f, op, v; dims, kw...)
+    end
 end
 
 for f in [:(==), :isequal]
@@ -257,7 +265,7 @@ Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Boo
 
 @inline function Base.minimum(f::F, v::AbstractFixedVector; dims = :, kw...) where F
     if dims isa Colon
-        Base.mapfoldl_impl(f, min, Base._InitialValue(), v)
+        mapfoldl(f, min, v)
     else
         invoke(minimum, Tuple{F,AbstractVector}, f, v; dims, kw...)
     end
@@ -265,7 +273,7 @@ end
 
 @inline function Base.maximum(f::F, v::AbstractFixedVector; dims = :, kw...) where F
     if dims isa Colon
-        Base.mapfoldl_impl(f, max, Base._InitialValue(), v)
+        mapfoldl(f, max, v)
     else
         invoke(maximum, Tuple{F,AbstractVector}, f, v; dims, kw...)
     end
@@ -273,7 +281,7 @@ end
 
 @inline function Base.extrema(f::F, v::AbstractFixedVector; dims = :, kw...) where F
     if dims isa Colon
-        Base.mapfoldl_impl(Base.ExtremaMap(f), Base._extrema_rf, Base._InitialValue(), v)
+        mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v)
     else
         invoke(extrema, Tuple{F,AbstractVector}, f, v; dims, kw...)
     end
