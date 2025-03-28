@@ -3,7 +3,7 @@
 #
 
 export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
-    empty, push, pop, delete
+    empty, push, pop, delete, sum_fast, extrema_fast
 
 import Base: show, copy, length, iterate, values, in,
     push!, pop!, delete!, filter!, setdiff!
@@ -258,3 +258,28 @@ function _setdiff!(s::MutableSmallSet, t)
         foldl(delete!, t; init = s)
     end
 end
+
+for g in (:sum, :prod, :minimum, :maximum, :extrema)
+    @eval $g(s::AbstractSmallSet;  kw...) = $g(values(s);  kw...)
+    @eval $g(f::F, s::AbstractSmallSet;  kw...) where F = $g(f, values(s);  kw...)
+end
+
+"""
+    sum_fast(s::AbstractSmallSet{N,T}) where {N,T}
+
+Return the sum of the elements of `s` using `@fastmath` arithmetic
+if `T` is `Float32` or `Float64`. Otherwise return `sum(s)`.
+
+See also `Base.sum`, `Base.@fastmath`.
+"""
+sum_fast(s::AbstractSmallSet) = sum_fast(values(s))
+
+"""
+    extrema_fast(s::AbstractSmallSet; [init])
+
+Return the `@fastmath` minimum and maximum of the elements of `s`.
+The `init` keyword argument may not be used.
+
+See also `Base.extrema`, `Base.@fastmath`.
+"""
+extrema_fast(s::AbstractSmallSet; kw...) = extrema_fast(values(s); kw...)

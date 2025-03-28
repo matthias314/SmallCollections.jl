@@ -16,4 +16,6 @@ pop(::AbstractSmallSet)
 pop(::AbstractSmallSet, ::Any)
 pop(::AbstractSmallSet, ::Any, Any)
 delete(::AbstractSmallSet, ::Any)
+sum_fast(::AbstractSmallSet)
+extrema_fast(::AbstractSmallSet)
 ```
