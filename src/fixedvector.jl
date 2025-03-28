@@ -199,7 +199,7 @@ function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) wh
 end
 
 @generated function Base.mapfoldl_impl(f, op, init, v::AbstractFixedVector{N}) where N
-    ex, start = init <: Base._InitialValue ? (:(f(v[1])), 2) : (:init, 1)
+    ex, start = init <: Void ? (:(f(v[1])), 2) : (:init, 1)
     for i in start:N
         ex = :(op($ex, f(v[$i])))
     end
@@ -207,14 +207,14 @@ end
 end
 
 @generated function Base.mapfoldr_impl(f, op, init, v::AbstractFixedVector{N}) where N
-    ex, start = init <: Base._InitialValue ? (:(f(v[N])), N-1) : (:init, N)
+    ex, start = init <: Void ? (:(f(v[N])), N-1) : (:init, N)
     for i in start:-1:1
         ex = :(op(f(v[$i]), $ex))
     end
     ex
 end
 
-function Base._mapreduce_dim(f, op, init::Base._InitialValue, v::AbstractFixedVector, ::Colon)
+function Base._mapreduce_dim(f, op, init::Void, v::AbstractFixedVector, ::Colon)
     Base.mapfoldl_impl(f, op, init, v)
 end
 

@@ -22,6 +22,7 @@ See [`AbstractFixedVector`](@ref), [`AbstractCapacityVector`](@ref),
 module SmallCollections
 
 using Base: @propagate_inbounds, BitInteger
+using Base: _InitialValue as Void
 
 using BitIntegers: AbstractBitSigned, AbstractBitUnsigned,
     UInt256, UInt512, UInt1024
