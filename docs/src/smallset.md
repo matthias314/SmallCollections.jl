@@ -10,6 +10,7 @@ SmallSet
 MutableSmallSet
 capacity(::Type{<:AbstractSmallSet})
 empty(::AbstractSmallSet)
+values(::AbstractSmallSet)
 push(::AbstractSmallSet, ::Pair)
 pop(::AbstractSmallSet)
 pop(::AbstractSmallSet, ::Any)

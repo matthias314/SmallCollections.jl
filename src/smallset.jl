@@ -5,7 +5,7 @@
 export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
     empty, push, pop, delete
 
-import Base: show, copy, length, iterate, in,
+import Base: show, copy, length, iterate, values, in,
     push!, pop!, delete!, filter!, setdiff!
 
 """
@@ -131,6 +131,13 @@ copy(s::MutableSmallSet) = MutableSmallSet(nothing, copy(s.d))
 length(s::AbstractSmallSet) = length(s.d)
 
 iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
+
+"""
+    values(s::AbstractSmallSet{N,T}) where {N,T} -> SmallVector{N,T}
+
+Return the values of the set `s` as a `SmallVector`.
+"""
+values(s::AbstractSmallSet) = keys(s.d)
 
 Base.hasfastin(::Type{S}) where S <: AbstractSmallSet = Base.hasfastin(fieldtype(S, :d))
 
