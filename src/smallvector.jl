@@ -394,6 +394,10 @@ extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) 
     SmallVector(b, length(v))
 end
 
+for g in (:sum, :prod, :minimum, :maximum, :extrema)
+    @eval $g(f::F, v::AbstractSmallVector;  kw...) where F = $g(map(f, v);  kw...)
+end
+
 findfirst(v::AbstractSmallVector{N,Bool}) where N = findfirst(v.b)
 findlast(v::AbstractSmallVector{N,Bool}) where N = findlast(v.b)
 
