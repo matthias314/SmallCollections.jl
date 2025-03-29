@@ -7,7 +7,8 @@ export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
 
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
-    setindex!, get!, empty!, delete!, pop!, filter!, mergewith!
+    setindex!, get!, empty!, delete!, pop!, filter!, mergewith!,
+    replace!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -336,10 +337,10 @@ function mergewith(op, d::AbstractSmallDict, es::AbstractDict...)
     foldl((d, e) -> mergewith(op, d, e), es; init = SmallDict(d))
 end
 
-function setindex!(d::MutableSmallDict, val, key)
+@inline function setindex!(d::MutableSmallDict, val, key)
     i = token(d, key)
     if i === nothing
-        push!(d.keys, key)
+        @inline push!(d.keys, key)
         @inbounds push!(d.vals, val)
     else
         @inbounds d.vals[i] = val
@@ -421,4 +422,43 @@ function mergewith!(op, d::MutableSmallDict, e::AbstractDict)
         end
     end
     d
+end
+
+function smalldict_replace!(d, count, ps::Tuple{Pair})
+    (oldkey, oldval), (newkey, newval) = only(ps)
+    i = token(d, oldkey)
+    @inbounds if count > 0 && i !== nothing && isequal(d.vals[i], oldval)
+        j = token(d, newkey)
+        if j === nothing
+            d.keys[i] = newkey
+            d.vals[i] = newval
+        else
+            d.vals[j] = newval
+            unsafe_pop!(d, i)
+        end
+    end
+    d
+end
+
+function smalldict_replace!(d0, count, ps::Tuple{Vararg{Pair}})
+    d1 = empty(d0)
+    for ((oldkey, oldval), (newkey, newval)) in ps
+        i = token(d0, oldkey)
+        if count > 0 && i !== nothing && isequal(@inbounds(d0.vals[i]), oldval)
+            unsafe_pop!(d0, i)
+            d1[newkey] = newval
+            count -= one(count)
+        end
+    end
+    @inline merge!(d0, d1)
+end
+
+function replace!(d::MutableSmallDict, ps::Vararg{Pair{<:Pair,<:Pair},M}; count::Integer = typemax(Int)) where M
+    smalldict_replace!(d, count, ps)
+end
+
+function replace(d::AbstractSmallDict, ps::Vararg{Pair{<:Pair,<:Pair},M}; count::Integer = typemax(Int)) where M
+    e = MutableSmallDict(d)
+    @inline smalldict_replace!(e, count, ps)
+    SmallDict(e)
 end
