@@ -633,7 +633,7 @@ function _map(f::F, n, vs::Vararg{Any,M}) where {F,M}
 end
 
 _map(f::Union{typeof.(
-        (&, round, floor, ceil, trunc, abs, abs2, sign, sqrt)
+        (identity, &, round, floor, ceil, trunc, abs, abs2, sign, sqrt)
     )...}, n, vs::AbstractSmallVector{N}...) where N = map_fast(f, n, vs...)
 
 _map(::typeof(*), n, vs::AbstractSmallVector{N,<:Integer}...) where N = map_fast(*, n, vs...)
