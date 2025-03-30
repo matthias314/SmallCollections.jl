@@ -131,9 +131,9 @@ struct MutableSmallDict{N,K,V} <: AbstractSmallDict{N,K,V}
     MutableSmallDict(keys::AbstractSmallVector{N,K}, vals::AbstractSmallVector{N,V}) where {N,K,V} = new{N,K,V}(keys, vals)
 end
 
-MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(d.keys, d.vals)
+MutableSmallDict(d::AbstractSmallDict) = MutableSmallDict(copy(d.keys), copy(d.vals))
 
-MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(MutableSmallVector{N,K}(), MutableSmallVector{N,V}())
+MutableSmallDict{N,K,V}() where {N,K,V} = MutableSmallDict(SmallVector{N,K}(), SmallVector{N,V}())
 
 function MutableSmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
     if unique
@@ -173,7 +173,7 @@ capacity(::AbstractSmallDict)
 capacity(::Type{<:AbstractSmallDict{N}}) where N = N
 
 copy(d::SmallDict) = d
-copy(d::MutableSmallDict) = MutableSmallDict(copy(d.keys), copy(d.vals))
+copy(d::MutableSmallDict) = MutableSmallDict(d)
 
 length(d::AbstractSmallDict) = length(d.keys)
 
