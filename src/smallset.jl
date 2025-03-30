@@ -225,6 +225,11 @@ end
 
 filter(f::F, s::AbstractSmallSet) where F = _SmallSet(filter(f∘first, s.d))
 
+function replace(s::AbstractSmallSet, ps::Vararg{Pair,M}; kw...) where M
+    qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
+    _SmallSet(replace(s.d, qs...; kw...))
+end
+
 function push!(s::MutableSmallSet, xs...)
     push!(s.d, map(x -> x => nothing, xs)...)
     s
@@ -247,6 +252,12 @@ function pop!(s::MutableSmallSet, x, default)
 end
 
 filter!(f::F, s::MutableSmallSet) where F = (filter!(f∘first, s.d); s)
+
+function replace!(s::MutableSmallSet, ps::Vararg{Pair,M}; kw...) where M
+    qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
+    replace!(s.d, qs...; kw...)
+    s
+end
 
 setdiff!(s::MutableSmallSet, t) = _setdiff!(s, t)
 setdiff!(s::MutableSmallSet, t::AbstractSet) = _setdiff!(s, t)
