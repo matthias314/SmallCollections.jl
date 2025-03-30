@@ -8,7 +8,7 @@ export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
     setindex!, get!, empty!, delete!, pop!, filter!, mergewith!,
-    replace!
+    replace!, push!
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
@@ -347,6 +347,9 @@ end
     end
     d
 end
+
+push!(d::MutableSmallDict, (key, val)::Pair) = @inline setindex!(d, val, key)
+push!(d::MutableSmallDict, p::Pair, ps::Vararg{Pair,M}) where M = @inline push!(push!(d, p), ps...)
 
 function get!(f::Base.Callable, d::MutableSmallDict{N,K,V}, key) where {N,K,V}
     i = token(d, key)
