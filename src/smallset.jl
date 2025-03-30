@@ -231,7 +231,7 @@ function replace(s::AbstractSmallSet, ps::Vararg{Pair,M}; kw...) where M
 end
 
 function push!(s::MutableSmallSet, xs...)
-    push!(s.d, map(x -> x => nothing, xs)...)
+    @inline push!(s.d, map(x -> x => nothing, xs)...)
     s
 end
 
