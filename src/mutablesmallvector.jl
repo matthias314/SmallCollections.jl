@@ -4,7 +4,7 @@ import Base:
     copy, copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
-    append!, prepend!, pushfirst!, empty, empty!, map!, filter!, replace!
+    append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!
 
 export duplicate!
 
@@ -202,6 +202,13 @@ end
     @boundscheck n <= N || error("vector cannot have more than $N elements")
     GC.@preserve v unsafe_copyto!(pointer(v, length(v)+1), pointer(w), length(w))
     v.n = n % SmallLength
+    v
+end
+
+@inline function push!(v::MutableSmallVector{N}, x) where N
+    @boundscheck v.n < N || error("vector cannot have more than $N elements")
+    v.n += 1
+    @inbounds v[v.n] = x
     v
 end
 
