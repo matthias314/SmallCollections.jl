@@ -126,6 +126,7 @@ capacity(::AbstractSmallSet)
 
 capacity(::Type{<:AbstractSmallSet{N}}) where N = N
 
+copy(s::SmallSet) = s
 copy(s::MutableSmallSet) = MutableSmallSet(s)
 
 length(s::AbstractSmallSet) = length(s.d)
