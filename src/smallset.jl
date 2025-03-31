@@ -59,7 +59,7 @@ end
 
 _MutableSmallSet(d) = MutableSmallSet(nothing, d)
 
-function SmallSet{N,T}(itr; unique = itr isa AbstractSet) where {N,T}
+function SmallSet{N,T}(itr; unique = itr isa Union{AbstractSet,OrdinalRange}) where {N,T}
     if unique
         keys = SmallVector{N,T}(itr)
         vals = SmallVector(default(Values{N,Nothing}), length(keys))
@@ -73,7 +73,7 @@ end
 SmallSet{N,T}(s::AbstractSmallSet; unique = false) where {N,T} =
     _SmallSet(SmallDict{N,T,Nothing}(s.d))
 
-function MutableSmallSet{N,T}(itr; unique = itr isa AbstractSet) where {N,T}
+function MutableSmallSet{N,T}(itr; unique = itr isa Union{AbstractSet,OrdinalRange}) where {N,T}
     if unique
         keys = MutableSmallVector{N,T}(itr)
         vals = MutableSmallVector{N,Nothing}(undef, length(keys))
