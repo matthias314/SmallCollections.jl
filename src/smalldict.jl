@@ -213,9 +213,15 @@ Return the dictionary that is obtained from `d` by adding the mappings given as 
 
 See also `Base.push!`, [`setindex`](@ref setindex(::AbstractSmallDict, ::Any, ::Any)).
 """
-@propagate_inbounds function push(d::AbstractSmallDict, kvs::Pair...)
-    foldl(kvs; init = SmallDict(d)) do d, (key, val)
-        setindex(d, val, key)
+@propagate_inbounds function push(d::AbstractSmallDict{N,K,V}, kvs::Vararg{Pair,M}) where {N,K,V,M}
+    if isbitstype(Tuple{K,V}) && N >= 8
+        e = MutableSmallDict(d)
+        @inline push!(e, kvs...)
+        SmallDict(e)
+    else
+        foldl(kvs; init = SmallDict(d)) do d, (key, val)
+            setindex(d, val, key)
+        end
     end
 end
 
@@ -352,6 +358,7 @@ end
     d
 end
 
+push!(d::MutableSmallDict) = d
 push!(d::MutableSmallDict, (key, val)::Pair) = @inline setindex!(d, val, key)
 push!(d::MutableSmallDict, p::Pair, ps::Vararg{Pair,M}) where M = @inline push!(push!(d, p), ps...)
 
