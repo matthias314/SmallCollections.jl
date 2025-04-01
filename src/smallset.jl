@@ -64,6 +64,8 @@ function SmallSet{N,T}(itr; unique = itr isa Union{AbstractSet,OrdinalRange}) wh
         keys = SmallVector{N,T}(itr)
         vals = SmallVector(default(Values{N,Nothing}), length(keys))
         d = SmallDict(keys, vals)
+    elseif itr isa Tuple
+        d = SmallDict{N,T,Nothing}(map(x -> x => nothing, itr))
     else
         d = SmallDict{N,T,Nothing}(x => nothing for x in itr)
     end

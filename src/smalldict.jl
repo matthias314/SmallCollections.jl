@@ -82,8 +82,12 @@ function SmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
         foldl(push, itr; init = SmallDict{N,K,V}())::SmallDict{N,K,V}   # type annotation needed for inference
     else
         d = MutableSmallDict{N,K,V}()
-        for p in itr
-            @inline push!(d, p)
+        if itr isa Tuple
+            @inline push!(d, itr...)
+        else
+            for p in itr
+                @inline push!(d, p)
+            end
         end
         SmallDict(d)
     end
