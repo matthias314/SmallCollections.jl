@@ -169,7 +169,7 @@ Return the set that is obtained from `s` by adding the elements given as argumen
 
 See also `Base.push!`.
 """
-function push(s::AbstractSmallSet, xs...)
+function push(s::AbstractSmallSet, xs::Vararg{Any,M}) where M
     _SmallSet(push(s.d, map(x -> x => nothing, xs)...))
 end
 
