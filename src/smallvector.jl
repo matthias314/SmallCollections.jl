@@ -445,8 +445,8 @@ end
 
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
-# TODO: needed?
-@inline function push(v::AbstractSmallVector{N}, x) where N
+@propagate_inbounds function push(v::AbstractSmallVector{N,T}, x) where {N,T}
+    isbitstype(T) && bitsize(T) < bitsize(Int) && return append(v, (x,))
     n = length(v)
     @boundscheck n < N || error("vector cannot have more than $N elements")
     @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
@@ -505,6 +505,11 @@ end
 @propagate_inbounds append(v::AbstractSmallVector, w) = foldl(push, w; init = SmallVector(v))
 
 @inline function append(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+    if isbitstype(T) && N >= 8
+        u = MutableSmallVector(v)
+        append!(u, w)
+        return SmallVector(u)
+    end
     n = length(v)
     m = n+length(w)
     @boundscheck m <= N || error("vector cannot have more than $N elements")
