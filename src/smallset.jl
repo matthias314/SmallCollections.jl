@@ -99,8 +99,8 @@ end
 
 (::Type{S})() where {N,T,S<:AbstractSmallSet{N,T}} = S((); unique = true)
 
-SmallSet(s::AbstractSmallSet) = _SmallSet(s.d)
-MutableSmallSet(s::AbstractSmallSet) = _MutableSmallSet(MutableSmallDict(s.d))
+SmallSet(s::AbstractSmallSet{N,T}) where {N,T} = SmallSet{N,T}(s)
+MutableSmallSet(s::AbstractSmallSet{N,T}) where {N,T} = MutableSmallSet{N,T}(s)
 
 function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
     if isempty(s) || get(io, :compact, false) || haskey(io, :SHOWN_SET)

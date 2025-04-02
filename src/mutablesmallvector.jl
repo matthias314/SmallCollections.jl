@@ -93,8 +93,7 @@ function MutableSmallVector{N,T}(itr) where {N,T}
     v
 end
 
-MutableSmallVector(v::AbstractSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
-SmallVector(v::AbstractSmallVector{N,T}) where {N,T} = SmallVector{N,T}(v.b, v.n)
+MutableSmallVector(v::AbstractSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v)
 
 @inline function unsafe_getindex(v::MutableSmallVector, i::Int)
     GC.@preserve v unsafe_load(pointer(v, i))

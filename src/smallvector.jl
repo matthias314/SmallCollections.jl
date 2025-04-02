@@ -228,6 +228,8 @@ function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
     V{T}(iter)
 end
 
+SmallVector(v::AbstractSmallVector{N,T}) where {N,T} = SmallVector{N,T}(v)
+
 +(v::AbstractSmallVector) = v
 -(v::AbstractSmallVector) = SmallVector(-v.b, length(v))
 
