@@ -4,7 +4,7 @@
 
 export AbstractSmallVector, SmallVector, sum_fast, extrema_fast
 
-import Base: ==, Tuple, empty,
+import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, findfirst, findlast, findmin, findmax, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace
@@ -136,13 +136,17 @@ Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 
 size(v::AbstractSmallVector) = (v.n % Int,)
 
-rest(v::AbstractSmallVector, (r, i) = (eachindex(v), 0)) = @inbounds v[i+1:last(r)]
+@inline function iterate(v::AbstractSmallVector, i = 1)
+    i <= length(v) ? (@inbounds v[i], i+1) : nothing
+end
+
+rest(v::AbstractSmallVector, i = 1) = @inbounds v[i:end]
 
 if VERSION >= v"1.9"
-    @inline function split_rest(v::AbstractSmallVector, n::Int, (r, i) = (eachindex(v), 0))
-        m = length(r)-n
-        @boundscheck (n >= 0 && m >= i) || error("impossible number of elements requested")
-        @inbounds v[i+1:m], v[m+1:end]
+    @inline function split_rest(v::AbstractSmallVector, n::Int, i = 1)
+        m = length(v)-n
+        @boundscheck (n >= 0 && m >= i-1) || error("impossible number of elements requested")
+        @inbounds v[i:m], v[m+1:end]
     end
 end
 
