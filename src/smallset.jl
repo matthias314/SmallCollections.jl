@@ -5,7 +5,7 @@
 export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
     empty, push, pop, delete, sum_fast, extrema_fast
 
-import Base: show, copy, length, iterate, values, in,
+import Base: show, copy, length, iterate, values, in, empty!,
     push!, pop!, delete!, filter!, setdiff!
 
 """
@@ -232,6 +232,8 @@ function replace(s::AbstractSmallSet, ps::Vararg{Pair,M}; kw...) where M
     qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
     _SmallSet(replace(s.d, qs...; kw...))
 end
+
+empty!(s::MutableSmallSet) = (@inline empty!(s.d); s)
 
 function push!(s::MutableSmallSet, xs...)
     @inline push!(s.d, map(x -> x => nothing, xs)...)
