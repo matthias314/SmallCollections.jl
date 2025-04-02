@@ -329,6 +329,11 @@ function pop(d::AbstractSmallDict, key, default)
 end
 
 function filter(f, d::AbstractSmallDict{N,K,V}) where {N,K,V}
+    if isbitstype(Tuple{K,V})
+        e = MutableSmallDict(d)
+        @inline filter!(f, e)
+        return SmallDict(e)
+    end
     keys = SmallVector{N,K}()
     vals = SmallVector{N,V}()
     for (k, v) in zip(d.keys, d.vals)
