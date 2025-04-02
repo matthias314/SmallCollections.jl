@@ -6,7 +6,9 @@ export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
     empty, push, pop, delete, sum_fast, extrema_fast
 
 import Base: show, copy, length, iterate, values, in, empty!,
-    push!, pop!, delete!, filter!, setdiff!
+    push!, pop!, delete!, filter!,
+    union!, intersect!, setdiff!, symdiff!,
+    union, intersect, setdiff, symdiff
 
 """
     AbstractSmallSet{N,T} <: AbstractSet{T}
@@ -240,7 +242,7 @@ function push!(s::MutableSmallSet, xs...)
     s
 end
 
-delete!(s::MutableSmallSet, x) = (delete!(s.d, x); s)
+delete!(s::MutableSmallSet, x) = (@inline(delete!(s.d, x)); s)
 
 pop!(s::MutableSmallSet) = first(pop!(s.d))
 
@@ -256,7 +258,7 @@ function pop!(s::MutableSmallSet, x, default)
     first(unsafe_pop!(s.d, i))
 end
 
-filter!(f::F, s::MutableSmallSet) where F = (filter!(f∘first, s.d); s)
+filter!(f::F, s::MutableSmallSet) where F = (@inline filter!(f∘first, s.d); s)
 
 function replace!(s::MutableSmallSet, ps::Vararg{Pair,M}; kw...) where M
     qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
@@ -264,14 +266,60 @@ function replace!(s::MutableSmallSet, ps::Vararg{Pair,M}; kw...) where M
     s
 end
 
-setdiff!(s::MutableSmallSet, t) = _setdiff!(s, t)
-setdiff!(s::MutableSmallSet, t::AbstractSet) = _setdiff!(s, t)
+function smallset_union!(s::MutableSmallSet, t)
+    for x in t
+        @inline push!(s, x)
+    end
+    s
+end
 
-function _setdiff!(s::MutableSmallSet, t)
-    if Base.hasfastin(t) && length(s) < 2*length(t)
-        filter!(!in(t), s)
+function smallset_intersect!(s::MutableSmallSet, t)
+    if Base.hasfastin(t)
+        @inline filter!(in(t), s)
     else
-        foldl(delete!, t; init = s)
+        u = copy(s)
+        @inline empty!(s)
+        for x in t
+            x in u && @inline push!(s, x)
+        end
+    end
+    s
+end
+
+function smallset_setdiff!(s::MutableSmallSet, t)
+    if Base.hasfastin(t) && length(s) < 2*length(t)
+        @inline filter!(!in(t), s)
+    else
+        for x in t
+            @inline delete!(s, x)
+        end
+        s
+    end
+end
+
+function smallset_symdiff!(s::MutableSmallSet, t)
+    for x in t
+        @inline(pop!(s, x, Void())) isa Void && @inline(push!(s, x))
+    end
+    s
+end
+
+for g in (:union, :intersect, :setdiff, :symdiff)
+    g! = Symbol(g, '!')
+    gsmall = Symbol("smallset_", g!)
+    if g in (:intersect, :setdiff)
+        def_u = :(u = MutableSmallSet(s))
+    else
+        def_u = :(U = promote_type(T, eltype(t)); u = MutableSmallSet{N,U}(s))
+    end
+    # we need both methods for g! to avoid method ambiguities
+    @eval $g!(s::MutableSmallSet, t) = @inline $gsmall(s, t)
+    @eval $g!(s::MutableSmallSet, t::AbstractSet) = @inline $gsmall(s, t)
+    @eval function $g(s::AbstractSmallSet{N,T}, t) where {N,T}
+        isbitstype(T) || error("not implemented") # TODO
+        $def_u
+        @inline $g!(u, t)
+        SmallSet(u)
     end
 end
 
