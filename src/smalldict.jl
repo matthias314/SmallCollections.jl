@@ -71,7 +71,7 @@ SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,K}(), SmallVector{N,V
         unsafe_setindex!(keys, key, i)
         unsafe_setindex!(vals, val, i)
     end
-    vals.n = keys.n = i
+    vals.n = keys.n = i % SmallLength
     keys, vals
 end
 
@@ -424,7 +424,7 @@ function filter!(f, d::MutableSmallDict{N,K,V}) where {N,K,V}
     for i in j+1:n
         @inbounds d.keys[i], d.vals[i] = default(K), default(V)
     end
-    d.vals.n = d.keys.n = j
+    d.vals.n = d.keys.n = j % SmallLength
     d
 end
 

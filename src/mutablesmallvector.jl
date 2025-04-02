@@ -173,7 +173,7 @@ end
     @boundscheck isempty(v) && error("vector must not be empty")
     n = length(v)
     @inbounds x, v[n] = v[n], default(T)
-    v.n -= 1
+    v.n -= 1 % SmallLength
     x
 end
 
@@ -187,7 +187,7 @@ end
 
 @inline function insert!(v::MutableSmallVector{N,T}, i::Integer, xs::Vararg{Any,M}) where {N,T,M}
     @boundscheck 1 <= i <= length(v)+1 <= N-M+1 || throw(BoundsError(v, i))
-    v.n += M
+    v.n += M % SmallLength
     unsafe_shl!(v, v.n, i, xs...)
 end
 
@@ -207,7 +207,7 @@ end
 
 @inline function push!(v::MutableSmallVector{N}, x) where N
     @boundscheck v.n < N || error("vector cannot have more than $N elements")
-    v.n += 1
+    v.n += 1 % SmallLength
     @inbounds v[v.n] = x
     v
 end
@@ -249,7 +249,7 @@ end
         @boundscheck length(v) < N || error("vector cannot have more than $N elements")
     end
     GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
-    v.n += 1
+    v.n += 1 % SmallLength
     v
 end
 
