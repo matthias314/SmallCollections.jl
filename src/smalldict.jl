@@ -386,10 +386,12 @@ end
 empty!(d::MutableSmallDict) = (empty!(d.keys); empty!(d.vals); d)
 
 @inline function unsafe_pop!(d::MutableSmallDict, i::Int)
-    @inbounds key = d.keys[i]
-    @inbounds unsafe_setindex!(d.keys, pop!(d.keys), i)
-    @inbounds val = d.vals[i]
-    @inbounds unsafe_setindex!(d.vals, pop!(d.vals), i)
+    @inbounds key = pop!(d.keys)
+    @inbounds val = pop!(d.vals)
+    if i <= length(d)
+        @inbounds key, _ = d.keys[i], unsafe_setindex!(d.keys, key, i)
+        @inbounds val, _ = d.vals[i], unsafe_setindex!(d.vals, val, i)
+    end
     key => val
 end
 
