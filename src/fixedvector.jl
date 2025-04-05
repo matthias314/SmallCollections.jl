@@ -73,8 +73,16 @@ mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
 
-(::Type{V})(v::AbstractFixedVector{N}) where {N,T,V<:AbstractFixedVector{N,T}} = V(Tuple(v))
-# to avoid (possibly allocating) NTuple in other constructor
+function FixedVector{N,T}(v::AbstractVector) where {N,T}
+    length(v) == N || error("argument is not of length ", N)
+    t = ntuple(i -> convert(T, @inbounds v[i+firstindex(v)-1]), Val(N))
+    FixedVector{N,T}(t)
+end
+
+function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
+    w = FixedVector{N,T}(v)
+    MutableFixedVector{N,T}(w.t)
+end
 
 function (::Type{V})(t) where {N,T,V<:AbstractFixedVector{N,T}}
     isconcretetype(V) || error("constructor type must be concrete")
