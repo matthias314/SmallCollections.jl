@@ -1,7 +1,8 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector,
     sum_fast, extrema_fast, bits, fasthash
 
-using Base: @propagate_inbounds, tail, haslength, BitInteger
+using Base: @propagate_inbounds, tail, haslength, BitInteger,
+    IteratorEltype, HasEltype, Generator
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
@@ -84,16 +85,71 @@ function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
     MutableFixedVector{N,T}(w.t)
 end
 
-function (::Type{V})(t) where {N,T,V<:AbstractFixedVector{N,T}}
-    isconcretetype(V) || error("constructor type must be concrete")
-    !haslength(t) || length(t) == N || error("argument is not of length $N")
-    V(NTuple{N,T}(t))
+function FixedVector{N,T}(itr::Generator) where {N,T}
+    if IteratorEltype(itr.iter) isa HasEltype
+        v = @inline FixedVector{N}(itr.iter)
+        map(itr.f, v)
+    else
+        invoke(FixedVector{N,T}, Tuple{Any}, itr)
+    end
+end
+
+function MutableFixedVector{N,T}(itr::Generator) where {N,T}
+    if IteratorEltype(itr.iter) isa HasEltype
+        MutableFixedVector(FixedVector{N,T}(itr))
+    else
+        invoke(MutableFixedVector{N,T}, Tuple{Any}, itr)
+    end
+end
+
+@generated function FixedVector{N,T}(itr) where {N,T}
+    ex1 = (quote
+        xs = iterate(itr, $((k == 1 ? () : (:s,))...))
+        xs === nothing && @goto err
+        $(Symbol(:x, k))::T, s = xs
+    end for k in 1:N)
+    ex2 = Expr(:tuple, (Symbol(:x, k) for k in 1:N)...)
+    quote
+        $(ex1...)
+        iterate(itr, s) === nothing && return FixedVector{N,T}($ex2)
+        @label err
+        error("argument is not of length ", N)
+    end
+end
+
+#=
+@generated function MutableFixedVector{N,T}(itr) where {N,T}
+    ex = (quote v[$k], s = iterate(itr, $((k == 1 ? () : (:s,))...))::Tuple end for k in 1:N)
+    quote
+        isbitstype(T) || return MutableFixedVector(FixedVector{N,T}(itr))
+        !haslength(itr) || length(itr) == N || error("argument is not of length ", N)
+        v = MutableFixedVector{N,T}(undef)
+        $(ex...)
+        haslength(itr) || iterate(itr, s) === nothing || error("argument is not of length ", N)
+        v
+    end
+end
+=#
+
+function MutableFixedVector{N,T}(itr) where {N,T}
+    isbitstype(T) || return MutableFixedVector(FixedVector{N,T}(itr))
+    v = MutableFixedVector{N,T}(undef)
+    i = 0
+    xs = iterate(itr)
+    while i < N && xs !== nothing
+        i += 1
+        x, s = xs
+        @inbounds v[i] = x
+        xs = iterate(itr, s)
+    end
+    (i == N && xs === nothing) || error("argument is not of length ", N)
+    v
 end
 
 function (::Type{V})(t) where {N,V<:AbstractFixedVector{N}}
     if Base.IteratorEltype(t) isa Base.HasEltype
         T = element_type(t)
-        V{T}(t)
+        @inline V{T}(t)
     else
         V(NTuple{N}(t))
     end
