@@ -82,11 +82,12 @@ MutableSmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = MutableSmallVec
 
 function MutableSmallVector{N,T}(itr) where {N,T}
     isbitstype(T) || return MutableSmallVector(SmallVector{N,T}(itr))
+    !haslength(itr) || length(itr) <= N || error("vector cannot have more than $N elements")
     v = MutableSmallVector{N,T}()
     i = 0
     for ix in enumerate(itr)
         i, x = ix
-        i <= N || error("vector cannot have more than $N elements")
+        haslength(itr) || i <= N || error("vector cannot have more than $N elements")
         unsafe_setindex!(v, x, i)
     end
     v.n = i % SmallLength
