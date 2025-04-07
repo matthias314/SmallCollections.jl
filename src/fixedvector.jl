@@ -313,7 +313,11 @@ sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
 Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
-Base._count(f, v::AbstractFixedVector, ::Colon, init) = Base._sum(x -> f(x)::Bool, v, :; init)
+function Base._count(f, v::AbstractFixedVector{N}, ::Colon, init::T) where {N,T}
+    w = map(f, v)
+    eltype(w) == Bool || error("given function must return Bool values")
+    init + count_ones(bits(w)) % T
+end
 
 Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; kw...)
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
