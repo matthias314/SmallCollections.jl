@@ -331,8 +331,8 @@ end
 """
     sum_fast(s::AbstractSmallSet{N,T}) where {N,T}
 
-Return the sum of the elements of `s` using `@fastmath` arithmetic
-if `T` is `Float32` or `Float64`. Otherwise return `sum(s)`.
+Return the `@fastmath` sum of the elements of `s`.
+Unlike for `sum`, the return value always is of the element type of `s`, even for small bit integers.
 
 See also `Base.sum`, `Base.@fastmath`.
 """

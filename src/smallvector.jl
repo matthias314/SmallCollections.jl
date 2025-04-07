@@ -280,8 +280,8 @@ end
 """
     sum_fast(v::AbstractSmallVector{N,T}) where {N,T}
 
-Return the sum of the elements of `v` using `@fastmath` arithmetic
-if `T` is `Float32` or `Float64`. Otherwise return `sum(v)`.
+Return the `@fastmath` sum of the elements of `v`.
+Unlike for `sum`, the return value always is of the element type of `v`, even for small bit integers.
 
 See also `Base.sum`, `Base.@fastmath`.
 
@@ -294,10 +294,17 @@ julia> v = SmallVector{4}([-0.0, -0.0])
 
 julia> sum(v), sum_fast(v)
 (-0.0, 0.0)
+
+julia> v = SmallVector{4}(Int8[80, 90])
+2-element SmallVector{4, Int8}:
+ 80
+ 90
+
+julia> sum(v), sum_fast(v)
+(170, -86)
 ```
 """
-sum_fast(v::AbstractSmallVector) = sum(v)
-sum_fast(v::AbstractSmallVector{N,T}) where {N, T <: FastFloat} = @fastmath foldl(+, v.b)
+sum_fast(v::AbstractSmallVector) = @fastmath foldl(+, v.b)
 
 function prod(v::AbstractSmallVector{N,T}) where {N,T}
     if T <: Base.BitInteger
