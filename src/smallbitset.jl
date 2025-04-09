@@ -8,7 +8,7 @@ using Base: hasfastin
 
 import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
-    length, issubset, maximum, minimum, extrema,
+    length, issubset, ⊊, maximum, minimum, extrema,
     union, intersect, setdiff, symdiff, filter,
     replace
 
@@ -219,6 +219,8 @@ function in(n, s::SmallBitSet{U}) where U <: Unsigned
 end
 
 issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
+
+⊊(s::SmallBitSet, t::SmallBitSet) = issubset(s, t) && s != t
 
 """
     push(s::S, xs...) where S <: SmallBitSet -> S

@@ -69,6 +69,9 @@ end
         @test_inferred issubset(s2, s) issubset(t2, t)
         @test_inferred issubset(s2, t) issubset(t2, t)
         @test_inferred issubset(t2, s) issubset(t2, t)
+        @test_inferred s2 ⊊ s t2 ⊊ t
+        @test_inferred s2 ⊊ t t2 ⊊ t
+        @test_inferred t2 ⊊ s t2 ⊊ t
     end
 end
 
