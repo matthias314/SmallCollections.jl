@@ -95,7 +95,7 @@ This must be defined as `zero(T)` if `T` supports algebraic operations. Otherwis
 be any value of type `T`.
 
 This function has methods for number types, bits types, `Symbol`, `AbstractChar`, `AbstractString`,
-`AbstractFixedVector`, `AbstractSmallVector` und `SmallBitSet`.
+`Tuple`, `NamedTuple`, `AbstractFixedVector`, `AbstractSmallVector` und `SmallBitSet`.
 Methods for other types must be defined explicitly.
 
 See also `Base.isbitstype`.
@@ -124,7 +124,11 @@ default(::Type{T}) where T <: AbstractChar = T(0)
 default(::Type{<:AbstractString}) = ""
 default(::Type{Symbol}) = Symbol()
 
-default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(ntuple(Returns(default(T)), Val(N)))
+default(::Type{T}) where T <: Tuple = map_tuple(default, fieldtypes(T))
+default(::Type{NamedTuple{K,T}}) where {K,T} = NamedTuple{K}(default(T))
+default(::Type{Pair{K,V}}) where {K,V} = default(K) => default(V)
+
+default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(default(NTuple{N,T}))
 
 #
 # bit conversions
