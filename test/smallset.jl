@@ -215,10 +215,10 @@ end
         v, w, x, y, z = rand_unique(T, 5)
         s = S{N,T}((v, w, x, y))
         t = S{N,T}((x, y, z))
-        @test_inferred union(s, t) union(Set(s), Set(t)) MutableSmallSet{N,T}
-        @test_inferred intersect(s, t) intersect(Set(s), Set(t)) MutableSmallSet{N,T}
-        @test_inferred setdiff(s, t) setdiff(Set(s), Set(t)) MutableSmallSet{N,T}
-        @test_inferred symdiff(s, t) symdiff(Set(s), Set(t)) MutableSmallSet{N,T}
+        @test_inferred union(s, t) union(Set(s), Set(t)) SmallSet{N,T}
+        @test_inferred intersect(s, t) intersect(Set(s), Set(t)) SmallSet{N,T}
+        @test_inferred setdiff(s, t) setdiff(Set(s), Set(t)) SmallSet{N,T}
+        @test_inferred symdiff(s, t) symdiff(Set(s), Set(t)) SmallSet{N,T}
     end
 end
 

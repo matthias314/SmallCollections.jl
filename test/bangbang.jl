@@ -43,7 +43,7 @@ end
     @test uu === u
     @test_broken isdefined(BangBang, :filter!!)
     u = copy(s)
-    uu = @test_inferred union!!(u, t) union(copy(s), t)
+    uu = @test_inferred union!!(u, t) union!(copy(s), t)
     @test uu === u
     u = copy(s)
     uu = @test_inferred intersect!!(u, t) intersect!(copy(s), t)
