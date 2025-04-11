@@ -394,7 +394,7 @@ julia> collect(permutations_sign_transposition(3))
  ([2, 3, 1], 1, (1, 3))
  ([3, 2, 1], -1, (1, 2))
 
-julia> collect(SmallCollections.permutations_sign_transposition(0))
+julia> collect(permutations_sign_transposition(0))
 1-element Vector{Tuple{SmallVector{16, Int8}, Int64, Tuple{Int64, Int64}}}:
  ([], 1, (0, 0))
 ```

@@ -151,7 +151,7 @@ whose bit length is a power of `2`.
 If the element type is `Bool`, then each element only takes one bit in the return value.
 If `N` is less than `8` or not a power of `2`, then the result will again be zero-extended.
 
-See also [`SmallCollections.bitsize`](@ref), `Base.BitInteger`, `Base.reinterpret`, `BitIntegers`.
+See also [`$(@__MODULE__).bitsize`](@ref), `Base.BitInteger`, `Base.reinterpret`, `BitIntegers`.
 
 # Examples
 ```jldoctest
