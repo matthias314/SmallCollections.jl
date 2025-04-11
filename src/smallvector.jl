@@ -7,7 +7,8 @@ export AbstractSmallVector, SmallVector, resize, sum_fast, extrema_fast
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, findfirst, findlast, findmin, findmax, in,
-    +, -, *, sum, prod, maximum, minimum, extrema, replace
+    +, -, *, sum, prod, maximum, minimum, extrema, replace,
+    count
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -713,4 +714,26 @@ function copy(bc::Broadcasted{SmallVectorStyle})
             error("vectors must have the same length")
     end
     @inline smallvector_map(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+end
+
+#
+# count
+#
+
+count(v::AbstractSmallVector; kw...) = count(identity, v; kw...)
+
+count(f::F, v::AbstractSmallVector{N,T}; dims = :, init = 0, style::MapStyle = MapStyle(f, T)) where {F,N,T} =
+    smallvector_count(style, f, v, dims, init)
+
+smallvector_count(::MapStyle, f::F, v, dims, init) where F =
+    invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
+
+smallvector_count(::Union{PreservesDefault,WeaklyPreservesDefault}, f::F, v, ::Colon, init) where F =
+    count(f, v.b; init)
+
+function smallvector_count(::AcceptsDefault, f::F, v, ::Colon, init::T) where {F,T}
+    c = @inline map(f, v.b)
+    eltype(c) == Bool || error("given function must return Bool values")
+    m = bits(c)
+    init + ifelse(isempty(v), 0, count_ones(unsafe_shl(m, bitsize(m)-length(v)))) % T
 end
