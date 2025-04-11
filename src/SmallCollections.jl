@@ -86,6 +86,7 @@ ntuple(f, n) = Base.ntuple(f, n)
 include("bits.jl")
 include("smallbitset.jl")
 
+include("mapstyle.jl")
 include("fixedvector.jl")
 include("staticvectors.jl")
 
