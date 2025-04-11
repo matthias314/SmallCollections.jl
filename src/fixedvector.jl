@@ -313,8 +313,10 @@ sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
 Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
-function Base._count(f, v::AbstractFixedVector{N}, ::Colon, init::T) where {N,T}
-    w = map(f, v)
+
+function Base.count(f::F, v::AbstractFixedVector; dims = :, init::T = 0) where {F,T}
+# function Base._count(f::F, v::AbstractFixedVector{N}, ::Colon, init::T) where {F,N,T}
+    w = @inline map(f, v)
     eltype(w) == Bool || error("given function must return Bool values")
     init + count_ones(bits(w)) % T
 end
