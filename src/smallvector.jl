@@ -548,6 +548,95 @@ prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w)
 support(v::AbstractSmallVector) = support(v.b)
 # here we assume that the padding is via zeros
 
+#
+# map
+#
+
+using Base: Fix1, Fix2
+
+abstract type MapStyle end
+
+struct PreservesDefault <: MapStyle end
+struct WeaklyPreservesDefault <: MapStyle end
+struct AcceptsDefault <: MapStyle end
+struct DefaultMapStyle <: MapStyle end
+
+MapStyle(::Any, ::Type...) = DefaultMapStyle()
+# MapStyle(f, args...) = MapStyle(f, map(typeof, args)...)
+
+MapStyle(::Union{typeof.(
+        (-, identity, signbit, isodd, round, floor, ceil, trunc, abs, sign, sqrt)
+    )...}, ::Type) = PreservesDefault()
+MapStyle(::Union{typeof.(
+        (&,)
+    )...}, ::Type...) = PreservesDefault()
+
+MapStyle(::Union{typeof.(
+        (!==, !=, <, >, -, abs2)
+    )...}, ::Type, ::Type) = WeaklyPreservesDefault()
+MapStyle(::Union{typeof.(
+        (|, xor, +)
+    )...}, ::Type...) = WeaklyPreservesDefault()
+
+MapStyle(::Union{typeof.(
+        (!, ~, iseven)
+    )...}, ::Type) = AcceptsDefault()
+MapStyle(::Union{typeof.(
+        # note: 1/0 = Inf
+        (===, isequal, ==, <=, >=, /)
+    )...}, ::Type, ::Type) = AcceptsDefault()
+MapStyle(::Union{typeof.(
+        (nand, nor)
+    )...}, ::Type...) = AcceptsDefault()
+
+# definitions depending on type
+
+hasfloats(::Type) = false
+hasfloats(::Type{<:AbstractFloat}) = true
+hasfloats(::Type{<:Complex{T}}) where T = hasfloats(T)
+hasfloats(::Type{<:AbstractArray{T}}) where T = hasfloats(T)
+
+# -(0.0) === -0.0, not 0.0
+MapStyle(::typeof(-), ::Type{T}) where T = hasfloats(T) ? WeaklyPreservesDefault() : PreservesDefault()
+
+# (-1) * 0.0 === -0.0, not 0.0
+function MapStyle(::typeof(*), ::Type{T}, types::Type...) where T
+    if hasfloats(T) || MapStyle(*, types...) isa WeaklyPreservesDefault
+        WeaklyPreservesDefault()
+    else
+        PreservesDefault()
+    end
+end
+
+MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StronlyPreservesDefault()
+MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = WeaklyPreservesDefault()
+
+MapStyle(::typeof(intersect), ::Type{<:AbstractSet}, ::Type...) = PreservesDefault()
+MapStyle(::Union{typeof.(
+        (union, setdiff, symdiff)
+    )...}, ::Type{<:AbstractSet}, ::Type...) = WeaklyPreservesDefault()
+
+MapStyle(::Union{typeof.(
+        (merge, mergewith)
+    )...}, ::Type{<:AbstractDict}, ::Type...) = WeaklyPreservesDefault()
+
+# TODO: use PreservesDefault
+if VERSION > v"1.12-alpha"
+    function MapStyle(g::Base.Fix{N,F,T}, types::Type...) where {N,F,T}
+        style = MapStyle(g.f, types[1:N-1]..., T, types[N:end]...)
+        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+    end
+else
+    function MapStyle(g::Fix1{F,T}, types::Type...) where {F,T}
+        style = MapStyle(g.f, T, types...)
+        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+    end
+    function MapStyle(g::Fix2{F,T}, type1::Type, types::Type...) where {F,T}
+        style = MapStyle(g.f, type1, T, types...)
+        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+    end
+end
+
 """
     map(f, v::AbstractSmallVector...) -> SmallVector
 
@@ -573,70 +662,50 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
  "cz"
 ```
 """
-function map(f::F, vs::Vararg{AbstractSmallVector,M}) where {F,M}
-    n = minimum(length, vs)
-    _map(f, n, vs...)
-end
-
-function map_fast(f::F, n, vs::Vararg{AbstractSmallVector{N},M}) where {F,N,M}
-    bs = map(v -> v.b, vs)
-    SmallVector(map(f, bs...), n)
-end
-
-function map_fast_pad(f::F, n, vs::Vararg{AbstractSmallVector{N},M}) where {F,N,M}
-    bs = map(v -> v.b, vs)
-    b = map(f, bs...)
-    SmallVector(padtail(b, n), n)
-end
-
-#
-# broadcast
-#
-
-using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, flatten
-import Base.Broadcast: BroadcastStyle, instantiate
-
-"""
-    $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
-
-The broadcasting style used for `AbstractSmallVector`.
-
-See also [`AbstractSmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
-"""
-struct SmallVectorStyle <: AbstractArrayStyle{1} end
-
-BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
-BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
-BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
-
-instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
-
-function copy(bc::Broadcasted{SmallVectorStyle})
-    bcflat = flatten(bc)
-    i = findfirst(x -> x isa AbstractSmallVector, bcflat.args)::Int
-    n = length(bcflat.args[i])
-    foreach(bcflat.args) do x
-        x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&
-            error("vectors must have the same length")
+function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+    n, eq = minlength(vs)
+    if style isa DefaultMapStyle
+        @inline smallvector_map(DefaultMapStyle(), n, f, vs...)
+    elseif style isa PreservesDefault || (style isa WeaklyPreservesDefault && ((M == 1) || eq))
+        @inline smallvector_map(PreservesDefault(), n, f, vs...)
+    else
+        @inline smallvector_map(AcceptsDefault(), n, f, vs...)
     end
-    _map(bcflat.f, n, bcflat.args...)
+end
+
+function minlength(vs)
+    foldl(vs[2:end]; init = (length(vs[1]), true)) do (n, eq), v
+        min(n, length(v)), eq & (n == length(v))
+    end
+end
+
+_fixed(x) = x
+_fixed(v::AbstractSmallVector) = v.b
+
+function smallvector_map(::PreservesDefault, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    b = materialize(broadcasted(f, map(_fixed, vs)...))
+    SmallVector(b, n)
+end
+
+function smallvector_map(::AcceptsDefault, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    b = materialize(broadcasted(f, map(_fixed, vs)...))
+    SmallVector(padtail(b, n), n)
 end
 
 _eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
 _eltype(x::T) where T = T
 
-_capacity(v::AbstractSmallVector) = capacity(v)
-_capacity(_) = typemax(Int)
-
 _getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
 _getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
 _getindex(x, i) = x
 
-function _map(f::F, n, vs::Vararg{Any,M}) where {F,M}
-    N = minimum(_capacity, vs)
+function smallvector_map(::DefaultMapStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    N = minimum(vs) do v
+        v isa AbstractSmallVector ? capacity(v) : typemax(Int)
+    end
     TT = map(_eltype, vs)
     U = Core.Compiler.return_type(f, Tuple{TT...})
-    if isconcretetype(U)
+    if isbitstype(U)
         tt = ntuple(Val(N)) do i
             ntuple(j -> _getindex(vs[j], i), Val(M))
         end
@@ -654,18 +723,63 @@ function _map(f::F, n, vs::Vararg{Any,M}) where {F,M}
     end
 end
 
-_map(f::Union{typeof.(
-        (identity, &, round, floor, ceil, trunc, abs, abs2, sign, sqrt)
-    )...}, n, vs::AbstractSmallVector{N}...) where N = map_fast(f, n, vs...)
+#
+# broadcast
+#
 
-_map(::typeof(*), n, vs::AbstractSmallVector{N,<:Integer}...) where N = map_fast(*, n, vs...)
-_map(::typeof(signbit), n, v::AbstractSmallVector{N,<:Integer}) where N = map_fast(signbit, n, v)
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, flatten, materialize
+import Base.Broadcast: BroadcastStyle, instantiate
 
-_map(f::Union{typeof.(
-        (+, -, *, ~, |, xor, nand, nor, ==, !=, <, >, <=, >=, ===, isequal, signbit)
-    )...}, n, vs::AbstractSmallVector{N}...) where N = map_fast_pad(f, n, vs...)
+"""
+    $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
 
-_map(::typeof(/), n,
-        v::AbstractSmallVector{N,<:Union{Integer,AbstractFloat}},
-        w::AbstractSmallVector{N,<:Union{Integer,AbstractFloat}}) where N =
-    map_fast_pad(/, n, v, w)
+The broadcasting style used for `AbstractSmallVector`.
+
+See also [`AbstractSmallVector`](@ref), `Broadcast.AbstractArrayStyle`.
+"""
+struct SmallVectorStyle <: AbstractArrayStyle{1} end
+
+BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
+BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
+BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
+
+instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
+
+_fixed(bc::Broadcasted) = broadcasted(bc.f, map(_fixed, bc.args)...)
+
+bc_return_type(x) = _eltype(x)
+
+function bc_return_type(bc::Broadcasted)
+    TT = map(bc_return_type, bc.args)
+    Core.Compiler.return_type(bc.f, Tuple{TT...})
+end
+
+bc_mapstyle(::Any) = AcceptsDefault()
+bc_mapstyle(::AbstractSmallVector) = PreservesDefault()
+
+function bc_mapstyle(bc::Broadcasted)
+    TT = map(bc_return_type, bc.args)
+    all(isconcretetype, TT) || return DefaultMapStyle()
+    fstyle = MapStyle(bc.f, TT...)
+    argstyles = map(bc_mapstyle, bc.args)
+    if fstyle isa DefaultMapStyle || any(Fix2(isa, DefaultMapStyle), argstyles)
+        DefaultMapStyle()
+    elseif fstyle isa WeaklyPreservesDefault && all(Fix2(isa, PreservesDefault), argstyles)
+        PreservesDefault()
+    elseif fstyle isa PreservesDefault && any(Fix2(isa, PreservesDefault), argstyles)
+        PreservesDefault()
+    else
+        AcceptsDefault()
+    end
+end
+
+function copy(bc::Broadcasted{SmallVectorStyle})
+    bcflat = flatten(bc)
+    i = findfirst(Fix2(isa, AbstractSmallVector), bcflat.args)::Int
+    n = length(bcflat.args[i])
+    foreach(bcflat.args) do x
+        x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&
+            error("vectors must have the same length")
+    end
+    @inline smallvector_map(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+end
