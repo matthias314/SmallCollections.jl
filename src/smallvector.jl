@@ -2,7 +2,7 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, sum_fast, extrema_fast
+export AbstractSmallVector, SmallVector, resize, sum_fast, extrema_fast
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
@@ -193,6 +193,20 @@ See also [`empty(v::AbstractCapacityVector)`](@ref).
 empty(v::AbstractSmallVector, ::Type)
 
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
+
+"""
+    resize(v::AbstractSmallVector{N,T}, n::Integer) -> SmallVector{N,T}
+
+Return a vector of length `n` by making `v` longer or shorter. If the new vector
+is longer, then the new elements are initialized with `default(T)`.
+
+See also `Base.resize!`, [`$(@__MODULE__).default`](@ref).
+"""
+@inline function resize(v::AbstractSmallVector{N}, n::Integer) where N
+    @boundscheck 0 <= n <= N || error("length must be between 0 and $N")
+    b = n < v.n ? padtail(v.b, n) : v.b
+    SmallVector(b, n % SmallLength)
+end
 
 default(::Type{V}) where V <: AbstractSmallVector = V()
 

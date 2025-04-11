@@ -32,6 +32,7 @@ AbstractSmallVector
 SmallVector
 MutableSmallVector
 empty(::AbstractSmallVector, ::Type)
+resize
 fasthash(::AbstractSmallVector, ::UInt)
 sum_fast(::AbstractSmallVector)
 extrema_fast(::AbstractSmallVector)
