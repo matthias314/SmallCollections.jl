@@ -124,7 +124,8 @@ default(::Type{T}) where T <: AbstractChar = T(0)
 default(::Type{<:AbstractString}) = ""
 default(::Type{Symbol}) = Symbol()
 
-default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(ntuple(Returns(default(T)), Val(N)))
+default(::Type{T}) where T <: Tuple = map_tuple(default, fieldtypes(T))
+default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(default(NTuple{N,T}))
 
 #
 # bit conversions
