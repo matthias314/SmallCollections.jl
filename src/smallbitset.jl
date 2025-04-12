@@ -42,6 +42,8 @@ function show(io::IO, s::SmallBitSet{U}) where U
     print(io, "])")
 end
 
+isfasttype(::Type{SmallBitSet{U}}) where U = isfasttype(U)
+
 ==(s::SmallBitSet, t::SmallBitSet) = s.mask == t.mask
 
 copy(s::SmallBitSet) = s

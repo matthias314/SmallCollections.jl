@@ -84,9 +84,10 @@ ntuple(f, n) = Base.ntuple(f, n)
 @inline @generated ntuple(f, ::Val{N}) where N = :(Base.Cartesian.@ntuple $N i -> f(i))
 
 include("bits.jl")
+include("mapstyle.jl")
+
 include("smallbitset.jl")
 
-include("mapstyle.jl")
 include("fixedvector.jl")
 include("staticvectors.jl")
 
