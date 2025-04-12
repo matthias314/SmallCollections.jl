@@ -430,8 +430,6 @@ function findmax(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
     m, findfirst(==(m), v)::Int
 end
 
-const FastTestType = Union{Base.HWReal, Bool, Char, Enum, SmallBitSet{<:Union{UInt8,UInt16,UInt32,UInt}}}
-
 for f in (:findfirst, :findlast)
     @eval function $f(pred::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
         if style isa DefaultMapStyle
@@ -442,15 +440,15 @@ for f in (:findfirst, :findlast)
     end
 end
 
-Base.hasfastin(::Type{<:AbstractFixedVector{<:Any,<:FastTestType}}) = true
+Base.hasfastin(::Type{<:AbstractFixedVector{N,T}}) where {N,T} = isfasttype(T)
 
 in(x, v::AbstractFixedVector) = any(==(x), v)
 
 @inline replace_pair(v::AbstractFixedVector, w::AbstractFixedVector, p::Pair, ::Type{T}) where T =
     map((x, y) -> isequal(x, p[1]) ? convert(T, p[2]) : convert(T, y), v, w)
 
-function replace(v::AbstractFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
-    if isempty(kw)
+function replace(v::AbstractFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
+    if isfasttype(T) && isempty(kw)
         foldl(ps; init = FixedVector(v)) do w, p
             U = promote_type(eltype(w), typeof(p[2]))
             replace_pair(v, w, p, U)  # separate function for type stability
@@ -460,8 +458,8 @@ function replace(v::AbstractFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {
     end
 end
 
-function replace!(v::MutableFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
-    if isempty(kw)
+function replace!(v::MutableFixedVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
+    if isfasttype(T) && isempty(kw)
         v .= replace(v, ps...)
     else
         invoke(replace!, Tuple{AbstractVector,Vararg{Pair,M}}, v, ps...; kw...)

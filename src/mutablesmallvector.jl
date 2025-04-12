@@ -145,8 +145,8 @@ empty!(v::MutableSmallVector) = resize!(v, 0)
     v
 end
 
-function replace!(v::MutableSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
-    if isempty(kw)
+function replace!(v::MutableSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
+    if isfasttype(T) && isempty(kw)
         v.b = replace(v, ps...).b
         v
     else

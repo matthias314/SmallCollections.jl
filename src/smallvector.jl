@@ -503,8 +503,8 @@ Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldt
 
 in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
 
-function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N, T <: FastTestType, M}
-    if isempty(kw)
+function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
+    if isfasttype(T) && isempty(kw)
         b = replace(v.b, ps...)
         if default(T) in map(first, ps)
             b = padtail(b, v.n)

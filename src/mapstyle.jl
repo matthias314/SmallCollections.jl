@@ -1,4 +1,17 @@
 #
+# fast types
+#
+
+isfasttype(::Type) = false
+isfasttype(::Type{<:Union{Base.HWReal, Bool, Char, Enum}}) = true
+
+isfasttype(::Type{Complex{T}}) where T = isfasttype(T)
+isfasttype(::Type{Pair{K,V}}) where {K,V} = isfasttype(K) && isfasttype(V)
+isfasttype(::Type{T}) where T <: Tuple = all(isfasttype, fieldtypes(T))
+isfasttype(::Type{NamedTuple{K,T}}) where {K,T} = isfasttype(T)
+isfasttype(::Type{<:Ref{T}}) where T = isfasttype(T)
+
+#
 # MapStyle definitions
 #
 
@@ -11,35 +24,41 @@ struct WeaklyPreservesDefault <: MapStyle end
 struct AcceptsDefault <: MapStyle end
 struct DefaultMapStyle <: MapStyle end
 
+iffasttypes(style::MapStyle) = style
+
+function iffasttypes(style::MapStyle, ::Type{T}, types::Type...) where T
+    isfasttype(T) ? iffasttypes(style, types...) : DefaultMapStyle()
+end
+
 MapStyle(::Any, ::Type...) = DefaultMapStyle()
 # MapStyle(f, args...) = MapStyle(f, map(typeof, args)...)
 
 MapStyle(::Union{typeof.(
         (-, identity, signbit, isodd, isone, isinf, isnan, zero, round, floor, ceil, trunc, abs, sign, sqrt)
-    )...}, ::Type) = PreservesDefault()
+    )...}, ::Type{T}) where T = iffasttypes(PreservesDefault(), T)
 MapStyle(::Union{typeof.(
         (&,)
-    )...}, ::Type...) = PreservesDefault()
+    )...}, types::Type...) = iffasttypes(PreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
         (!==, !=, <, >, -, abs2)
-    )...}, ::Type, ::Type) = WeaklyPreservesDefault()
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(WeaklyPreservesDefault(), T1, T2)
 MapStyle(::Union{typeof.(
         (|, xor, +)
-    )...}, ::Type...) = WeaklyPreservesDefault()
+    )...}, types::Type...) = iffasttypes(WeaklyPreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
         (!, ~, iseven, iszero, one)
-    )...}, ::Type) = AcceptsDefault()
+    )...}, ::Type{T}) where T = iffasttypes(AcceptsDefault(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
         (===, isequal, ==, <=, >=, /)
-    )...}, ::Type, ::Type) = AcceptsDefault()
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(AcceptsDefault(), T1, T2)
 MapStyle(::Union{typeof.(
         (nand, nor)
-    )...}, ::Type...) = AcceptsDefault()
+    )...}, types::Type...) = iffasttypes(AcceptsDefault(), types...)
 
-# definitions depending on type
+# definitions depending on specific types
 
 hasfloats(::Type) = false
 hasfloats(::Type{<:AbstractFloat}) = true
@@ -48,24 +67,27 @@ hasfloats(::Type{<:AbstractArray{T}}) where T = hasfloats(T)
 hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 
 # -(0.0) === -0.0, not 0.0
-MapStyle(::typeof(-), ::Type{T}) where T = hasfloats(T) ? WeaklyPreservesDefault() : PreservesDefault()
+MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? WeaklyPreservesDefault() : PreservesDefault(), T)
 
 # (-1) * 0.0 === -0.0, not 0.0
 function MapStyle(::typeof(*), ::Type{T}, types::Type...) where T
-    if hasfloats(T) || MapStyle(*, types...) isa WeaklyPreservesDefault
+    style = if hasfloats(T) || MapStyle(*, types...) isa WeaklyPreservesDefault
         WeaklyPreservesDefault()
     else
         PreservesDefault()
     end
+    iffasttypes(style, T, types...)
 end
 
 MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StronlyPreservesDefault()
 MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = WeaklyPreservesDefault()
 
-MapStyle(::typeof(intersect), ::Type{<:AbstractSet}, ::Type...) = PreservesDefault()
+MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(PreservesDefault(), T, types...)
 MapStyle(::Union{typeof.(
         (union, setdiff, symdiff)
-    )...}, ::Type{<:AbstractSet}, ::Type...) = WeaklyPreservesDefault()
+    )...}, ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(WeaklyPreservesDefault(), T, types...)
+
+# definitions for constructors of new functions
 
 MapStyle(f::Returns{T}, types::Type...) where T = iffasttypes(AcceptsDefault(), T)
 
