@@ -8,7 +8,7 @@ import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, findfirst, findlast, findmin, findmax, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
-    count
+    count, allequal, allunique
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -460,8 +460,44 @@ end
     m, findfirst(==(m), v.b)::Int
 end
 
-Base._any(f, v::AbstractSmallVector, ::Colon) = findfirst(f, v) !== nothing
-Base._all(f, v::AbstractSmallVector, ::Colon) = findfirst((!)∘f, v) === nothing
+Base._any(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst(f, v; style) !== nothing
+Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst((!)∘f, v; style) === nothing
+
+function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
+    if !(dims isa Colon) || style isa DefaultMapStyle
+        invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        Base._any(f, v, :, style)
+    end
+end
+
+function all(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
+    if !(dims isa Colon) || style isa DefaultMapStyle
+        invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        Base._all(f, v, :, style)
+    end
+end
+
+allequal(v::AbstractSmallVector) = isempty(v) ? true : all(isequal(@inbounds v[1]), v)
+
+function allequal(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    if style isa DefaultMapStyle
+        invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allequal(map(f, v; style))
+    end
+end
+
+allunique(v::AbstractSmallVector) = all(x -> count(isequal(x), v) == 1, v)
+
+function allunique(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    if style isa DefaultMapStyle
+        invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allunique(map(f, v; style))
+    end
+end
 
 Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
 
