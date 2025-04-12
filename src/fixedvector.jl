@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
-    minimum, maximum, extrema, any, all, in, reverse,
+    minimum, maximum, extrema, any, all, allequal, allunique, in, reverse,
     findfirst, findlast, findmin, findmax, vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
@@ -312,6 +312,42 @@ sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
 Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
 Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
+
+function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
+    if !(dims isa Colon) || style isa DefaultMapStyle
+        invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        Base._any(f, v, :)
+    end
+end
+
+function all(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
+    if !(dims isa Colon) || style isa DefaultMapStyle
+        invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        Base._all(f, v, :)
+    end
+end
+
+allequal(v::AbstractFixedVector) = all(isequal(v[1]), v)
+
+function allequal(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    if style isa DefaultMapStyle
+        invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allequal(map(f, v))
+    end
+end
+
+allunique(v::AbstractFixedVector) = all(x -> count(isequal(x), v) == 1, v)
+
+function allunique(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    if style isa DefaultMapStyle
+        invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allunique(map(f, v))
+    end
+end
 
 function Base._count(f::F, v::AbstractFixedVector, ::Colon, init::T) where {F,T}
     w = @inline map(f, v)
