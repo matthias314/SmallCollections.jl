@@ -429,15 +429,23 @@ end
 findfirst(v::AbstractSmallVector{N,Bool}) where N = findfirst(v.b)
 findlast(v::AbstractSmallVector{N,Bool}) where N = findlast(v.b)
 
-function findfirst(pred::FastTest, v::AbstractSmallVector{<:Any,<:FastTestType})
-    i = @inline findfirst(pred, v.b)
-    i === nothing || i > length(v) ? nothing : i
+function findfirst(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
+    if style isa DefaultMapStyle
+        invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
+    else
+        i = @inline findfirst(pred, v.b; style)
+        i === nothing || i > length(v) ? nothing : i
+    end
 end
 
-function findlast(pred::FastTest, v::AbstractSmallVector{<:Any,<:FastTestType})
-    m = bits(map(pred, v.b))
-    m &= unsafe_shl(one(m), length(v)) - one(m)
-    iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
+function findlast(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
+    if style isa DefaultMapStyle
+        invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
+    else
+        m = bits(map(pred, v.b; style))
+        m &= unsafe_shl(one(m), length(v)) - one(m)
+        iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
+    end
 end
 
 @inline function findmin(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
