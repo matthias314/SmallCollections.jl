@@ -3,7 +3,7 @@
 #
 
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
-    setindex, push, delete, pop
+    setindex, push, delete, pop, invget
 
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
@@ -207,6 +207,37 @@ end
 
 function getkey(d::AbstractSmallDict, key, default)
     i = token(d, key)
+    i === nothing ? default : @inbounds d.keys[i]
+end
+
+"""
+    invget(d::AbstractSmallDict{N,K}, val) where {N,K} -> K
+
+Return a key in `d` whose value is equal to `val` (in the sense of `isequal`).
+If there is no such key, an error is raised.
+
+This reverse lookup is as fast as "forward" lookup by keys.
+The key returned is the first matching one in `keys(d)`.
+"""
+function invget(d::AbstractSmallDict, val)
+    key = invget(d, val, Void())
+    key isa Void ? error("value not found") : key
+end
+
+"""
+    invget(d::AbstractSmallDict{N,K}, val, default::T) where {N,K,T} -> Union{K,T}
+
+Return a key in `d` whose value is equal to `val` (in the sense of `isequal`).
+If there is no such key, return `default`.
+
+This reverse lookup is as fast as "forward" lookup by keys.
+The key returned is the first matching one in `keys(d)`.
+"""
+function invget(d::AbstractSmallDict{N,K,V}, val, default) where {N,K,V}
+    if d isa SmallDict && isbitstype(Tuple{K,V})
+        d = MutableSmallDict(d)  # apparently faster for N < 64 (?)
+    end
+    i = findfirst(isequal(val), d.vals)
     i === nothing ? default : @inbounds d.keys[i]
 end
 

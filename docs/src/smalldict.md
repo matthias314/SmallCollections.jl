@@ -11,6 +11,7 @@ MutableSmallDict
 capacity(::Type{<:AbstractSmallDict})
 empty(::AbstractSmallDict)
 setindex(::AbstractSmallDict, ::Any, ::Any)
+invget
 push(::AbstractSmallDict, ::Pair)
 pop(::AbstractSmallDict)
 pop(::AbstractSmallDict, ::Any)
