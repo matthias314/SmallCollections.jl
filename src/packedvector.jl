@@ -603,7 +603,7 @@ function sum_count(v::PackedVector{U,M,T}) where {U,M,T}
     s = sum(t)
     if bitsize(T) > bitsize(Int)
         s % T
-    elseif T <: Signed
+    elseif T <: Union{Signed, Bool}
         s
     else
         unsigned(s)

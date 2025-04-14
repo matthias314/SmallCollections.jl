@@ -275,7 +275,7 @@ end
 
 @testset "PackedVector sum/max" begin
     for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
-        T in (Int8, UInt8, Int16, UInt16, Int32, UInt32),
+        T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
         N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
