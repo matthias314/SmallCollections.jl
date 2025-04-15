@@ -337,7 +337,12 @@ Remove the mapping for `key` from `d` and return the new dictionary together wit
 
 See also `Base.pop!`, [`delete`](@ref delete(::AbstractSmallDict, ::Any)).
 """
-function pop(d::AbstractSmallDict, key)
+function pop(d::AbstractSmallDict{N,K,V}, key) where {N,K,V}
+    if isbitstype(Tuple{K,V})
+        e = MutableSmallDict(d)
+        val = @inline pop!(e, key)
+        return SmallDict(e), val
+    end
     i = token(d, key)
     i === nothing && error("key not found")
     e, kv = unsafe_pop(d, i)
