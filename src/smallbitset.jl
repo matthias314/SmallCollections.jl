@@ -10,7 +10,7 @@ import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
     length, issubset, ⊊, maximum, minimum, extrema,
     union, intersect, setdiff, symdiff, filter,
-    replace
+    count, replace
 
 isinteger(x) = x isa Number && Base.isinteger(x)
 
@@ -342,7 +342,16 @@ SmallBitSet{UInt64} with 2 elements:
     convert(SmallBitSet{U}, ifelse(iszero(m & t) || m & t == t, m, m ⊻ t))
 end
 
-function filter(f::F, s::SmallBitSet) where F
+filter(f, s::SmallBitSet; style::MapStyle = MapStyle(f, Int)) = smallbitset_filter(style, f, s)
+
+function smallbitset_filter(::MapStyle, f::F, s::SmallBitSet{U}) where {F,U}
+    N = bitsize(U)
+    v = map(f, FixedVector{N}(1:N))
+    eltype(v) == Bool || error("given function must return Bool values")
+    _SmallBitSet((bits(v) % U) & bits(s))
+end
+
+function smallbitset_filter(::DefaultMapStyle, f::F, s::SmallBitSet) where F
     m = bits(s)
     q = zero(m)
     while !iszero(m)
@@ -355,6 +364,12 @@ function filter(f::F, s::SmallBitSet) where F
     end
     _SmallBitSet(q)
 end
+
+count(f, s::SmallBitSet; init = 0, style::MapStyle = MapStyle(f, Int)) = smallbitset_count(style, f, s, init)
+
+smallbitset_count(::DefaultMapStyle, f::F, s, init) where F = invoke(count, Tuple{Any, AbstractSet}, f, s; init)
+
+smallbitset_count(::MapStyle, f::F, s, init::T) where {F,T} = init + (length(filter(f, s)) % T)
 
 union(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask | t.mask)
 
