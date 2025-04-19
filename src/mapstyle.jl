@@ -34,21 +34,21 @@ MapStyle(::Any, ::Type...) = DefaultMapStyle()
 # MapStyle(f, args...) = MapStyle(f, map(typeof, args)...)
 
 MapStyle(::Union{typeof.(
-        (-, identity, signbit, isodd, isone, isinf, isnan, zero, round, floor, ceil, trunc, abs, sign, sqrt)
+        (-, identity, signbit, isodd, isone, isinf, isnan, issubnormal, zero, round, floor, ceil, trunc, abs, sign, sqrt, conj)
     )...}, ::Type{T}) where T = iffasttypes(PreservesDefault(), T)
 MapStyle(::Union{typeof.(
         (&,)
     )...}, types::Type...) = iffasttypes(PreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
-        (!==, !=, <, >, -, abs2)
+        (!==, !=, <, >, cmp, -, abs2)
     )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(WeaklyPreservesDefault(), T1, T2)
 MapStyle(::Union{typeof.(
-        (|, xor, +)
+        (|, xor, +, min, max, minmax)
     )...}, types::Type...) = iffasttypes(WeaklyPreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
-        (!, ~, iseven, iszero, one)
+        (!, ~, iseven, iszero, isfinite, one, inv)
     )...}, ::Type{T}) where T = iffasttypes(AcceptsDefault(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
@@ -59,6 +59,10 @@ MapStyle(::Union{typeof.(
     )...}, types::Type...) = iffasttypes(AcceptsDefault(), types...)
 
 # definitions depending on specific types
+
+MapStyle(::Fix2{typeof(rem),Type{S}}, T::Type) where S = iffasttypes(PreservesDefault(), S, T)
+
+MapStyle(::typeof(min), types::Type{<:Unsigned}...) = iffasttypes(PreservesDefault(), types...)
 
 hasfloats(::Type) = false
 hasfloats(::Type{<:AbstractFloat}) = true
