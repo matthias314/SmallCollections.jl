@@ -35,12 +35,35 @@ See also [`setindex`](@ref setindex(::AbstractFixedVector, ::Any, ::Integer)).
     v + setindex(zero(v), x, i)
 end
 
-
 function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
     t = ntuple(Val(N)) do j
         ifelse(j <= i, v[j], convert(T, x))
     end
     Values{N,T}(t)
+end
+
+@generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: Union{Base.HWReal, Bool, Char}}
+    M = if T == Float32
+        "float"
+    elseif T == Float64
+        "double"
+    else # Bool, BitInteger or Char
+        string('i', 8*sizeof(T))
+    end
+    L = bitsize(SmallLength)
+    s = join(("i$L $k" for k in 0:N-1), ", ")
+    ir = """
+        %b = insertelement <$N x i$L> poison, i$L %1, i8 0
+        %c = shufflevector <$N x i$L> %b, <$N x i$L> poison, <$N x i32> zeroinitializer
+        %d = icmp ult <$N x i$L> <$s>, %c
+        %r = select <$N x i1> %d, <$N x $M> %0, <$N x $M> zeroinitializer
+        ret <$N x $M> %r
+        """
+    quote
+        @inline
+        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, SmallLength}, vec(Tuple(v)), n % SmallLength)
+        FixedVector{N,T}(unvec(b))
+    end
 end
 
 pushfirst(v::Values, xs...) = prepend(v, xs)
