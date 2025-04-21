@@ -17,6 +17,11 @@ isfasttype(::Type{<:Ref{T}}) where T = isfasttype(T)
 
 using Base: Fix1, Fix2
 
+using Base.FastMath: abs2_fast, abs_fast, add_fast, cmp_fast, conj_fast,
+    eq_fast, ge_fast, gt_fast, inv_fast, isfinite_fast, isinf_fast,
+    isnan_fast, issubnormal_fast, le_fast, lt_fast, max_fast, min_fast,
+    minmax_fast, mul_fast, ne_fast, sign_fast, sqrt_fast, sub_fast
+
 abstract type MapStyle end
 
 struct PreservesDefault <: MapStyle end
@@ -34,25 +39,27 @@ MapStyle(::Any, ::Type...) = DefaultMapStyle()
 # MapStyle(f, args...) = MapStyle(f, map(typeof, args)...)
 
 MapStyle(::Union{typeof.(
-        (-, identity, signbit, isodd, isone, isinf, isnan, issubnormal, zero, round, floor, ceil, trunc, abs, sign, sqrt, conj)
+        (-, identity, signbit, isodd, isone, isinf, isinf_fast, isnan, isnan_fast,
+            issubnormal, issubnormal_fast, zero, round, floor, ceil, trunc,
+            abs, abs_fast, sign, sign_fast, sqrt, sqrt_fast, conj, conj_fast)
     )...}, ::Type{T}) where T = iffasttypes(PreservesDefault(), T)
 MapStyle(::Union{typeof.(
         (&,)
     )...}, types::Type...) = iffasttypes(PreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
-        (!==, !=, <, >, cmp, -, abs2)
+        (!==, !=, ne_fast, <, lt_fast, >, gt_fast, cmp, cmp_fast, -, abs2, abs2_fast)
     )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(WeaklyPreservesDefault(), T1, T2)
 MapStyle(::Union{typeof.(
-        (|, xor, +, min, max, minmax)
+        (|, xor, +, add_fast, min, min_fast, max, max_fast, minmax, minmax_fast)
     )...}, types::Type...) = iffasttypes(WeaklyPreservesDefault(), types...)
 
 MapStyle(::Union{typeof.(
-        (!, ~, iseven, iszero, isfinite, one, inv)
+        (!, ~, iseven, iszero, isfinite, isfinite_fast, one, inv, inv_fast)
     )...}, ::Type{T}) where T = iffasttypes(AcceptsDefault(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
-        (===, isequal, ==, <=, >=, /)
+        (===, isequal, ==, eq_fast, <=, le_fast, >=, ge_fast, /)
     )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(AcceptsDefault(), T1, T2)
 MapStyle(::Union{typeof.(
         (nand, nor)
@@ -74,7 +81,9 @@ hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? WeaklyPreservesDefault() : PreservesDefault(), T)
 
 # (-1) * 0.0 === -0.0, not 0.0
-function MapStyle(::typeof(*), ::Type{T}, types::Type...) where T
+function MapStyle(::Union{typeof.(
+        (*, mul_fast)
+    )...}, ::Type{T}, types::Type...) where T
     style = if hasfloats(T) || MapStyle(*, types...) isa WeaklyPreservesDefault
         WeaklyPreservesDefault()
     else
