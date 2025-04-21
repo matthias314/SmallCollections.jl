@@ -259,20 +259,11 @@ for op in (:+, :-)
     end
 end
 
-@inline mul_fast(c::Number, v::AbstractSmallVector) = SmallVector(c*v.b, length(v))
-mul_fast(v::AbstractSmallVector, c::Number) = mul_fast(c, v)
+@inline mul_fast(c::Number, v::AbstractSmallVector) = mul_fast.(c, v)
+@inline mul_fast(v::AbstractSmallVector, c::Number) = mul_fast.(v, c)
 
-*(c::Integer, v::AbstractSmallVector{N}) where N = @fastmath c*v
-
-function *(c::Number, v::AbstractSmallVector{N}) where N
-# multiplication by Inf and NaN does not preserve zero padding
-    c0 = zero(c)
-    n = length(v)
-    t = ntuple(i -> (i <= n ? c : c0) * v.b[i], Val(N))
-    SmallVector(Values{N}(t), n)
-end
-
-*(v::AbstractSmallVector, c::Number) = c*v
+*(c::Number, v::AbstractSmallVector) = c .* v
+*(v::AbstractSmallVector, c::Number) = v .* c
 
 function sum(v::AbstractSmallVector{N,T}) where {N,T}
     if T <: Base.BitSignedSmall

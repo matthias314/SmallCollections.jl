@@ -324,6 +324,8 @@ end
     end
 end
 
+using Base.FastMath: mul_fast
+
 @testset "SmallVector add/mul" begin
     for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (1, round(Int, 0.7*N), N-1, N)
         T1 <: Number || continue
@@ -359,8 +361,15 @@ end
             end
             w = @test_inferred c*v1 c*u1 SmallVector{N,T}
             @test isvalid(w)
-            w = @test_inferred Base.FastMath.mul_fast(c, v1) c*u1 SmallVector{N,T}
-            @test isvalid(w)
+            if T <: Unsigned && (minimum(v1; init = zero(T1)) < 0 ||
+                (c < 0 && !(isempty(v1) && SmallCollections.MapStyle(mul_fast, T2, T1) isa SmallCollections.DefaultMapStyle)))
+                # Julia bug, see julia#58188
+                @test_broken mul_fast(c, v1) == mul_fast.(c, u1)
+            else
+                w = @inferred mul_fast(c, v1)
+                @test isapprox(w, mul_fast.(c, u1)) && w isa SmallVector{N,T}
+                @test isvalid(w)
+            end
             @test_inferred v1*c c*v1
         end
     end
