@@ -630,61 +630,17 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
 function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
     n, eq = minlength(vs)
     if style isa LazyStyle
-        @inline smallvector_map(LazyStyle(), n, f, vs...)
-    elseif style isa StrictStyle || (style isa RigidStyle && ((M == 1) || eq))
-        @inline smallvector_map(StrictStyle(), n, f, vs...)
+        @inline smallvector_bc(LazyStyle(), n, f, vs...)
+    elseif style isa StrictStyle || (style isa RigidStyle && (M == 1 || eq))
+        @inline smallvector_bc(StrictStyle(), n, f, vs...)
     else
-        @inline smallvector_map(EagerStyle(), n, f, vs...)
+        @inline smallvector_bc(EagerStyle(), n, f, vs...)
     end
 end
 
 function minlength(vs)
     foldl(vs[2:end]; init = (length(vs[1]), true)) do (n, eq), v
         min(n, length(v)), eq & (n == length(v))
-    end
-end
-
-_fixed(x) = x
-_fixed(v::AbstractSmallVector) = v.b
-
-function smallvector_map(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
-    b = materialize(broadcasted(f, map(_fixed, vs)...))
-    SmallVector(b, n)
-end
-
-function smallvector_map(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
-    b = materialize(broadcasted(f, map(_fixed, vs)...))
-    SmallVector(padtail(b, n), n)
-end
-
-_eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
-_eltype(x::T) where T = T
-
-_getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
-_getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
-_getindex(x, i) = x
-
-function smallvector_map(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
-    N = minimum(vs) do v
-        v isa AbstractSmallVector ? capacity(v) : typemax(Int)
-    end
-    TT = map(_eltype, vs)
-    U = Core.Compiler.return_type(f, Tuple{TT...})
-    if isbitstype(U)
-        tt = ntuple(Val(N)) do i
-            ntuple(j -> _getindex(vs[j], i), Val(M))
-        end
-        t = ntuple(Val(N)) do i
-            i <= n ? f(tt[i]...) : default(U)
-        end
-        SmallVector(Values{N,U}(t), n)
-    else
-        VT = map(vs) do v
-            T = typeof(v)
-            T <: AbstractSmallVector ? AbstractVector{eltype(T)} : T
-        end
-        w = invoke(map, Tuple{F,VT...}, f, vs...)
-        SmallVector{N}(w)
     end
 end
 
@@ -711,8 +667,6 @@ BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
 
 instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
-
-_fixed(bc::Broadcasted) = broadcasted(bc.f, map(_fixed, bc.args)...)
 
 bc_return_type(x) = _eltype(x)
 
@@ -748,7 +702,53 @@ function copy(bc::Broadcasted{SmallVectorStyle})
         x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&
             error("vectors must have the same length")
     end
-    @inline smallvector_map(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+    @inline smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+end
+
+_capacity(x) = typemax(Int)
+_capacity(v::AbstractSmallVector) = capacity(v)
+
+function smallvector_bc(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    N = minimum(_capacity, vs)
+    ts = map(vs) do v
+        v isa AbstractSmallVector ? Tuple(v.b)[1:N] : v
+    end
+    t = materialize(broadcasted(f, ts...))
+    SmallVector(FixedVector(t), n)
+end
+
+function smallvector_bc(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    w = smallvector_bc(StrictStyle(), n, f, vs...)
+    SmallVector(padtail(w.b, n), n)
+end
+
+_eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
+_eltype(x::T) where T = T
+
+_getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
+_getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
+_getindex(x, i) = x
+
+function smallvector_bc(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    N = minimum(_capacity, vs)
+    TT = map(_eltype, vs)
+    U = Core.Compiler.return_type(f, Tuple{TT...})
+    if isconcretetype(U)
+        tt = ntuple(Val(N)) do i
+            ntuple(j -> _getindex(vs[j], i), Val(M))
+        end
+        t = ntuple(Val(N)) do i
+            i <= n ? f(tt[i]...) : default(U)
+        end
+        SmallVector(Values{N,U}(t), n)
+    else
+        VT = map(vs) do v
+            T = typeof(v)
+            T <: AbstractSmallVector ? AbstractVector{eltype(T)} : T
+        end
+        w = invoke(map, Tuple{F,VT...}, f, vs...)
+        SmallVector{N}(w)
+    end
 end
 
 #
