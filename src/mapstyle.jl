@@ -2,6 +2,17 @@
 # fast types
 #
 
+"""
+    $(@__MODULE__).isfasttype(::Type{T}) where T -> Bool
+
+Return `true` if elements of type `T` permit fast (for instance, vectorized) operations.
+
+By default, `Base.HWReal`, `Bool`, `Char`, and `Enum` types are considered
+fast, as well as `Complex`, `Pair`, `Tuple`, `NamedTuple` and `Ref` with
+fast components.
+
+See `Base.HWReal`.
+"""
 isfasttype(::Type) = false
 isfasttype(::Type{<:Union{Base.HWReal, Bool, Char, Enum}}) = true
 
@@ -22,12 +33,80 @@ using Base.FastMath: abs2_fast, abs_fast, add_fast, cmp_fast, conj_fast,
     isnan_fast, issubnormal_fast, le_fast, lt_fast, max_fast, min_fast,
     minmax_fast, mul_fast, ne_fast, sign_fast, sqrt_fast, sub_fast
 
-abstract type MapStyle end
+"""
+    $(@__MODULE__).MapStyle
 
+    MapStyle(f, types::Type...) -> MapStyle
+
+
+A `MapStyle` determines how `$(@__MODULE__)` evaluates certain functions like
+`map` or `findfirst` that take a function `f` as argument. The available subtypes
+of `MapStyle` are as follows, from the least to the most efficient:
+
+- `LazyStyle`: the function `f` is only evaluated when strictly necessary,
+  and it is not assumed to be defined for default values. This is the default
+  `MapStyle` for unknown functions.
+
+- `EagerStyle`: `f` may be evaluated more often than strictly necessary,
+  and it is assumed to be defined for default values. However, it need not
+  map default values to default values.
+
+- `RigidStyle`: `f` may be evaluated more often than strictly necessary. It is
+  assumed to be defined for default values and to return a default value if all
+  arguments are default values.
+
+- `StrictStyle`: `f` may be evaluated more often than strictly necessary. It is
+  assumed to be defined for default values and to return a default value if at
+  least one argument is a default value. (This is the same as `RigidStyle` for
+  functions with a single argument.)
+
+The `MapStyle` is predefined for many functions from `Base` as well as for operations
+that produce new functions out of old. Unnamed functions are not recognized. However,
+several functions from `$(@__MODULE__)` allow to specify a `MapStyle` as keyword argument.
+In addition, users can define a `MapStyle` for their own types.
+
+See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).isfasttype`](@ref).
+
+# Examples
+```jldoctest
+julia> using SmallCollections: MapStyle
+
+julia> MapStyle(iszero, Int)   # not RigidStyle: iszero(0) is true, not false
+SmallCollections.EagerStyle()
+
+julia> MapStyle(+, Int, Int)
+SmallCollections.RigidStyle()
+
+julia> MapStyle(*, Int, Float64)   # not StrictStyle: 0 * Inf is NaN, not 0.0
+SmallCollections.RigidStyle()
+
+julia> MapStyle(*, Int, Int)
+SmallCollections.StrictStyle()
+
+julia> MapStyle(-, Int)
+SmallCollections.StrictStyle()
+
+julia> MapStyle(x -> -x, Int)   # not StrictStyle: anonymous function not recognized
+SmallCollections.LazyStyle()
+
+julia> MapStyle(-, Int128)   # Int128 is not a fast type, so better be lazy
+SmallCollections.LazyStyle()
+
+julia> MapStyle(isfinite∘inv, Float64)   # function composition is recognized
+SmallCollections.EagerStyle()
+
+julia> MapStyle(!iszero, Int)   # function composition again
+SmallCollections.EagerStyle()
+
+julia> MapStyle(>=(1), Int)   # >=(1) is Base.Fix2(>=, 1), which is recognized
+SmallCollections.EagerStyle()
+```
+"""
+abstract type MapStyle end,
+struct LazyStyle <: MapStyle end,
+struct EagerStyle <: MapStyle end,
+struct RigidStyle <: MapStyle end,
 struct StrictStyle <: MapStyle end
-struct RigidStyle <: MapStyle end
-struct EagerStyle <: MapStyle end
-struct LazyStyle <: MapStyle end
 
 iffasttypes(style::MapStyle) = style
 

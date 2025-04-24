@@ -11,6 +11,8 @@ SmallCollections.bitsize
 SmallCollections.default
 SmallCollections.FixedVectorStyle
 SmallCollections.SmallVectorStyle
+SmallCollections.isfasttype
+SmallCollections.MapStyle
 ```
 
 ## Internal names
