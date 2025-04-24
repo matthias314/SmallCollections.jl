@@ -24,52 +24,52 @@ using Base.FastMath: abs2_fast, abs_fast, add_fast, cmp_fast, conj_fast,
 
 abstract type MapStyle end
 
-struct PreservesDefault <: MapStyle end
-struct WeaklyPreservesDefault <: MapStyle end
-struct AcceptsDefault <: MapStyle end
-struct DefaultMapStyle <: MapStyle end
+struct StrictStyle <: MapStyle end
+struct RigidStyle <: MapStyle end
+struct EagerStyle <: MapStyle end
+struct LazyStyle <: MapStyle end
 
 iffasttypes(style::MapStyle) = style
 
 function iffasttypes(style::MapStyle, ::Type{T}, types::Type...) where T
-    isfasttype(T) ? iffasttypes(style, types...) : DefaultMapStyle()
+    isfasttype(T) ? iffasttypes(style, types...) : LazyStyle()
 end
 
-MapStyle(::Any, ::Type...) = DefaultMapStyle()
+MapStyle(::Any, ::Type...) = LazyStyle()
 # MapStyle(f, args...) = MapStyle(f, map(typeof, args)...)
 
 MapStyle(::Union{typeof.(
         (-, identity, signbit, isodd, isone, isinf, isinf_fast, isnan, isnan_fast,
             issubnormal, issubnormal_fast, zero, round, floor, ceil, trunc,
             abs, abs_fast, sign, sign_fast, sqrt, sqrt_fast, conj, conj_fast)
-    )...}, ::Type{T}) where T = iffasttypes(PreservesDefault(), T)
+    )...}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
 MapStyle(::Union{typeof.(
         (&,)
-    )...}, types::Type...) = iffasttypes(PreservesDefault(), types...)
+    )...}, types::Type...) = iffasttypes(StrictStyle(), types...)
 
 MapStyle(::Union{typeof.(
         (!==, !=, ne_fast, <, lt_fast, >, gt_fast, cmp, cmp_fast, -, abs2, abs2_fast)
-    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(WeaklyPreservesDefault(), T1, T2)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(RigidStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (|, xor, +, add_fast, min, min_fast, max, max_fast, minmax, minmax_fast)
-    )...}, types::Type...) = iffasttypes(WeaklyPreservesDefault(), types...)
+    )...}, types::Type...) = iffasttypes(RigidStyle(), types...)
 
 MapStyle(::Union{typeof.(
         (!, ~, iseven, iszero, isfinite, isfinite_fast, one, inv, inv_fast)
-    )...}, ::Type{T}) where T = iffasttypes(AcceptsDefault(), T)
+    )...}, ::Type{T}) where T = iffasttypes(EagerStyle(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
         (===, isequal, ==, eq_fast, <=, le_fast, >=, ge_fast, /)
-    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(AcceptsDefault(), T1, T2)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(EagerStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (nand, nor)
-    )...}, types::Type...) = iffasttypes(AcceptsDefault(), types...)
+    )...}, types::Type...) = iffasttypes(EagerStyle(), types...)
 
 # definitions depending on specific types
 
-MapStyle(::Fix2{typeof(rem),Type{S}}, T::Type) where S = iffasttypes(PreservesDefault(), S, T)
+MapStyle(::Fix2{typeof(rem),Type{S}}, T::Type) where S = iffasttypes(StrictStyle(), S, T)
 
-MapStyle(::typeof(min), types::Type{<:Unsigned}...) = iffasttypes(PreservesDefault(), types...)
+MapStyle(::typeof(min), types::Type{<:Unsigned}...) = iffasttypes(StrictStyle(), types...)
 
 hasfloats(::Type) = false
 hasfloats(::Type{<:AbstractFloat}) = true
@@ -78,62 +78,62 @@ hasfloats(::Type{<:AbstractArray{T}}) where T = hasfloats(T)
 hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 
 # -(0.0) === -0.0, not 0.0
-MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? WeaklyPreservesDefault() : PreservesDefault(), T)
+MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? RigidStyle() : StrictStyle(), T)
 
 # (-1) * 0.0 === -0.0, not 0.0
 function MapStyle(::Union{typeof.(
         (*, mul_fast)
     )...}, ::Type{T}, types::Type...) where T
-    style = if hasfloats(T) || MapStyle(*, types...) isa WeaklyPreservesDefault
-        WeaklyPreservesDefault()
+    style = if hasfloats(T) || MapStyle(*, types...) isa RigidStyle
+        RigidStyle()
     else
-        PreservesDefault()
+        StrictStyle()
     end
     iffasttypes(style, T, types...)
 end
 
-MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StronlyPreservesDefault()
-MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = WeaklyPreservesDefault()
+MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StronlyStrictStyle()
+MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = RigidStyle()
 
-MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(PreservesDefault(), T, types...)
+MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(StrictStyle(), T, types...)
 MapStyle(::Union{typeof.(
         (union, setdiff, symdiff)
-    )...}, ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(WeaklyPreservesDefault(), T, types...)
+    )...}, ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(RigidStyle(), T, types...)
 
 # definitions for constructors of new functions
 
-MapStyle(f::Returns{T}, types::Type...) where T = iffasttypes(AcceptsDefault(), T)
+MapStyle(f::Returns{T}, types::Type...) where T = iffasttypes(EagerStyle(), T)
 
 function MapStyle(f::ComposedFunction, types::Type...)
     istyle = MapStyle(f.inner, types...)
-    istyle isa DefaultMapStyle && return DefaultMapStyle()
+    istyle isa LazyStyle && return LazyStyle()
     T = Core.Compiler.return_type(f.inner, Tuple{types...})
-    isconcretetype(T) || return DefaultMapStyle()
+    isconcretetype(T) || return LazyStyle()
     ostyle = MapStyle(f.outer, T)
-    if ostyle isa Union{DefaultMapStyle, AcceptsDefault}
+    if ostyle isa Union{LazyStyle, EagerStyle}
         ostyle
-    elseif istyle isa Union{AcceptsDefault, WeaklyPreservesDefault}
+    elseif istyle isa Union{EagerStyle, RigidStyle}
         istyle
     else
-        PreservesDefault()
+        StrictStyle()
     end
 end
 
 MapStyle(f::Base.Splat, ::Type{T}) where T <: Tuple = MapStyle(f.f, fieldtypes(T)...)
 
-# TODO: use PreservesDefault
+# TODO: use StrictStyle
 if VERSION > v"1.12-alpha"
     function MapStyle(g::Base.Fix{N,F,T}, types::Type...) where {N,F,T}
         style = MapStyle(g.f, types[1:N-1]..., T, types[N:end]...)
-        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+        style isa RigidStyle ? EagerStyle() : style
     end
 else
     function MapStyle(g::Fix1{F,T}, types::Type...) where {F,T}
         style = MapStyle(g.f, T, types...)
-        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+        style isa RigidStyle ? EagerStyle() : style
     end
     function MapStyle(g::Fix2{F,T}, type1::Type, types::Type...) where {F,T}
         style = MapStyle(g.f, type1, T, types...)
-        style isa WeaklyPreservesDefault ? AcceptsDefault() : style
+        style isa RigidStyle ? EagerStyle() : style
     end
 end

@@ -362,7 +362,7 @@ using Base.FastMath: mul_fast
             w = @test_inferred c*v1 c*u1 SmallVector{N,T}
             @test isvalid(w)
             if T <: Unsigned && (minimum(v1; init = zero(T1)) < 0 ||
-                (c < 0 && !(isempty(v1) && SmallCollections.MapStyle(mul_fast, T2, T1) isa SmallCollections.DefaultMapStyle)))
+                (c < 0 && !(isempty(v1) && SmallCollections.MapStyle(mul_fast, T2, T1) isa SmallCollections.LazyStyle)))
                 # Julia bug, see julia#58188
                 @test_broken mul_fast(c, v1) == mul_fast.(c, u1)
             else

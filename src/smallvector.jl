@@ -421,7 +421,7 @@ findfirst(v::AbstractSmallVector{N,Bool}) where N = findfirst(v.b)
 findlast(v::AbstractSmallVector{N,Bool}) where N = findlast(v.b)
 
 function findfirst(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
     else
         i = @inline findfirst(pred, v.b; style)
@@ -430,7 +430,7 @@ function findfirst(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapSt
 end
 
 function findlast(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
     else
         m = bits(map(pred, v.b; style))
@@ -455,7 +455,7 @@ Base._any(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f
 Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst((!)∘f, v; style) === nothing
 
 function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa DefaultMapStyle
+    if !(dims isa Colon) || style isa LazyStyle
         invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._any(f, v, :, style)
@@ -463,7 +463,7 @@ function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapS
 end
 
 function all(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa DefaultMapStyle
+    if !(dims isa Colon) || style isa LazyStyle
         invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._all(f, v, :, style)
@@ -473,7 +473,7 @@ end
 allequal(v::AbstractSmallVector) = isempty(v) ? true : all(isequal(@inbounds v[1]), v)
 
 function allequal(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
     else
         allequal(map(f, v; style))
@@ -483,7 +483,7 @@ end
 allunique(v::AbstractSmallVector) = all(x -> count(isequal(x), v) == 1, v)
 
 function allunique(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
     else
         allunique(map(f, v; style))
@@ -629,12 +629,12 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
 """
 function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
     n, eq = minlength(vs)
-    if style isa DefaultMapStyle
-        @inline smallvector_map(DefaultMapStyle(), n, f, vs...)
-    elseif style isa PreservesDefault || (style isa WeaklyPreservesDefault && ((M == 1) || eq))
-        @inline smallvector_map(PreservesDefault(), n, f, vs...)
+    if style isa LazyStyle
+        @inline smallvector_map(LazyStyle(), n, f, vs...)
+    elseif style isa StrictStyle || (style isa RigidStyle && ((M == 1) || eq))
+        @inline smallvector_map(StrictStyle(), n, f, vs...)
     else
-        @inline smallvector_map(AcceptsDefault(), n, f, vs...)
+        @inline smallvector_map(EagerStyle(), n, f, vs...)
     end
 end
 
@@ -647,12 +647,12 @@ end
 _fixed(x) = x
 _fixed(v::AbstractSmallVector) = v.b
 
-function smallvector_map(::PreservesDefault, n, f::F, vs::Vararg{Any,M}) where {F,M}
+function smallvector_map(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
     b = materialize(broadcasted(f, map(_fixed, vs)...))
     SmallVector(b, n)
 end
 
-function smallvector_map(::AcceptsDefault, n, f::F, vs::Vararg{Any,M}) where {F,M}
+function smallvector_map(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
     b = materialize(broadcasted(f, map(_fixed, vs)...))
     SmallVector(padtail(b, n), n)
 end
@@ -664,7 +664,7 @@ _getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
 _getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
 _getindex(x, i) = x
 
-function smallvector_map(::DefaultMapStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+function smallvector_map(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
     N = minimum(vs) do v
         v isa AbstractSmallVector ? capacity(v) : typemax(Int)
     end
@@ -721,22 +721,22 @@ function bc_return_type(bc::Broadcasted)
     Core.Compiler.return_type(bc.f, Tuple{TT...})
 end
 
-bc_mapstyle(::Any) = AcceptsDefault()
-bc_mapstyle(::AbstractSmallVector) = PreservesDefault()
+bc_mapstyle(::Any) = EagerStyle()
+bc_mapstyle(::AbstractSmallVector) = StrictStyle()
 
 function bc_mapstyle(bc::Broadcasted)
     TT = map(bc_return_type, bc.args)
-    all(isconcretetype, TT) || return DefaultMapStyle()
+    all(isconcretetype, TT) || return LazyStyle()
     fstyle = MapStyle(bc.f, TT...)
     argstyles = map(bc_mapstyle, bc.args)
-    if fstyle isa DefaultMapStyle || any(Fix2(isa, DefaultMapStyle), argstyles)
-        DefaultMapStyle()
-    elseif fstyle isa WeaklyPreservesDefault && all(Fix2(isa, PreservesDefault), argstyles)
-        PreservesDefault()
-    elseif fstyle isa PreservesDefault && any(Fix2(isa, PreservesDefault), argstyles)
-        PreservesDefault()
+    if fstyle isa LazyStyle || any(Fix2(isa, LazyStyle), argstyles)
+        LazyStyle()
+    elseif fstyle isa RigidStyle && all(Fix2(isa, StrictStyle), argstyles)
+        StrictStyle()
+    elseif fstyle isa StrictStyle && any(Fix2(isa, StrictStyle), argstyles)
+        StrictStyle()
     else
-        AcceptsDefault()
+        EagerStyle()
     end
 end
 
@@ -763,10 +763,10 @@ count(f::F, v::AbstractSmallVector{N,T}; dims = :, init = 0, style::MapStyle = M
 smallvector_count(::MapStyle, f::F, v, dims, init) where F =
     invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
 
-smallvector_count(::Union{PreservesDefault,WeaklyPreservesDefault}, f::F, v, ::Colon, init) where F =
+smallvector_count(::Union{StrictStyle,RigidStyle}, f::F, v, ::Colon, init) where F =
     count(f, v.b; init)
 
-function smallvector_count(::AcceptsDefault, f::F, v, ::Colon, init::T) where {F,T}
+function smallvector_count(::EagerStyle, f::F, v, ::Colon, init::T) where {F,T}
     c = @inline map(f, v.b)
     eltype(c) == Bool || error("given function must return Bool values")
     m = bits(c)

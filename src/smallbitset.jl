@@ -351,7 +351,7 @@ function smallbitset_filter(::MapStyle, f::F, s::SmallBitSet{U}) where {F,U}
     _SmallBitSet((bits(v) % U) & bits(s))
 end
 
-function smallbitset_filter(::DefaultMapStyle, f::F, s::SmallBitSet) where F
+function smallbitset_filter(::LazyStyle, f::F, s::SmallBitSet) where F
     m = bits(s)
     q = zero(m)
     while !iszero(m)
@@ -367,7 +367,7 @@ end
 
 count(f, s::SmallBitSet; init = 0, style::MapStyle = MapStyle(f, Int)) = smallbitset_count(style, f, s, init)
 
-smallbitset_count(::DefaultMapStyle, f::F, s, init) where F = invoke(count, Tuple{Any, AbstractSet}, f, s; init)
+smallbitset_count(::LazyStyle, f::F, s, init) where F = invoke(count, Tuple{Any, AbstractSet}, f, s; init)
 
 smallbitset_count(::MapStyle, f::F, s, init::T) where {F,T} = init + (length(filter(f, s)) % T)
 

@@ -314,7 +314,7 @@ Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
 Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
 function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa DefaultMapStyle
+    if !(dims isa Colon) || style isa LazyStyle
         invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._any(f, v, :)
@@ -322,7 +322,7 @@ function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapS
 end
 
 function all(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa DefaultMapStyle
+    if !(dims isa Colon) || style isa LazyStyle
         invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._all(f, v, :)
@@ -332,7 +332,7 @@ end
 allequal(v::AbstractFixedVector) = all(isequal(v[1]), v)
 
 function allequal(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
     else
         allequal(map(f, v))
@@ -342,7 +342,7 @@ end
 allunique(v::AbstractFixedVector) = all(x -> count(isequal(x), v) == 1, v)
 
 function allunique(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa DefaultMapStyle
+    if style isa LazyStyle
         invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
     else
         allunique(map(f, v))
@@ -432,7 +432,7 @@ end
 
 for f in (:findfirst, :findlast)
     @eval function $f(pred::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-        if style isa DefaultMapStyle
+        if style isa LazyStyle
             invoke($f, Tuple{F,AbstractVector{T}}, pred, v)
         else
             $f(map(x -> pred(x)::Bool, v))
