@@ -263,8 +263,9 @@ function filter!(f, v::MutableSmallVector)
     @inbounds resize!(v, j-1)
 end
 
-function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,N}) where {F,N}
-    copyto!(w, map(f, vs...))
+function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,M};
+        style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+    copyto!(w, map(f, vs...; style))
 end
 
 # broadcast
