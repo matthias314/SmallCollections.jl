@@ -10,7 +10,7 @@ import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
     length, issubset, ⊊, maximum, minimum, extrema,
     union, intersect, setdiff, symdiff, filter,
-    count, replace
+    count, any, all, replace
 
 isinteger(x) = x isa Number && Base.isinteger(x)
 
@@ -363,6 +363,22 @@ function smallbitset_filter(::LazyStyle, f::F, s::SmallBitSet) where F
         m = p
     end
     _SmallBitSet(q)
+end
+
+function any(f::F, s::SmallBitSet; style::MapStyle = MapStyle(f, Int)) where F <: Function
+    if style isa LazyStyle
+        invoke(any, Tuple{F, AbstractSet}, f, s)
+    else
+        !isempty(filter(f, s; style))
+    end
+end
+
+function all(f::F, s::SmallBitSet; style::MapStyle = MapStyle(f, Int)) where F <: Function
+    if style isa LazyStyle
+        invoke(all, Tuple{F, AbstractSet}, f, s)
+    else
+        filter(f, s; style) == s
+    end
 end
 
 count(f, s::SmallBitSet; init = 0, style::MapStyle = MapStyle(f, Int)) = smallbitset_count(style, f, s, init)
