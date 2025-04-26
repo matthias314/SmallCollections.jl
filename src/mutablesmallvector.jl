@@ -118,9 +118,21 @@ end
 
 copy(v::MutableSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
 
-function copyto!(v::MutableSmallVector{N}, w::AbstractSmallVector{N}) where N
-    v.b, v.n = w.b, w.n
-    v
+function copyto!_merge(w::MutableSmallVector{N}, v::AbstractVector) where N
+    length(w) >= length(v) || error("destination vector too short")
+    w.b = ntuple(Val(N)) do i
+        @inbounds ifelse(i <= length(v), v[i], w[i])
+    end
+    w
+end
+
+function copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{M}) where {N,M}
+    if N <= M && length(w) == length(v)
+        w.b = Tuple(v.b)[1:N]
+        w
+    else
+        copyto!_merge(w, v)
+    end
 end
 
 similar(v::AbstractSmallVector{N}, ::Type{T}, (n,)::Tuple{Int}) where {N,T} =
@@ -283,4 +295,8 @@ end
 
 # broadcast
 
-copyto!(v::MutableSmallVector, bc::Broadcasted{SmallVectorStyle}) = copyto!(v, copy(bc))
+function copyto!(v::MutableSmallVector, bc::Broadcasted{SmallVectorStyle})
+    w = copy(bc)
+    length(v) == length(w) || error("vectors must have the same length")
+    @inline copyto!(v, w)
+end
