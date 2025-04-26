@@ -263,6 +263,19 @@ function filter!(f, v::MutableSmallVector)
     @inbounds resize!(v, j-1)
 end
 
+"""
+    map!(f, w::MutableSmallVector, v::AbstractSmallVector...; [style::MapStyle]) -> w
+
+Apply `f` to the argument vectors elementwise and store the result in `w`.
+Stop when one of the arguments is exhausted.
+
+The `style` keyword argument determines how `map!` treats the padding used for
+`AbstractSmallVector`. As discussed under `MapStyle`, the default value is based on
+a list of known functions.
+
+See also `Base.map!(f, w::AbstractVector, v::AbstractVector...)`,
+[`$(@__MODULE__).MapStyle`](@ref), [Section "Broadcasting"](@ref sec-broadcasting).
+"""
 function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,M};
         style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
     copyto!(w, map(f, vs...; style))

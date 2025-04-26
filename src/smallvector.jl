@@ -454,6 +454,34 @@ end
 Base._any(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst(f, v; style) !== nothing
 Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst((!)∘f, v; style) === nothing
 
+"""
+    any(f::Function, v::AbstractSmallVector; dims = :, [style::MapStyle])
+    all(f::Function, v::AbstractSmallVector; dims = :, [style::MapStyle])
+    allequal(f, v::AbstractSmallVector; [style::MapStyle})
+    allunique(f, v::AbstractSmallVector; [style::MapStyle])
+    findfirst(f::Function, v::AbstractSmallVector; [style::MapStyle])
+    findlast(f::Function, v::AbstractSmallVector; [style::MapStyle])
+    count(f, v::AbstractSmallVector; dims = :, init = 0, [style::MapStyle])
+
+With an `AbstractSmallVector` `v` as second argument, these functions accept
+the additional keyword argument `style`. If it equals `LazyStyle()`, then the
+function `f` is only evaluated until the result has been determined. For any
+other value of `style`, `f` is evaluated on all elements of `v` as well as on
+the default values used for padding. This is often faster for simple functions.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions.
+
+See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).MapStyle`](@ref).
+"""
+any(::Function, ::AbstractSmallVector),
+all(::Function, ::AbstractSmallVector),
+allequal(::Any, ::AbstractSmallVector),
+allunique(::Any, ::AbstractSmallVector),
+findfirst(::Function, ::AbstractSmallVector),
+findlast(::Function, ::AbstractSmallVector),
+count(::Any, ::AbstractSmallVector)
+
 function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
     if !(dims isa Colon) || style isa LazyStyle
         invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
@@ -603,14 +631,18 @@ support(v::AbstractSmallVector) = support(v.b)
 #
 
 """
-    map(f, v::AbstractSmallVector...) -> SmallVector
+    map(f, v::AbstractSmallVector...; [style::MapStyle]) -> SmallVector
 
 Apply `f` to the argument vectors elementwise and stop when one of them is exhausted.
 Note that the capacity of the resulting `SmallVector` is the minimum of the argument
 vectors' capacities.
 
+The `style` keyword argument determines how `map` treats the padding used for
+`AbstractSmallVector`. As discussed under `MapStyle`, the default value is based on
+a list of known functions.
+
 See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`,
-[Section "Broadcasting"](@ref sec-broadcasting).
+[`$(@__MODULE__).MapStyle`](@ref), [Section "Broadcasting"](@ref sec-broadcasting).
 
 # Examples
 ```jldoctest

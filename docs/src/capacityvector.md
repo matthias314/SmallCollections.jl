@@ -36,6 +36,7 @@ resize
 fasthash(::AbstractSmallVector, ::UInt)
 sum_fast(::AbstractSmallVector)
 extrema_fast(::AbstractSmallVector)
+any(::Function, ::AbstractSmallVector)
 map
 ```
 

@@ -342,6 +342,28 @@ SmallBitSet{UInt64} with 2 elements:
     convert(SmallBitSet{U}, ifelse(iszero(m & t) || m & t == t, m, m ⊻ t))
 end
 
+"""
+    any(f::Function, s::SmallBitSet{U}; [style::MapStyle]) where U
+    all(f::Function, s::SmallBitSet{U}; [style::MapStyle]) where U
+    count(f, s::SmallBitSet{U}; init = 0, [style::MapStyle]) where U
+    filter(f, s::SmallBitSet{U}; [style::MapStyle]) where U
+
+With a `SmallBitSet` `s` as second argument, these functions accept
+the additional keyword argument `style`. If it equals `LazyStyle()`, then the
+function `f` is only evaluated for elements of `s`. For any
+other value of `style`, `f` is evaluated on all numbers between `1` and the
+bit size of `U`. This is often faster for simple functions.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions.
+
+See also [`$(@__MODULE__).MapStyle`](@ref).
+"""
+any(::Function, ::SmallBitSet),
+all(::Function, ::SmallBitSet),
+count(::Any, ::SmallBitSet),
+filter(::Any, ::SmallBitSet)
+
 filter(f, s::SmallBitSet; style::MapStyle = MapStyle(f, Int)) = smallbitset_filter(style, f, s)
 
 function smallbitset_filter(::MapStyle, f::F, s::SmallBitSet{U}) where {F,U}

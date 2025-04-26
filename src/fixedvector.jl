@@ -313,6 +313,32 @@ sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
 Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
+"""
+    any(f::Function, v::AbstractFixedVector; dims = :, [style::MapStyle])
+    all(f::Function, v::AbstractFixedVector; dims = :, [style::MapStyle])
+    allequal(f, v::AbstractFixedVector; [style::MapStyle})
+    allunique(f, v::AbstractFixedVector; [style::MapStyle])
+    findfirst(f::Function, v::AbstractFixedVector; [style::MapStyle])
+    findlast(f::Function, v::AbstractFixedVector; [style::MapStyle])
+
+With an `AbstractFixedVector` `v` as second argument, these functions accept
+the additional keyword argument `style`. If it equals `LazyStyle()`, then the
+function `f` is only evaluated until the result has been determined. For any
+other value of `style`, `f` is evaluated on all elements of `v`. This is often
+faster for simple functions.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions.
+
+See also [`$(@__MODULE__).MapStyle`](@ref).
+"""
+any(::Function, ::AbstractFixedVector),
+all(::Function, ::AbstractFixedVector),
+allequal(::Any, ::AbstractFixedVector),
+allunique(::Any, ::AbstractFixedVector),
+findfirst(::Function, ::AbstractFixedVector),
+findlast(::Function, ::AbstractFixedVector)
+
 function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
     if !(dims isa Colon) || style isa LazyStyle
         invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
