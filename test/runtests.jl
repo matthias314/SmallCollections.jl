@@ -68,11 +68,10 @@ rand_unique(::Type{T}, m::Integer) where T = foldl((v, _) -> push!(v, rand_notin
 
 test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct)
 
-include("bits.jl")
-include("smallbitset.jl")
-include("fixedvector.jl")
-include("smallvector.jl")
-include("packedvector.jl")
-include("smalldict.jl")
-include("smallset.jl")
-include("bangbang.jl")
+if isempty(ARGS)
+    push!(ARGS,
+        "bits.jl", "smallbitset.jl", "fixedvector.jl", "smallvector.jl",
+        "packedvector.jl", "smalldict.jl", "smallset.jl", "bangbang.jl")
+end
+
+foreach(include, ARGS)
