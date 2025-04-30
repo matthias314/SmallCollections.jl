@@ -157,7 +157,7 @@ hasfloats(::Type{<:AbstractArray{T}}) where T = hasfloats(T)
 hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 
 # -(0.0) === -0.0, not 0.0
-MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? RigidStyle() : StrictStyle(), T)
+MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? EagerStyle() : StrictStyle(), T)
 
 # (-1) * 0.0 === -0.0, not 0.0
 function MapStyle(::Union{typeof.(
