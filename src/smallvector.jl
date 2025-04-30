@@ -249,8 +249,8 @@ end
 
 SmallVector(v::AbstractSmallVector{N,T}) where {N,T} = SmallVector{N,T}(v)
 
-+(v::AbstractSmallVector) = v
--(v::AbstractSmallVector) = SmallVector(-v.b, length(v))
++(v::AbstractSmallVector) = map(+, v)  # +true = 1::Int
+-(v::AbstractSmallVector) = map(-, v)
 
 for op in (:+, :-)
     @eval @inline function $op(v::AbstractSmallVector, w::AbstractSmallVector)

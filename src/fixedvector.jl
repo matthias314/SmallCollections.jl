@@ -232,11 +232,11 @@ iterate(v::AbstractFixedVector, state...) = iterate(v.t, state...)
 zero(::Type{V}) where {N,T,V<:AbstractFixedVector{N,T}} = V(ntuple(Returns(zero(T)), Val(N)))
 zero(::V) where V <: AbstractFixedVector = zero(V)
 
-@inline -(v::AbstractFixedVector) = FixedVector(.- v.t)
+@inline +(v::AbstractFixedVector) = map(+, v)  # +true = 1::Int
+@inline -(v::AbstractFixedVector) = map(-, v)
 
-@inline +(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .+ w.t)
-
-@inline -(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = FixedVector(v.t .- w.t)
+@inline +(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = map(+, v, w)
+@inline -(v::AbstractFixedVector{N}, w::AbstractFixedVector{N}) where N = map(-, v, w)
 
 @inline *(c::Number, v::AbstractFixedVector) = FixedVector(c .* v.t)
 *(v::AbstractFixedVector, c::Number) = c*v
