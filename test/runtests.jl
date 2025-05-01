@@ -71,7 +71,7 @@ test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Sym
 if isempty(ARGS)
     push!(ARGS,
         "bits.jl", "smallbitset.jl", "fixedvector.jl", "smallvector.jl",
-        "packedvector.jl", "smalldict.jl", "smallset.jl", "bangbang.jl")
+        "packedvector.jl", "smalldict.jl", "smallset.jl", "bangbang.jl", "combinatorics.jl")
 end
 
 foreach(include, ARGS)
