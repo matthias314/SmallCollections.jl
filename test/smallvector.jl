@@ -335,7 +335,7 @@ using Base.FastMath: mul_fast
             u1 = rand(T1(-9):T1(9), m)
         end
         v1 = V{N}(u1)
-        w = @test_inferred +v1 u1 v1
+        w = @test_inferred +v1 u1 SmallVector(v1)
         @test isvalid(w)
         w = @test_inferred -v1 -u1 SmallVector(v1)
         @test isvalid(w)
