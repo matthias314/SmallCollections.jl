@@ -32,6 +32,8 @@ macro test_inferred(expr, good, goodtype = missing)
     end |> esc
 end
 
+BitIntegers.@define_integers 440
+
 @enum TestEnum::Int16 begin
     Item1 = 5
     Item2 = 7

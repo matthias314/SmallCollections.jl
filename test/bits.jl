@@ -1,7 +1,5 @@
 using SmallCollections: bitsize, top_set_bit
 
-BitIntegers.@define_integers 440
-
 @testset "bitsize" begin
     for T in (Int8, UInt16, Int32, UInt64, Int128, UInt256, Int440)
         @test_inferred bitsize(T) 8*sizeof(T)

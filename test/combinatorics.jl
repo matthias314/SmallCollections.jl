@@ -1,7 +1,5 @@
 using SmallCollections: bitsize
 
-BitIntegers.@define_integers 440
-
 unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 
 @testset "subsets(n,k)" begin
