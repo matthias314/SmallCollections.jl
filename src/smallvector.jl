@@ -433,8 +433,8 @@ function findlast(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapSty
     if style isa LazyStyle
         invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
     else
-        m = bits(map(pred, v.b; style))
-        m &= unsafe_shl(one(m), length(v)) - one(m)
+        m = bits(map(pred, v.b))
+        m &= one(m) << unsigned(length(v)) - one(m)
         iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
     end
 end
