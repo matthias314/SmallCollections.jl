@@ -1,5 +1,6 @@
 using Documenter
 using SmallCollections
+using StaticArrays: StaticArrays
 
 DocMeta.setdocmeta!(SmallCollections, :DocTestSetup, quote
         using SmallCollections
@@ -7,7 +8,10 @@ DocMeta.setdocmeta!(SmallCollections, :DocTestSetup, quote
     end; recursive = true)
 
 makedocs(sitename = "SmallCollections.jl",
-    modules = [SmallCollections],
+    modules = [
+        SmallCollections,
+        Base.get_extension(SmallCollections, :StaticArraysExt),
+    ],
     pages = [
         "index.md",
         "fixedvector.md",

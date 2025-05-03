@@ -17,4 +17,5 @@ extrema_fast(::AbstractFixedVector)
 extrema_fast(::Any, ::AbstractFixedVector)
 any(::Function, ::AbstractFixedVector)
 support(::AbstractFixedVector)
+StaticArrays.SVector
 ```

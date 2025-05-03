@@ -9,15 +9,18 @@ CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
 
 [weakdeps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [extensions]
 BangBangExt = "BangBang"
+StaticArraysExt = "StaticArrays"
 
 [compat]
-julia = "1.6"
+julia = "1.10"
 BitIntegers = "0.3"
 CpuId = "0.3"
 BangBang = "0.4"
+StaticArrays = "1.5"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
