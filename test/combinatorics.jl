@@ -115,7 +115,7 @@ end
 @testset "compositions" begin
     function test_compositions(ks)
         N = length(ks)
-        sh = @inferred compositions(ks...)
+        sh = @inferred set_compositions(ks...)
         a = SmallBitSet(1:sum(ks; init = 0))
         @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
         @test @inferred(eltype(sh)) == NTuple{N, SmallBitSet{UInt}}
@@ -125,7 +125,7 @@ end
 
     function test_compositions(a::S, ks::NTuple{N,Int}) where {S <: SmallBitSet, N}
         test_compositions(ks)
-        sh = @inferred compositions(a, ks...)
+        sh = @inferred set_compositions(a, ks...)
         @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
         @test @inferred(eltype(sh)) == NTuple{N, S}
         @test all(t isa NTuple{N, S} && map(length, t) == ks && (isempty(t) ? isempty(a) : (union(t...) == a)) for t in sh)
@@ -141,12 +141,12 @@ end
         test_compositions(a, ks)
     end
 
-    @test_throws Exception compositions(-1, 2)
-    @test_throws Exception compositions(bitsize(UInt)-1, 2)
+    @test_throws Exception set_compositions(-1, 2)
+    @test_throws Exception set_compositions(bitsize(UInt)-1, 2)
     for U in unsigned_types
-        @test_throws Exception compositions(SmallBitSet{U}(2:2:6))
-        @test_throws Exception compositions(SmallBitSet{U}(2:2:6), -1, 2, 2)
-        @test_throws Exception compositions(SmallBitSet{U}(2:2:6), 3, 4)
-        @test (compositions(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
+        @test_throws Exception set_compositions(SmallBitSet{U}(2:2:6))
+        @test_throws Exception set_compositions(SmallBitSet{U}(2:2:6), -1, 2, 2)
+        @test_throws Exception set_compositions(SmallBitSet{U}(2:2:6), 3, 4)
+        @test (set_compositions(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
     end
 end
