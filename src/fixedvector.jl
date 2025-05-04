@@ -385,7 +385,16 @@ Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; k
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
 Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)
 
-@fastmath maximum(v::AbstractFixedVector; kw...) = maximum(identity, v; kw...)
+if VERSION < v"1.13.0-DEV.284"
+    @fastmath maximum(v::AbstractFixedVector; kw...) = maximum(identity, v; kw...)
+    @fastmath function maximum(f::F, v::AbstractFixedVector{N,T}; kw...) where {F,N,T}
+        if T <: AbstractFloat && T <: Base.HWReal
+            -minimum(-map(f, v); kw...)   # work around LLVM bug for max_fast, see julia#56341
+        else
+            invoke(maximum, Tuple{F,AbstractVector}, f, v; kw...)
+        end
+    end
+end
 
 """
     extrema_fast(v::AbstractFixedVector; [init])
@@ -396,14 +405,6 @@ The `init` keyword argument may not be used.
 See also `Base.extrema`, `Base.@fastmath`.
 """
 extrema_fast(v::AbstractFixedVector; kw...) = extrema_fast(identity, v; kw...)
-
-@fastmath function maximum(f::F, v::AbstractFixedVector{N,T}; kw...) where {F,N,T}
-    if T <: AbstractFloat && T <: Base.HWReal
-        -minimum(-map(f, v); kw...)   # work around LLVM bug for max_fast, see julia#56341
-    else
-        invoke(maximum, Tuple{F,AbstractVector}, f, v; kw...)
-    end
-end
 
 """
     extrema_fast(f, v::AbstractFixedVector; [init])
