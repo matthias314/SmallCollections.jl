@@ -50,10 +50,3 @@ fasthash(::PackedVector, ::UInt)
 SmallCollections.unsafe_add
 SmallCollections.unsafe_sub
 ```
-
-## Permutations
-
-```@docs
-permutations
-permutations_sign_transposition
-```

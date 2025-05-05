@@ -1,3 +1,4 @@
+using SmallCollections.Combinatorics
 using SmallCollections: bitsize
 
 unsigned_types = (UInt8, UInt64, UInt256, UInt440)

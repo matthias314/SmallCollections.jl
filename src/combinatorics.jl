@@ -1,11 +1,19 @@
+export Combinatorics
+
+module Combinatorics
+
+using ..SmallCollections
+using SmallCollections: bitsize, unsafe_shl, unsafe_lshr,
+    blsi, blsr, blsmsk, pdep, _SmallBitSet
+
 #
 # subset iterators
 #
 
 export set_compositions, subsets, shuffles, shuffle_signbit
 
-using Base: Generator
-import Base: eltype, length, size, IndexStyle, getindex
+using Base: @propagate_inbounds, Generator
+import Base: eltype, length, size, IndexStyle, getindex, iterate
 
 struct Shuffles{N,S}
     set::S
@@ -434,3 +442,5 @@ end
     end
     nothing
 end
+
+end # module
