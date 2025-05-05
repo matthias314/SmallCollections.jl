@@ -21,6 +21,8 @@ function benchmark_dict(::Val{N}, ::Type{T}, M) where {N,T}
     k = map(rand, map(collect∘keys, pp))
     v = map(rand, map(collect∘values, pp))
     np = [Pair{T,T}(rand(T), rand(T)) for _ in 1:M]
+    npk = map(first, np)
+    npv = map(last, np)
 
     a = fill("", length(pq), 11)
 
@@ -48,9 +50,9 @@ function benchmark_dict(::Val{N}, ::Type{T}, M) where {N,T}
         end
 
         a[i, 5] = if D <: SmallDict
-            @bs similar(p) map!(push, _, $p, $np)
+            @bs similar(p) map!(setindex, _, $p, $npv, $npk)
         else
-            @bs deepcopy(p) foreach(push!, _, $np) evals = 1
+            @bs deepcopy(p) foreach((d, v, k) -> setindex!(d, v, k), _, $npv, $npk) evals = 1
         end
 
         a[i, 6] = if D <: SmallDict
@@ -69,7 +71,7 @@ function make_table_dict(a)
     b = ["| " * join(a[i, :], " | ") * " |" for i in axes(a, 1)]
 
     c = """
-        | type | create itr | getindex | invget | push(!) | pop(!) | iterate |
+        | type | create itr | getindex | invget | setindex(!) | pop(!) | iterate |
         | --- | --- | --- | --- | --- | --- | --- |
         """
 
@@ -81,12 +83,12 @@ function make_table_dict(a)
 end
 
 function make_table_dict_raw(a)
-    cols = [1, 3, 4, 5, 7]
+    cols = [1, 3, 4, 5, 6, 7]
     b = ["| " * join(a[i, cols], " | ") * " |" for i in axes(a, 1)]
 
     c = """
-        | type | getindex | invget | push(!) | iterate |
-        | --- | --- | --- | --- | --- |
+        | type | `getindex` | `invget` | `setindex(!)` | `pop(!)` | `iterate` |
+        | --- | --- | --- | --- | --- | --- |
         """
 
     c *= join(b, '\n') * '\n'

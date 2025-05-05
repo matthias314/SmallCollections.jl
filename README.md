@@ -1,229 +1,191 @@
 # SmallCollections.jl
 
-This Julia package defines three immutable collections types, `SmallVector`,
-`PackedVector` and `SmallBitSet`. They don't allocate and are often much faster
-than their allocating counterparts `Vector` and `BitSet`. Unlike the static vectors
-provided by [StaticArrays.jl](https://github.com/JuliaArrays/StaticArrays.jl),
-[StaticVectors.jl](https://github.com/chakravala/StaticVectors.jl) and
-[SIMD.jl](https://github.com/eschnett/SIMD.jl),
-the length of a `SmallVector` or `PackedVector` is variable with a user-defined limit.
+`SmallCollections.jl` offers vector, set and dictionary types that can hold
+any number of elements up to some (small) limit. Most of these types come
+in a mutable and an immutable version. With bit type elements, the immutable
+versions don't allocate. The mutable ones usually require bit type elements
+for full functionality.
+This approach leads to significant speed-ups compared to the standard types.
+For example, the performance of the vector types `SmallVector` and `MutableSmallVector`
+is close to that to `SVector` and `MVector` from
+[`StaticArrays.jl`](https://github.com/JuliaArrays/StaticArrays.jl).
+The most extreme performance gain is with `SmallBitSet`, which can be 100x faster than `BitSet`.
 
-If the package [BangBang.jl](https://github.com/JuliaFolds2/BangBang.jl)
-is loaded, then many functions defined by this package are also available
-in a `!!`-form. For example, both `push` and `push!!` add an element
-to a `SmallVector`, `PackedVector` or `SmallBitSet`.
+Below we present the major new types and also the submodule `Combinatorics`,
+which contains a few functions related to enumerative combinatorics.
+Compared to the analogous functions in
+[`Oscar.jl`](https://github.com/oscar-system/Oscar.jl),
+GAP and SageMath, they can be 2 or 3 orders of magnitude faster.
+The full documentation  for `SmallCollections` is available
+[here](https://matthias314.github.io/SmallCollections.jl/).
 
-Below are [examples](#examples) and [benchmarks](#benchmarks). For details see
-the [documentation](https://matthias314.github.io/SmallCollections.jl/stable/).
+## New types
 
-## Examples
+### `(Mutable)SmallVector` and `(Mutable)FixedVector`
 
-### `SmallVector`
+The types
+[`SmallVector{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/capacityvector/#SmallCollections.SmallVector)
+and
+[`MutableSmallVector{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/capacityvector/#SmallCollections.MutableSmallVector)
+can hold up to `N` elements of type `T`.
+In many cases they are almost as fast as fixed-length vectors.
+Internally, these types use fixed-length vectors and fill the unused elements with some
+[`default`](https://matthias314.github.io/SmallCollections.jl/stable/nonexported/#SmallCollections.default)
+value. The underlying types
+[`FixedVector{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/fixedvector/#SmallCollections.FixedVector)
+and
+[`MutableFixedVector{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/fixedvector/#SmallCollections.MutableFixedVector)
+store exactly `N` elements of type `T`.
+Up to a few implementation details, they are analogous to `SVector` and `MVector`.
 
-A vector of type `SmallVector{N,T}` can hold up to `N` elements of type `T`.
-Both `N` and `T` can be arbitrary. (If `T` is not a concrete type, however,
-then creating a small vector does allocate.)
-```julia
-julia> v = SmallVector{8,Int8}(2*x for x in 1:3)
-3-element SmallVector{8, Int8}:
- 2
- 4
- 6
+<details>
+<summary>Benchmarks for <code>SmallVector</code> and <code>MutableSmallVector</code></summary>
 
-julia> setindex(v, 7, 3)
-3-element SmallVector{8, Int8}:
- 2
- 4
- 7
+The timings are for **1000** operations of the given type on vectors having between 1 and 31 elements
+(or exactly 32 elements for fixed-length vectors). If possible, mutating operations were used.
 
-julia> w = SmallVector{9}((1, 2.5, 4))
-3-element SmallVector{9, Float64}:
- 1.0
- 2.5
- 4.0
+| `N = 32`, `T = Int16` | `v + w` | `v .+= w` |`sum` | `push(!)` | `count(>(c), v)` |
+| --- | --- | --- | --- | --- | --- |
+| `Vector{T}` | 44.827 μs | 21.258 μs | 7.612 μs | 5.003 μs | 11.241 μs |
+| `MVector{N,T}` | 5.606 μs | 19.478 μs | 2.301 μs | 9.764 μs | 2.679 μs |
+| **`MutableSmallVector{N,T}`** | 3.880 μs | 5.258 μs | 3.233 μs | 3.084 μs | 2.131 μs |
+| `SVector{N,T}` | 2.012 μs | n/a | 1.395 μs | 2.053 μs | 1.185 μs |
+| **`SmallVector{N,T}`** | 2.392 μs | n/a | 2.660 μs | 6.437 μs | 1.796 μs |
 
-julia> v+2*w
-3-element SmallVector{8, Float64}:
-  4.0
-  9.0
- 14.0
-```
-Non-numeric element types are possible. (One may have to define
-a default element used for padding via `SmallCollections.default(T)`.
-For `Char`, `String` and `Symbol` they are pre-defined.)
-```julia
-julia> u = SmallVector{6}(['a', 'b', 'c'])
-3-element SmallVector{6, Char}:
- 'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)
- 'b': ASCII/Unicode U+0062 (category Ll: Letter, lowercase)
- 'c': ASCII/Unicode U+0063 (category Ll: Letter, lowercase)
+Notes: `sum` for `SVector` and `MVector` returns an `Int16` instead of `Int`. `SmallCollections`
+has a separate function `sum_fast` for this. Addition allocates for `Vector`. To avoid this for
+`MVector`, the result was transformed to `SVector`. `push!` for `MVector` and `push` for `SVector`
+are not directly comparable to the others because they change the type of the returned vector,
+which leads to type instabilities in cases like loops.
 
-julia> popfirst(u)
-(['b', 'c'], 'a')
+For the benchmark code see the file `benchmark/benchmark_vec.jl` in the repository.
 
-julia> map(uppercase, u)
-3-element SmallVector{6, Char}:
- 'A': ASCII/Unicode U+0041 (category Lu: Letter, uppercase)
- 'B': ASCII/Unicode U+0042 (category Lu: Letter, uppercase)
- 'C': ASCII/Unicode U+0043 (category Lu: Letter, uppercase)
-```
+</details>
 
-### `PackedVector`
-
-A `PackedVector` can store bit integers or `Bool` values.
-The elements of a `PackedVector{U,M,T}` are stored in a common bit mask of type `U`
-with `M` bits for each entry. When retrieving elements, they are of type `T`.
-
-Compared to a `SmallVector`, a `PackedVector` may have faster insert and delete operations.
-Arithmetic operations are usually slower unless `M` is the size of a hardware integer.
-```julia
-julia> v = PackedVector{UInt64,5,Int}(4:6)
-3-element PackedVector{UInt64, 5, Int64}:
- 4
- 5
- 6
-
-julia> capacity(v)  # 64 bits available, 5 for each entry
-12
-
-julia> pushfirst(v, 7)
-4-element PackedVector{UInt64, 5, Int64}:
- 7
- 4
- 5
- 6
-
-julia> duplicate(v, 2)
-4-element PackedVector{UInt64, 5, Int64}:
- 4
- 5
- 5
- 6
-
-julia> 3*v   # note the overflow in the last entry
-3-element PackedVector{UInt64, 5, Int64}:
-  12
-  15
- -14
-```
-
-### `SmallBitSet`
-
-The default `SmallBitSet` type `SmallBitSet{UInt64}` can hold integers
-between `1` and `64`.
-```julia
-julia> s = SmallBitSet([1, 4, 7])
-SmallBitSet{UInt64} with 3 elements:
-  1
-  4
-  7
-
-julia> t = SmallBitSet([3, 4, 5])
-SmallBitSet{UInt64} with 3 elements:
-  3
-  4
-  5
-
-julia> union(s, t)
-SmallBitSet{UInt64} with 5 elements:
-  1
-  3
-  4
-  5
-  7
-
-julia> push(s, 9)
-SmallBitSet{UInt64} with 4 elements:
-  1
-  4
-  7
-  9
-
-julia> filter(iseven, s)
-SmallBitSet{UInt64} with 1 element:
-  4
-```
-Smaller or larger sets are possible by choosing a different unsigned bit integer
-as bitmask type, for example `UInt16` or `UInt128` or types like `UInt256` defined
-by the package [BitIntegers.jl](https://github.com/rfourquet/BitIntegers.jl).
-```julia
-julia> using BitIntegers
-
-julia> SmallBitSet{UInt256}(n for n in 1:256 if isodd(n) && isinteger(sqrt(n)))
-SmallBitSet{UInt256} with 8 elements:
-  1
-  9
-  25
-  49
-  81
-  121
-  169
-  225
-```
-
-## Benchmarks
-
-### `SmallVector`
-
-The timings are for pairwise adding the elements of two `Vector`s,
-each containing 1000 vectors with element type `T`.
-For `Vector` and `SmallVector` the length of each pair of elements is **variable** and
-chosen randomly between 1 and `N`. For `SVector{N,T}` (from StaticArrays.jl),
-`Values{N,T}` (from StaticVectors.jl) and `Vec{N,T}` (from SIMD.jl) the vectors have
-**fixed** length `N`.
-
-| `(N, T)` | `Vector{T}` | `SmallVector{N,T}` | `SVector{N,T}` | `Values{N,T}` | `Vec{N,T}` |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| (8, Float64) | 66.682 μs | 3.341 μs | 3.452 μs | 3.197 μs | 3.046 μs |
-| (8, Int64) | 48.642 μs | 4.962 μs | 3.196 μs | 4.551 μs | 2.954 μs |
-| (16, Int32) | 49.449 μs | 3.866 μs | 3.284 μs | 3.623 μs | 3.757 μs |
-| (32, Int16) | 55.027 μs | 5.046 μs | 4.212 μs | 3.618 μs | 3.548 μs |
+How broadcasting or functions like
+[`map`](https://matthias314.github.io/SmallCollections.jl/stable/capacityvector/#Base.map)
+or
+[`any`](https://matthias314.github.io/SmallCollections.jl/stable/capacityvector/#Base.any-Tuple{Function,%20AbstractSmallVector})
+deal with default values for a `(Mutable)SmallVector` is governed by a trait called
+[`MapStyle`](https://matthias314.github.io/SmallCollections.jl/stable/nonexported/#SmallCollections.MapStyle).
+Except for broadcasting one can override the automatically chosen style.
 
 ### `PackedVector`
 
-Here we compare a `PackedVector{UInt128, 4, Int8}` (that can hold 32 elements) to a `SmallVector{32, Int8}`
-and to a `Vector{Int8}` with 30 elements.
-The function `duplicate(v, i)` is equivalent to `insert(v, i+1, v[i])`.
-For the operations listed in the table below we have chosen the mutating variant for `Vector`.
+A
+[`PackedVector{U,M,T}`](https://matthias314.github.io/SmallCollections.jl/stable/capacityvector/#SmallCollections.PackedVector)
+uses the unsigned integer type `U` to store integers with `M` bits,
+which to the outside appear as having integer type `T`. For example, a `PackedVector{UInt128,5,Int8}`
+can store `25` (`128÷5`) signed integers with `5` bits. When retrieving them, they are of type `Int8`.
+Indexing and algebraic operations are usually slower for `PackedVector` than for `SmallVector`,
+while `push`/`pushfirst` and `pop`/`popfirst` may be faster.
 
-| operation | `Vector` | `SmallVector` | `PackedVector` |
-| ---: | ---: | ---: | ---: |
-| getindex | 2.902 ns | 2.647 ns | 3.167 ns |
-| setindex | 2.638 ns | 5.279 ns | 6.861 ns |
-| add | 12.419 ns | 2.375 ns | 4.222 ns |
-| scalar_mul | 9.762 ns | 4.749 ns | 4.223 ns |
-| push | 8.241 ns | 5.541 ns | 8.970 ns |
-| pushfirst | 8.750 ns | 4.221 ns | 4.223 ns |
-| pop | 8.600 ns | 6.000 ns | 4.933 ns |
-| popfirst | 11.267 ns | 4.667 ns | 3.867 ns |
-| insert | 12.928 ns | 24.804 ns | 7.328 ns |
-| deleteat | 12.933 ns | 18.200 ns | 5.667 ns |
-| duplicate | 13.546 ns | 20.845 ns | 4.486 ns |
+### `(Mutable)SmallSet` and `SmallBitSet`
 
-### `SmallBitSet`
+The types
+[`SmallSet{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/smallset/#SmallCollections.SmallSet)
+and
+[`MutableSmallSet{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/smallset/#SmallCollections.MutableSmallSet)
+ can hold up to `N` elements of type `T`. The type
+[`SmallBitSet{U}`](https://matthias314.github.io/SmallCollections.jl/stable/smallbitset/#SmallCollections.SmallBitSet)
+can hold integers between `1` and `M` where `M` is the bit size of the unsigned integer type `U`
+(taken to be `UInt` if omitted).
+For small integers, `MutableSmallSet` is as fast (or even faster than) `BitSet`.
+`SmallBitSet` can be up to 100x faster than `BitSet`.
 
-The timings are for taking the pairwise union of the elements of two `Vector`s,
-each containing 1000 sets of the indicated type.
-Each set contains up to `b` integers between 1 and `b = 8*sizeof(U)-1`.
+<details>
+<summary>Benchmarks for <code>SmallSet</code>, <code>MutableSmallSet</code> and <code>SmallBitSet</code></summary>
 
-| `U` | `Set{Int16}` | `BitSet` | `SmallBitSet` |
-| ---: | ---: | ---: | ---: |
-| UInt8 | 366.256 μs | 69.439 μs | 95.698 ns |
-| UInt16 | 801.736 μs | 68.195 μs | 311.559 ns |
-| UInt32 | 1.537 ms | 68.354 μs | 400.259 ns |
-| UInt64 | 2.836 ms | 68.751 μs | 640.833 ns |
-| UInt128 | 5.686 ms | 68.846 μs | 1.540 μs |
-| UInt256 | 11.579 ms | 69.398 μs | 2.441 μs |
-| UInt512 | 23.819 ms | 92.041 μs | 4.866 μs |
+The timings are for **1000** operations of the given type on sets having between 1 and 8 elements.
+If possible, mutating operations were used.
+Note that while a `BitSet` can hold arbitrarily many elements, the timings for `MutableSmallSet`
+wouldn't change if the elements were drawn from `Int16` without restrictions.
 
-Versions: Julia v1.10.4,
-Chairmarks v1.2.1,
-SmallCollections v0.3.0,
-StaticArrays v1.9.7,
-StaticVectors v1.0.5,
-SIMD v3.5.0,
-BitIntegers v0.3.1
+| `N = 16`, `T = Int16` | `push(!)` | `intersect(!)` | `issubset` | `in` |
+| --- | --- | --- | --- | --- |
+| `Set{T}` | 14.817 μs | 87.199 μs | 77.615 μs | 4.586 μs |
+| **`MutableSmallSet{N,T}`** | 9.532 μs | 14.244 μs | 4.392 μs | 1.167 μs |
+| **`SmallSet{N,T}`** | 13.645 μs | 17.705 μs | 8.806 μs | 2.182 μs |
+| `BitSet` | 16.184 μs | 21.225 μs | 7.518 μs | 1.983 μs |
+| **`SmallBitSet{UInt16}`** | 1.377 μs | 36.318 **ns** | 56.222 **ns** | 1.094 μs |
 
-Computer: Intel Core i3-10110U CPU @ 2.10GHz with 8GB RAM
+For the benchmark code see the file `benchmark/benchmark_set.jl` in the repository.
 
-The benchmark code can be found in the `benchmark` directory.
+</details>
+
+### `(Mutable)SmallDict`
+
+The types
+[`SmallDict{N,K,V}`](https://matthias314.github.io/SmallCollections.jl/stable/smalldict/#SmallCollections.SmallDict)
+and
+[`MutableSmallDict{N,K,V}`](https://matthias314.github.io/SmallCollections.jl/stable/smalldict/#SmallCollections.MutableSmallDict)
+can hold up to `N` entries with key type `K` and value type `V`.
+
+Operations for `MutableSmallDict` are typically faster than for `Dict`.
+For `SmallDict` this holds often, but not always.
+Since keys and values are stored as small vectors, inverse lookup with
+[`invget`](https://matthias314.github.io/SmallCollections.jl/stable/smalldict/#SmallCollections.invget)
+is as fast as regular lookup.
+
+<details>
+<summary>Benchmarks for <code>SmallDict</code> and <code>MutableSmallDict</code></summary>
+
+The timings are for **1000** operations of the given type on dictionaries created with 30
+randomly chosen key-value pairs. If possible, mutating operations were used.
+
+| `N = 32`, `K = V = Int8` | `getindex` | `invget` | `setindex(!)` | `pop(!)` | `iterate` |
+| --- | --- | --- | --- | --- | --- |
+| `Dict{Int8,Int8}` | 10.739 μs | n/a | 27.604 μs | 19.932 μs | 406.180 μs |
+| **`MutableSmallDict{32,Int8,Int8}`** | 1.853 μs | 2.650 μs | 8.762 μs | 7.460 μs | 18.653 μs |
+| **`SmallDict{32,Int8,Int8}`** | 1.864 μs | 1.495 μs | 9.516 μs | 17.761 μs | 16.514 μs |
+
+For the benchmark code see the file `benchmark/benchmark_dict.jl` in the repository.
+
+</details>
+
+## Combinatorics
+
+The submodule
+[`Combinatorics`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/)
+contains functions for enumerative combinatorics
+that are based on types provided by `SmallCollections.jl`. Currently this module
+is more of a proof-of-concept; it may be turned into a separate package in the future.
+Here are two example benchmarks
+(done with Oscar 1.3.1, GAP 4.14.0 and Sage 10.6, on an older computer).
+
+### Permutations
+
+Loop over all permutations of `1:9` and add up the image of `1` under each permutation.
+The iterator returned by
+[`permutations`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.permutations)
+ yields each permutation as a `SmallVector{16,Int8}`.
+```
+julia> n = 9; @b sum(p[1] for p in Combinatorics.permutations($n))
+2.987 ms   # 1.247 ms with @inbounds(p[1])
+
+julia> n = 9; @b sum(p(1) for p in symmetric_group($n))   # Oscar (using GAP)
+756.784 ms (931061 allocs: 28.470 MiB, without a warmup)
+
+gap> Sum(SymmetricGroup(9), p -> 1^p);; time;
+764  # milliseconds
+
+sage: timeit('sum(p[0] for p in Permutations(9))')
+5 loops, best of 3: 3.13 s per loop
+```
+
+### Subsets
+
+Loop over all `10`-element subsets of `1:20` and add up the sum of the elements of each subset.
+The iterator returned by
+[`subsets`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.subsets-Tuple{Integer,%20Integer})
+yields each subset as a `SmallBitSet`.
+```
+julia> n = 20; k = 10; @b sum(sum, Combinatorics.subsets($n, $k))
+2.830 ms
+
+gap> s := 0;; for c in IteratorOfCombinations([1..20], 10) do s := s + Sum(c); od; time;
+317  # milliseconds
+
+sage: timeit('sum(sum(c) for c in Subsets(20, 10))')
+5 loops, best of 3: 17.9 s per loop   # 11 seconds with Sage 9.4
+```
