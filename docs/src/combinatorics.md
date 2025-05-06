@@ -8,19 +8,19 @@ DocTestSetup = :(using SmallCollections)
 Combinatorics
 ```
 
-## Subsets and shuffles
+## Subsets and set compositions
 
 When used with a `SmallBitSet` as first argument, the following functions internally use
 the function [`pdep`](@ref SmallCollections.pdep).
 As discussed in the docstring for `pdep`, performance is much better if the processor supports the BMI2 instruction set.
-The same applies to `shuffles` with more than two parts, even if the first argument is not a `SmallBitSet`.
+The same applies to `set_compositions` with more than two parts, even if the first argument is not a `SmallBitSet`.
 
 ```@docs
 subsets(::Integer)
 subsets(::Integer, ::Integer)
 set_compositions
-shuffles(::Vararg{Integer})
-shuffle_signbit
+set_compositions_parity(::Vararg{Integer})
+set_composition_parity
 ```
 
 ## Permutations

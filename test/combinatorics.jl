@@ -66,28 +66,28 @@ end
     end
 end
 
-@testset "shuffles" begin
-    function test_shuffles(ks)
+@testset "set_compositions_parity" begin
+    function test_set_compositions_parity(ks)
         N = length(ks)
-        sh = @inferred shuffles(ks...)
+        sh = @inferred set_compositions_parity(ks...)
         a = SmallBitSet(1:sum(ks; init = 0))
         @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
         @test @inferred(eltype(sh)) == Tuple{NTuple{N, SmallBitSet{UInt}}, Bool}
         @test all(map(length, t) == ks && s isa Bool &&
             (isempty(t) ? isempty(a) : (union(t...) == a)) &&
-            shuffle_signbit(t...) == s for (t, s) in sh)
+            set_composition_parity(t...) == s for (t, s) in sh)
         @test allunique(sh)
     end
 
-    function test_shuffles(a::S, ks::NTuple{N,Int}) where {S <: SmallBitSet, N}
-        test_shuffles(ks)
-        sh = @inferred shuffles(a, ks...)
+    function test_set_compositions_parity(a::S, ks::NTuple{N,Int}) where {S <: SmallBitSet, N}
+        test_set_compositions_parity(ks)
+        sh = @inferred set_compositions_parity(a, ks...)
         @test @inferred(length(sh)) == factorial(big(sum(ks; init = 0))) ÷ prod(map(factorial∘big, ks); init = 1)
         @test @inferred(eltype(sh)) == Tuple{NTuple{N, S}, Bool}
         @test all(t isa NTuple{N, S} && s isa Bool &&
             map(length, t) == ks &&
             (isempty(t) ? isempty(a) : (union(t...) == a)) &&
-            shuffle_signbit(t...) == s for (t, s) in sh)
+            set_composition_parity(t...) == s for (t, s) in sh)
         @test allunique(sh)
     end
 
@@ -97,19 +97,19 @@ end
                 (20:2:38, (2, 3, 2, 3)), (20:2:38, (1, 4, 0, 2, 3))]
         maximum(v; init = 0) <= bitsize(U) || continue
         a = SmallBitSet{U}(v)
-        test_shuffles(a, ks)
+        test_set_compositions_parity(a, ks)
     end
 
-    @test_throws Exception shuffles(-1, 2)
-    @test_throws Exception shuffles(bitsize(UInt)-1, 2)
+    @test_throws Exception set_compositions_parity(-1, 2)
+    @test_throws Exception set_compositions_parity(bitsize(UInt)-1, 2)
     for U in unsigned_types
-        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6))
-        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6), -1, 2, 2)
-        @test_throws Exception shuffles(SmallBitSet{U}(2:2:6), 3, 4)
-        @test (shuffles(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
+        @test_throws Exception set_compositions_parity(SmallBitSet{U}(2:2:6))
+        @test_throws Exception set_compositions_parity(SmallBitSet{U}(2:2:6), -1, 2, 2)
+        @test_throws Exception set_compositions_parity(SmallBitSet{U}(2:2:6), 3, 4)
+        @test (set_compositions_parity(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
     end
 
-    # check that unsafe_lshr in iterate for Shuffles is safe
+    # check that unsafe_lshr in iterate for SetCompositions is safe
     @test collect(subsets(bitsize(UInt), 1)) == [SmallBitSet((k,)) for k in 1:bitsize(UInt)]
 end
 
