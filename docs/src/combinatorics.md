@@ -4,7 +4,9 @@ DocTestSetup = :(using SmallCollections)
 
 # [Combinatorics](@id combinatorics)
 
-The submodule `Combinatorics` contains a few functions related to enumerative combinatorics.
+```@docs
+Combinatorics
+```
 
 ## Subsets and shuffles
 

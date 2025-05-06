@@ -1,5 +1,10 @@
 export Combinatorics
 
+"""
+    $(@__MODULE__)
+
+    This module contains functions related to enumerative combinatorics.
+"""
 module Combinatorics
 
 using ..SmallCollections
