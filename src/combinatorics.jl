@@ -15,7 +15,7 @@ using SmallCollections: bitsize, unsafe_shl, unsafe_lshr,
 # subset iterators
 #
 
-export set_compositions, subsets, set_compositions_parity, set_composition_parity
+export setcompositions, subsets, setcompositions_parity, setcomposition_parity
 
 using Base: @propagate_inbounds, Generator
 import Base: eltype, length, size, IndexStyle, getindex, iterate
@@ -26,38 +26,38 @@ struct SetCompositions{N,S}
 end
 
 """
-    set_compositions_parity(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
-    set_compositions_parity(ks::Vararg{Integer,N}) where N
+    setcompositions_parity(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
+    setcompositions_parity(ks::Vararg{Integer,N}) where N
 
 In the first form, return an iterator that yields all `ks`-compositions of the set `s`
 together with the parity of the permutation that puts the elements back into an increasing order.
-See `set_compositions` and `set_composition_parity` for details.
+See `setcompositions` and `setcomposition_parity` for details.
 The iterator returns tuples `(t, p)`, where `t` is of type `NTuple{N, S}`
 and the parity `p` is of type `Bool` where `false` means even and `true` means odd.
 The partition sizes in `ks` must be non-negative and add up to `length(s)`.
 
 In the second form the set `s` is taken to be `SmallBitSet(1:sum(ks))`.
 
-See also [`set_compositions`](@ref), [`set_composition_parity`](@ref).
+See also [`setcompositions`](@ref), [`setcomposition_parity`](@ref).
 
 # Examples
 ```jldoctest
-julia> collect(set_compositions_parity(SmallBitSet([2, 4, 5]), 1, 2))
+julia> collect(setcompositions_parity(SmallBitSet([2, 4, 5]), 1, 2))
 3-element Vector{Tuple{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}}, Bool}}:
  ((SmallBitSet([2]), SmallBitSet([4, 5])), 0)
  ((SmallBitSet([4]), SmallBitSet([2, 5])), 1)
  ((SmallBitSet([5]), SmallBitSet([2, 4])), 0)
 
-julia> all(s == set_composition_parity(a, b) for ((a, b), s) in set_compositions_parity(1, 2))
+julia> all(s == setcomposition_parity(a, b) for ((a, b), s) in setcompositions_parity(1, 2))
 true
 ```
 """
-function set_compositions_parity(ks::Integer...)
+function setcompositions_parity(ks::Integer...)
     any(signbit, ks) && error("part sizes must be non-negative")
     sum(ks; init = 0) <= bitsize(UInt) || error("at most $(bitsize(UInt)) elements supported")
     SetCompositions(missing, ks)
 end,
-function set_compositions_parity(s::SmallBitSet, ks::Integer...)
+function setcompositions_parity(s::SmallBitSet, ks::Integer...)
     sum(ks; init = 0) == length(s) || error("part lengths must add up to size of the set")
     any(signbit, ks) && error("part sizes must be non-negative")
     SetCompositions(s, ks)
@@ -148,29 +148,29 @@ end
 end
 
 """
-    set_composition_parity(ss::SmallBitSet...) -> Bool
+    setcomposition_parity(ss::SmallBitSet...) -> Bool
 
 Return `true` if an odd number of transpositions is needed to transform the elements of the
 sets `ss` into an increasing sequence, and `false` otherwise. The sets are considered as
 increasing sequences and assumed to be disjoint.
 
-See also [`set_compositions_parity`](@ref).
+See also [`setcompositions_parity`](@ref).
 
 # Examples
 ```
 julia> s, t, u = SmallBitSet([2, 3, 8]), SmallBitSet([1, 4, 6]), SmallBitSet([5, 7]);
 
-julia> set_composition_parity(s, t), set_composition_parity(s, t, u)
+julia> setcomposition_parity(s, t), setcomposition_parity(s, t, u)
 (true, false)
 ```
 """
-set_composition_parity(ss::Vararg{SmallBitSet,N}) where N =
-    set_composition_parity(ss[N-1], ss[N]) ⊻ (@inline set_composition_parity(ss[1:N-2]..., ss[N-1] ∪ ss[N]))
+setcomposition_parity(ss::Vararg{SmallBitSet,N}) where N =
+    setcomposition_parity(ss[N-1], ss[N]) ⊻ (@inline setcomposition_parity(ss[1:N-2]..., ss[N-1] ∪ ss[N]))
 
-set_composition_parity() = false
-set_composition_parity(::SmallBitSet) = false
+setcomposition_parity() = false
+setcomposition_parity(::SmallBitSet) = false
 
-function set_composition_parity(s::SmallBitSet, t::SmallBitSet)
+function setcomposition_parity(s::SmallBitSet, t::SmallBitSet)
     m = bits(s)
     p = zero(m)
     while !iszero(m)
@@ -182,8 +182,8 @@ function set_composition_parity(s::SmallBitSet, t::SmallBitSet)
 end
 
 """
-    set_compositions(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
-    set_compositions(ks::Vararg{Integer,N}) where N
+    setcompositions(s::S, ks::Vararg{Integer,N}) where {S <: SmallBitSet, N}
+    setcompositions(ks::Vararg{Integer,N}) where N
 
 In the first form, return an iterator that yields all `ks`-compositions of the set `s`, that is,
 all ordered partitions of `s` into `N` sets of size `ks[1]` to `ks[N]`, respectively. The element type
@@ -193,17 +193,17 @@ In the second form the set `s` is taken to be `SmallBitSet(1:sum(ks))`.
 This gives an iterator over all set compositions of the integer `sum(ks)`.
 
 See also [`subsets`](@ref subsets(::SmallBitSet, ::Integer)),
-[`set_compositions_parity`](@ref set_compositions_parity(::Vararg{Integer,N}) where N).
+[`setcompositions_parity`](@ref setcompositions_parity(::Vararg{Integer,N}) where N).
 
 # Examples
 ```jldoctest
-julia> collect(set_compositions(SmallBitSet([2, 4, 5]), 1, 2))
+julia> collect(setcompositions(SmallBitSet([2, 4, 5]), 1, 2))
 3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([2]), SmallBitSet([4, 5]))
  (SmallBitSet([4]), SmallBitSet([2, 5]))
  (SmallBitSet([5]), SmallBitSet([2, 4]))
 
-julia> collect(set_compositions(1, 1, 1))
+julia> collect(setcompositions(1, 1, 1))
 6-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([1]), SmallBitSet([2]), SmallBitSet([3]))
  (SmallBitSet([2]), SmallBitSet([1]), SmallBitSet([3]))
@@ -212,18 +212,18 @@ julia> collect(set_compositions(1, 1, 1))
  (SmallBitSet([2]), SmallBitSet([3]), SmallBitSet([1]))
  (SmallBitSet([3]), SmallBitSet([2]), SmallBitSet([1]))
 
-julia> collect(set_compositions(SmallBitSet([2, 4, 5]), 1, 0, 2))
+julia> collect(setcompositions(SmallBitSet([2, 4, 5]), 1, 0, 2))
 3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([2]), SmallBitSet([]), SmallBitSet([4, 5]))
  (SmallBitSet([4]), SmallBitSet([]), SmallBitSet([2, 5]))
  (SmallBitSet([5]), SmallBitSet([]), SmallBitSet([2, 4]))
 
-julia> collect(set_compositions(SmallBitSet()))
+julia> collect(setcompositions(SmallBitSet()))
 1-element Vector{Tuple{}}:
  ()
 ```
 """
-set_compositions(args...) = Generator(first, set_compositions_parity(args...))
+setcompositions(args...) = Generator(first, setcompositions_parity(args...))
 
 eltype(g::Generator{<:SetCompositions, typeof(first)}) = fieldtype(eltype(g.iter), 1)
 
@@ -301,7 +301,7 @@ If `k` is negative or larger than `length(s)`, then the iterator is empty.
 
 In the second form the set `s` is taken to be `SmallBitSet(1:n)`.
 
-See also [`subsets(::Integer)`](@ref), [`set_compositions_parity`](@ref set_compositions_parity(::Vararg{Integer,N}) where N).
+See also [`subsets(::Integer)`](@ref), [`setcompositions_parity`](@ref setcompositions_parity(::Vararg{Integer,N}) where N).
 
 # Example
 ```jldoctest
