@@ -27,5 +27,5 @@ set_composition_parity
 
 ```@docs
 permutations
-permutations_sign_transposition
+permutations_parity_transposition
 ```
