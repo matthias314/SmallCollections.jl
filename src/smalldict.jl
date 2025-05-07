@@ -194,7 +194,7 @@ Base.hasfastin(::Type{D}) where D <: AbstractSmallDict = Base.hasfastin(fieldtyp
 function getindex(d::AbstractSmallDict, key)
     i = token(d, key)
     if i === nothing
-        error("key not found")
+        throw(KeyError(key))
     else
         @inbounds d.vals[i]
     end
