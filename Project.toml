@@ -1,7 +1,7 @@
 name = "SmallCollections"
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
 authors = ["matthias314"]
-version = "0.4.0"
+version = "0.4.1-DEV"
 
 [deps]
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
