@@ -159,7 +159,7 @@ Loop over all permutations of `1:9` and add up the image of `1` under each permu
 The iterator returned by
 [`permutations`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.permutations)
  yields each permutation as a `SmallVector{16,Int8}`.
-```
+```julia
 julia> n = 9; @b sum(p[1] for p in Combinatorics.permutations($n))
 2.987 ms   # 1.247 ms with @inbounds(p[1])
 
@@ -179,7 +179,7 @@ Loop over all `10`-element subsets of `1:20` and add up the sum of the elements 
 The iterator returned by
 [`subsets`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.subsets-Tuple{Integer,%20Integer})
 yields each subset as a `SmallBitSet`.
-```
+```julia
 julia> n = 20; k = 10; @b sum(sum, Combinatorics.subsets($n, $k))
 2.830 ms
 
