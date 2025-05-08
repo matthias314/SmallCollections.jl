@@ -79,7 +79,7 @@ end
         end
         @test_inferred (k0 => v0) in d false
         @test_inferred haskey(d, k0) false
-        @test_throws Exception d[k0]
+        @test_throws KeyError d[k0]
         @test_inferred get(d, k0, v0) v0
 
         D == MutableSmallDict || continue
@@ -148,7 +148,7 @@ end
 
         e = copy(d)
         k0 = rand_notin(K, keys(d))
-        @test_throws Exception pop!(e, k0)
+        @test_throws KeyError pop!(e, k0)
         @test_inferred pop!(e, k0, v0) v0
         @test e == d
     end
@@ -185,7 +185,7 @@ end
         @test_inferred push(e, kv) SmallDict(d)
 
         k0 = rand_notin(K, keys(d))
-        @test_throws Exception pop(d, k0)
+        @test_throws KeyError pop(d, k0)
         @test_inferred pop(d, k0, v0) (SmallDict(d), v0)
     end
 end

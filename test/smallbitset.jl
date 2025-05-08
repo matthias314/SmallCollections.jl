@@ -94,8 +94,8 @@ end
             @test_inferred pop(s, i) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Int}
             @test_inferred pop(s, Float64(i)) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Float64}
             @test_inferred pop(s, 0, -1) (s, -1)
-            @test_throws Exception pop(s, 0)
-            @test_throws Exception pop(s, 'x')
+            @test_throws KeyError pop(s, 0)
+            @test_throws KeyError pop(s, 'x')
             @test_inferred delete(s, i) delete!(copy(t), i) SmallBitSet{U}
             @test_inferred delete(s, m+1) s
         end

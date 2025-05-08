@@ -256,7 +256,7 @@ The set `s` must be non-empty.
 See also `Base.pop!`, `BangBang.pop!!`.
 """
 @inline function pop(s::SmallBitSet, n)
-    @boundscheck n in s || error("set does not contain the element")
+    @boundscheck n in s || keyerror(n)
     delete(s, n), n
 end
 

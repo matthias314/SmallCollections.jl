@@ -194,7 +194,7 @@ Base.hasfastin(::Type{D}) where D <: AbstractSmallDict = Base.hasfastin(fieldtyp
 function getindex(d::AbstractSmallDict, key)
     i = token(d, key)
     if i === nothing
-        error("key not found")
+        keyerror(key)
     else
         @inbounds d.vals[i]
     end
@@ -344,7 +344,7 @@ function pop(d::AbstractSmallDict{N,K,V}, key) where {N,K,V}
         return SmallDict(e), val
     end
     i = token(d, key)
-    i === nothing && error("key not found")
+    i === nothing && keyerror(key)
     e, kv = unsafe_pop(d, i)
     e, last(kv)
 end
@@ -445,7 +445,7 @@ end
 
 function pop!(d::MutableSmallDict, key)
     i = token(d, key)
-    i === nothing && error("key not found")
+    i === nothing && keyerror(key)
     last(unsafe_pop!(d, i))
 end
 

@@ -110,7 +110,7 @@ end
             @test_inferred delete(s, x) t
             T <: Union{Bool,Enum} && continue
             y = rand_notin(T, s)
-            @test_throws Exception pop(s, y)
+            @test_throws KeyError pop(s, y)
             @test_inferred delete(s, y) SmallSet(s)
             @test_inferred pop(s, x, y) (t, x)
             @test_inferred pop(s, y, x) (SmallSet(s), x)
@@ -120,7 +120,7 @@ end
     s = SmallSet{4}((0.0, 1.0))
     @test_inferred 1 in s true
     @test_inferred -0.0 in s false
-    @test_throws Exception pop(s, -0.0)
+    @test_throws KeyError pop(s, -0.0)
     @test_inferred pop(s, 1) pop(s, 1.0)
     @test_inferred delete(s, 1) delete(s, 1.0)
     @test_inferred pop(s, 1, 2.0) pop(s, 1.0, 2.0)
@@ -159,7 +159,7 @@ end
             @test w === u
             T <: Union{Bool,Enum} && continue
             y = rand_notin(T, s)
-            @test_throws Exception pop!(copy(s), y)
+            @test_throws KeyError pop!(copy(s), y)
             u = copy(s)
             w = @test_inferred delete!(u, y) s
             @test w === u
@@ -173,7 +173,7 @@ end
     end
 
     s = MutableSmallSet{4}((0.0, 1.0))
-    @test_throws Exception pop!(copy(s), -0.0)
+    @test_throws KeyError pop!(copy(s), -0.0)
     @test_inferred pop!(copy(s), 1) pop!(copy(s), 1.0)
     @test_inferred delete!(copy(s), 1) delete!(copy(s), 1.0)
     @test_inferred pop!(copy(s), 1, 2.0) pop!(copy(s), 1.0, 2.0)
