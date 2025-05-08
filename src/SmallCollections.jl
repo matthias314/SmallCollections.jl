@@ -40,9 +40,6 @@ and `BitIntegers.AbstractBitUnsigned`.
 """
 const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigned}
 
-const FastInteger = Union{BitInteger,Complex{<:BitInteger}}
-const FastFloat = Union{Float32,Float64,Complex{Float32},Complex{Float64}}
-
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
