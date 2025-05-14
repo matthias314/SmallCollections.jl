@@ -10,12 +10,15 @@ For example, the performance of the vector types `SmallVector` and `MutableSmall
 is close to that to `SVector` and `MVector` from
 [`StaticArrays.jl`](https://github.com/JuliaArrays/StaticArrays.jl).
 The most extreme performance gain is with `SmallBitSet`, which can be 100x faster than `BitSet`.
+(The exact speed-ups depend much on your processor.)
 
 Below we present the major new types and also the submodule `Combinatorics`,
 which contains a few functions related to enumerative combinatorics.
 Compared to the analogous functions in
-[`Oscar.jl`](https://github.com/oscar-system/Oscar.jl),
-GAP and SageMath, they can be 2 or 3 orders of magnitude faster.
+[Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl)
+and [Combinat.jl](https://github.com/jmichel7/Combinat.jl),
+they are at least 8x faster.
+
 The full documentation  for `SmallCollections` is available
 [here](https://matthias314.github.io/SmallCollections.jl/).
 
@@ -37,6 +40,7 @@ and
 [`MutableFixedVector{N,T}`](https://matthias314.github.io/SmallCollections.jl/stable/fixedvector/#SmallCollections.MutableFixedVector)
 store exactly `N` elements of type `T`.
 Up to a few implementation details, they are analogous to `SVector` and `MVector`.
+(However, broadcasting with assignment is currently much faster for `MutableSmallVector` than for `MVector`.)
 
 <details>
 <summary>Benchmarks for <code>SmallVector</code> and <code>MutableSmallVector</code></summary>
@@ -150,8 +154,10 @@ The submodule
 contains functions for enumerative combinatorics
 that are based on types provided by `SmallCollections.jl`. Currently this module
 is more of a proof-of-concept; it may be turned into a separate package in the future.
-Here are two example benchmarks
-(done with Oscar 1.3.1, GAP 4.14.0 and Sage 10.6, on an older computer).
+Here are two example benchmarks (done with Julia 1.11.5,
+[Combinatorics.jl](https://github.com/JuliaMath/Combinatorics.jl) 1.0.3
+and [Combinat.jl](https://github.com/jmichel7/Combinat.jl) 0.1.3).
+On a different computer, GAP and Sage were 2-3 orders of magnitude slower.
 
 ### Permutations
 
@@ -160,17 +166,14 @@ The iterator returned by
 [`permutations`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.permutations)
  yields each permutation as a `SmallVector{16,Int8}`.
 ```julia
-julia> n = 9; @b sum(p[1] for p in Combinatorics.permutations($n))
-2.987 ms   # 1.247 ms with @inbounds(p[1])
+julia> n = 9; @b sum(p[1] for p in Combinatorics.permutations($n))  # SmallCollections.jl
+1.909 ms  # 688.006 μs with @inbounds(p[1])
 
-julia> n = 9; @b sum(p(1) for p in symmetric_group($n))   # Oscar (using GAP)
-756.784 ms (931061 allocs: 28.470 MiB, without a warmup)
+julia> n = 9; @b sum(p[1] for p in permutations(1:$n))  # Combinatorics.jl
+14.535 s (725763 allocs: 44.297 MiB, 0.04% gc time, without a warmup)
 
-gap> Sum(SymmetricGroup(9), p -> 1^p);; time;
-764  # milliseconds
-
-sage: timeit('sum(p[0] for p in Permutations(9))')
-5 loops, best of 3: 3.13 s per loop
+julia> n = 9; @b sum(p[1] for p in Combinat.Permutations($n))  # Combinat.jl
+12.473 ms (725762 allocs: 44.297 MiB, 5.38% gc time)
 ```
 
 ### Subsets
@@ -180,12 +183,12 @@ The iterator returned by
 [`subsets`](https://matthias314.github.io/SmallCollections.jl/stable/combinatorics/#SmallCollections.Combinatorics.subsets-Tuple{Integer,%20Integer})
 yields each subset as a `SmallBitSet`.
 ```julia
-julia> n = 20; k = 10; @b sum(sum, Combinatorics.subsets($n, $k))
-2.830 ms
+julia> n = 20; k = 10; @b sum(sum, Combinatorics.subsets($n, $k))  # SmallCollections.jl
+1.121 ms
 
-gap> s := 0;; for c in IteratorOfCombinations([1..20], 10) do s := s + Sum(c); od; time;
-317  # milliseconds
+julia> n = 20; k = 10; @b sum(sum, combinations(1:$n, $k))  # Combinatorics.jl
+9.484 ms (369514 allocs: 25.373 MiB, 7.09% gc time)
 
-sage: timeit('sum(sum(c) for c in Subsets(20, 10))')
-5 loops, best of 3: 17.9 s per loop   # 11 seconds with Sage 9.4
+julia> n = 20; k = 10; @b sum(sum, Combinat.Combinations(1:$n, $k))  # Combinat.jl
+9.605 ms (369521 allocs: 25.373 MiB, 7.04% gc time)
 ```
