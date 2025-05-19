@@ -74,13 +74,13 @@ mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
     MutableFixedVector{N,T}(::UndefInitializer) where {N,T} = new{N,T}()
 end
 
-function FixedVector{N,T}(v::AbstractVector) where {N,T}
+@inline function FixedVector{N,T}(v::AbstractVector) where {N,T}
     length(v) == N || error("argument is not of length ", N)
     t = ntuple(i -> convert(T, @inbounds v[i+firstindex(v)-1]), Val(N))
     FixedVector{N,T}(t)
 end
 
-function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
+@inline function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
     w = FixedVector{N,T}(v)
     MutableFixedVector{N,T}(w.t)
 end
@@ -146,7 +146,7 @@ function MutableFixedVector{N,T}(itr) where {N,T}
     v
 end
 
-function (::Type{V})(t) where {N,V<:AbstractFixedVector{N}}
+@inline function (::Type{V})(t) where {N,V<:AbstractFixedVector{N}}
     if Base.IteratorEltype(t) isa Base.HasEltype
         T = element_type(t)
         @inline V{T}(t)
@@ -155,7 +155,7 @@ function (::Type{V})(t) where {N,V<:AbstractFixedVector{N}}
     end
 end
 
-function (::Type{V})(t) where {V<:AbstractFixedVector}
+@inline function (::Type{V})(t) where {V<:AbstractFixedVector}
     if haslength(t)
         N = length(t)
         V{N}(t)
