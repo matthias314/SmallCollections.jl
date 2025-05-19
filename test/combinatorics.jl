@@ -3,6 +3,35 @@ using SmallCollections: bitsize
 
 unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 
+@testset "compositions" begin
+    using .Combinatorics: CompN, CompEltype
+
+    for n in [-1, 0, 8], k in [-1, 0, 4, 8, 9, CompN+1]
+        if n < 0 || k < 0 || k > CompN
+            @test_throws Exception weak_compositions(n, k)
+            @test_throws Exception compositions(n, k)
+            continue
+        end
+        @test_inferred eltype(typeof(weak_compositions(n, k))) SmallVector{CompN,CompEltype}
+        v = @inferred collect(weak_compositions(n, k))
+        @test_inferred eltype(typeof(compositions(n, k))) SmallVector{CompN,CompEltype}
+        w = @inferred collect(compositions(n, k))
+        if k == n == 0
+            @test isempty(only(v))
+        else
+            @test length(v) == length(weak_compositions(n, k)) == binomial(n+k-1, k-1)
+            @test all(c -> all(>=(0), c) && length(c) == k, v)
+            @test all(c -> sum(c) == n, v)
+            @test allunique(v)
+
+            @test length(w) == length(compositions(n, k)) == (k <= n ? binomial(n-1, k-1) : 0)
+            @test all(c -> all(>(0), c) && length(c) == k, w)
+            @test all(c -> sum(c) == n, w)
+            @test allunique(w)
+        end
+    end
+end
+
 @testset "subsets(n,k)" begin
     for n in [-1, 0, 1, 2, 10], k in [-1, 0, 1, n-1, n, n+1]
         if n < 0
