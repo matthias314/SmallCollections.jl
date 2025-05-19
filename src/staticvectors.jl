@@ -5,7 +5,7 @@
 using Base: BitInteger, @assume_effects
 import Base: setindex
 
-export setindex
+export setindex, rotate, rotate!
 
 """
     setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T} -> FixedVector{N,T}
@@ -107,6 +107,125 @@ end
         end
     end
     Values{N,T}(t), v[i]
+end
+
+"""
+    rotate(v::AbstractFixedVector{N,T}, k::Integer) -> FixedVector{N,T}
+    rotate(v::AbstractFixedVector{N,T}, ::Val{k}) where k -> FixedVector{N,T}
+
+Rotate `v` by `k` positions towards higher indices and return the result.
+A negative value of `k` corresponds to a rotation towards lower indices.
+
+See also [`rotate!`](@ref rotate!(::MutableFixedVector, ::Union{Integer,Val}).
+
+# Examples
+```jldoctest
+julia> v = FixedVector{4}(1:4);
+
+julia> rotate(v, 1)
+4-element FixedVector{4, Int64}:
+ 4
+ 1
+ 2
+ 3
+
+julia> rotate(v, Val(-1))
+4-element FixedVector{4, Int64}:
+ 2
+ 3
+ 4
+ 1
+```
+"""
+rotate(::AbstractFixedVector, ::Union{Integer,Val})
+
+@inline function rotate(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
+    t = ntuple(i -> v[mod(i-k, 1:N)], Val(N))
+    FixedVector{N,T}(t)
+end
+
+rotate(v::AbstractFixedVector, ::Val{k}) where k = rotate(v, k)
+
+@generated function rotate(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: Union{Base.BitInteger,Bool,Char,Enum}, K}
+    b = sizeof(T)
+    m = 8*b  # for Bool we need 8, not 1
+    s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
+    ir = VERSION > v"1.12-" ? """
+        %a = load <$N x i$m>, ptr %0, align $b
+        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
+        ret <$N x i$m> %b
+    """ : """
+        %p = inttoptr i64 %0 to <$N x i$m>*
+        %a = load <$N x i$m>, <$N x i$m>* %p, align $b
+        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
+        ret <$N x i$m> %b
+    """
+    quote
+        b = Base.llvmcall($ir, NTuple{N,VecElement{T}}, Tuple{Ptr{T}}, pointer(v))
+        FixedVector{N,T}(unvec(b))
+    end
+end
+
+"""
+    rotate!(v::MutableFixedVector{N,T}, k::Integer) -> v
+    rotate!(v::MutableFixedVector{N,T}, ::Val{k}) where k -> v
+
+Rotate `v` in-place by `k` positions towards higher indices and return `v`.
+A negative value of `k` corresponds to a rotation towards lower indices.
+
+See also [`rotate`](@ref rotate(::AbstractFixedVector, ::Union{Integer,Val}).
+
+# Examples
+```jldoctest
+julia> v = MutableFixedVector{4}(1:4);
+
+julia> rotate!(v, 1)
+4-element MutableFixedVector{4, Int64}:
+ 4
+ 1
+ 2
+ 3
+
+julia> rotate!(v, Val(-1))  # undo previous step
+4-element MutableFixedVector{4, Int64}:
+ 1
+ 2
+ 3
+ 4
+```
+"""
+rotate!(::MutableFixedVector, ::Union{Integer,Val})
+
+@inline function rotate!(v::MutableFixedVector, k::Integer)
+    v .= rotate(v, k)
+end
+
+rotate!(v::MutableFixedVector, ::Val{k}) where k = rotate!(v, k)
+
+function rotate!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: Union{Base.HWReal,Bool,Char,Enum}, K}
+    vec_rotate!(pointer(v), Val(N), Val(K))
+    v
+end
+
+@inline @generated function vec_rotate!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: Union{Base.HWReal,Bool,Char,Enum}, K}
+    b = sizeof(T)
+    m = 8*b  # for Bool we need 8, not 1
+    s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
+    ir = VERSION > v"1.12-" ? """
+        %a = load <$N x i$m>, ptr %0, align $b
+        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
+        store <$N x i$m> %b, ptr %0, align $b
+        ret void
+    """ : """
+        %p = inttoptr i64 %0 to <$N x i$m>*
+        %a = load <$N x i$m>, <$N x i$m>* %p, align $b
+        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
+        store <$N x i$m> %b, <$N x i$m>* %p, align $b
+        ret void
+    """
+    quote
+        Base.llvmcall($ir, Cvoid, Tuple{Ptr{T}}, ptr)
+    end
 end
 
 """
