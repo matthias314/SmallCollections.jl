@@ -38,6 +38,9 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
             @test unique(map(length, ssv)) == [k]
         end
     end
+
+    @test_inferred eltype(typeof(subsets(5, 2))) SmallBitSet{UInt}
+    @test_inferred eltype(typeof(subsets(SmallBitSet{UInt8}(1:5), 2))) SmallBitSet{UInt8}
 end
 
 @testset "subsets(n)" begin
@@ -111,9 +114,12 @@ end
 
     # check that unsafe_lshr in iterate for SetCompositions is safe
     @test collect(subsets(bitsize(UInt), 1)) == [SmallBitSet((k,)) for k in 1:bitsize(UInt)]
+
+    @test_inferred eltype(typeof(setcompositions_parity(3, 2))) Tuple{Tuple{SmallBitSet{UInt}, SmallBitSet{UInt}}, Bool}
+    @test_inferred eltype(typeof(setcompositions_parity(SmallBitSet{UInt8}(1:5), 3, 2))) Tuple{Tuple{SmallBitSet{UInt8}, SmallBitSet{UInt8}}, Bool}
 end
 
-@testset "compositions" begin
+@testset "setcompositions" begin
     function test_compositions(ks)
         N = length(ks)
         sh = @inferred setcompositions(ks...)
@@ -150,4 +156,7 @@ end
         @test_throws Exception setcompositions(SmallBitSet{U}(2:2:6), 3, 4)
         @test (setcompositions(SmallBitSet{U}(1:bitsize(U)), bitsize(U)-2, 2); true)
     end
+
+    @test_inferred eltype(typeof(setcompositions(3, 2))) Tuple{SmallBitSet{UInt}, SmallBitSet{UInt}}
+    @test_inferred eltype(typeof(setcompositions(SmallBitSet{UInt8}(1:5), 3, 2))) Tuple{SmallBitSet{UInt8}, SmallBitSet{UInt8}}
 end

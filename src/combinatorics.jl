@@ -63,8 +63,8 @@ function setcompositions_parity(s::SmallBitSet, ks::Integer...)
     SetCompositions(s, ks)
 end
 
-eltype(sh::SetCompositions{N,Missing}) where N = Tuple{NTuple{N,SmallBitSet{UInt}}, Bool}
-eltype(sh::SetCompositions{N,S}) where {N, S <: SmallBitSet} = Tuple{NTuple{N,S}, Bool}
+eltype(::Type{SetCompositions{N,Missing}}) where N = Tuple{NTuple{N,SmallBitSet{UInt}}, Bool}
+eltype(::Type{SetCompositions{N,S}}) where {N, S <: SmallBitSet} = Tuple{NTuple{N,S}, Bool}
 
 length(sh::SetCompositions{0}) = 1
 
@@ -225,7 +225,7 @@ julia> collect(setcompositions(SmallBitSet()))
 """
 setcompositions(args...) = Generator(first, setcompositions_parity(args...))
 
-eltype(g::Generator{<:SetCompositions, typeof(first)}) = fieldtype(eltype(g.iter), 1)
+eltype(g::Type{Generator{I, typeof(first)}}) where I <: SetCompositions = fieldtype(eltype(I), 1)
 
 struct Subsets{T,S<:SmallBitSet} <: AbstractVector{S}
     set::T
@@ -331,8 +331,8 @@ function subsets(s::SmallBitSet, k::Integer)
     Generator(first∘first, SetCompositions(s, (k, length(s)-k)))
 end
 
-eltype(::Generator{SetCompositions{2,Missing}, typeof(first∘first)}) = SmallBitSet{UInt}
-eltype(::Generator{SetCompositions{2,S}, typeof(first∘first)}) where S <: SmallBitSet = S
+eltype(::Type{Generator{SetCompositions{2,Missing}, typeof(first∘first)}}) = SmallBitSet{UInt}
+eltype(::Type{Generator{SetCompositions{2,S}, typeof(first∘first)}}) where S <: SmallBitSet = S
 
 #
 # permutations
