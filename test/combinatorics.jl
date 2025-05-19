@@ -3,6 +3,24 @@ using SmallCollections: bitsize
 
 unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 
+@testset "partitions" begin
+    using .Combinatorics: PartN, PartEltype
+
+    for n in [-1, 0, 8, PartN+1]
+        if n < 0 || n > PartN
+            @test_throws Exception partitions(n)
+            continue
+        end
+        @test_inferred eltype(typeof(partitions(n))) SmallVector{PartN,PartEltype}
+        v = @inferred collect(partitions(n))
+        @test all(p -> issorted(p; rev = true) && all(>(0), p), v)
+        @test all(p -> sum(p; init = 0) == n, v)
+        @test allunique(v)
+        n == 0 && @test length(v) == 1
+        n == 8 && @test length(v) == 22
+    end
+end
+
 @testset "compositions" begin
     using .Combinatorics: CompN, CompEltype
 

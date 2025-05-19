@@ -14,6 +14,88 @@ using SmallCollections: bitsize, padtail, unsafe_shl, unsafe_lshr,
 using Base: Fix2, Generator
 
 #
+# partitions
+#
+
+export partitions
+
+import Base: IteratorSize, eltype, iterate
+
+const PartN = 64
+
+const PartEltype = Int8
+
+struct Partitions
+    n::Int
+end
+
+"""
+    partitions(n::Integer)
+
+Return an iterator over the partitions of `n`.
+A partition of `n` is a weakly decreasing sequence of positive integers that add up to `n`.
+Each partition is of type `SmallVector{$PartN,$PartEltype}`, but this may change in the future.
+
+# Examples
+```jldoctest
+julia> partitions(3) |> collect
+3-element Vector{SmallVector{64, Int8}}:
+ [3]
+ [2, 1]
+ [1, 1, 1]
+
+julia> partitions(0) |> collect
+1-element Vector{SmallVector{64, Int8}}:
+ 0-element SmallVector{64, Int8}
+```
+"""
+function partitions(n::Integer)
+    0 <= n <= PartN || error("argument must be between 0 and $(PartN)")
+    Partitions(n)
+end
+
+IteratorSize(::Type{Partitions}) = Base.SizeUnknown()
+
+eltype(::Type{Partitions}) = SmallVector{PartN,PartEltype}
+
+@inline function iterate(p::Partitions)
+    v = MutableSmallVector{PartN,PartEltype}()
+    # creating two separate MutableSmallVector below would lead to allocations
+    if iszero(p.n)
+        SmallVector(v), (v, 0, PartEltype(0))
+    else
+        @inbounds push!(v, p.n % PartEltype)
+        SmallVector(v), (v, 1-isone(p.n), PartEltype(isone(p.n)))
+    end
+end
+
+@inline function iterate(p::Partitions, (v, i, s)::Tuple{MutableSmallVector,Int,PartEltype})
+    @inbounds if i == 0
+        nothing
+    elseif v[i] == 2
+        v[i] = 1
+        push!(v, one(PartEltype))
+        SmallVector(v), (v, i-1, s+PartEltype(2))
+    else
+        c = (v[i] -= one(PartEltype))
+        s += one(PartEltype)
+        while s >= c
+            i += 1
+            v[i] = c
+            s -= c
+        end
+        if s == 0
+            resize!(v, i)
+            SmallVector(v), (v, length(v), zero(PartEltype))
+        else
+            v[i+1] = s
+            resize!(v, i+1)
+            SmallVector(v), (v, length(v)-isone(s), PartEltype(isone(s)))
+        end
+    end
+end
+
+#
 # compositions
 #
 

@@ -7,6 +7,10 @@ DocTestSetup = :(using SmallCollections)
 ```@docs
 Combinatorics
 ```
+# Partitions
+```@docs
+partitions
+```
 
 # Compositions
 ```@docs
