@@ -347,7 +347,7 @@ struct Permutations
 end
 
 const PermN = 16
-const PermElType = Int8
+const PermEltype = Int8
 
 """
     permutations(n::Integer)
@@ -356,7 +356,7 @@ Return an iterator that yields all permutations of the integers from `1` to `n`.
 
 The argument `n` must be between `0` and `$PermN`.
 The identity permutation is returned first.
-Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
+Each permutation is of type `SmallVector{$PermN,$PermEltype}`, but this may change in the future.
 
 See also [`permutations_parity_transposition`](@ref).
 
@@ -392,7 +392,7 @@ The argument `n` must be between `0` and `$PermN`.
 The iterator returns the identity permutation first;
 in this case the transposition pair is set to `(0, 0)`.
 The true transpositions `(i, j)` satisfy `i < j`.
-Each permutation is of type `SmallVector{$PermN,$PermElType}`, but this may change in the future.
+Each permutation is of type `SmallVector{$PermN,$PermEltype}`, but this may change in the future.
 
 See also [`permutations`](@ref).
 
@@ -419,7 +419,7 @@ end
 
 length(perm::Permutations) = factorial(perm.n)
 
-eltype(::Type{Permutations}) = Tuple{SmallVector{PermN,PermElType},Int,NTuple{2,Int}}
+eltype(::Type{Permutations}) = Tuple{SmallVector{PermN,PermEltype},Int,NTuple{2,Int}}
 
 # we use Heap's algorithm to iterate over all permutations
 
@@ -429,7 +429,7 @@ eltype(::Type{Permutations}) = Tuple{SmallVector{PermN,PermElType},Int,NTuple{2,
 end
 
 @inline function iterate(perm::Permutations)
-    p = MutableSmallVector{PermN,PermElType}(1:perm.n)
+    p = MutableSmallVector{PermN,PermEltype}(1:perm.n)
     (SmallVector(p), false, (0, 0)), (p, zero(p), false)
 end
 
@@ -438,7 +438,7 @@ end
     @inbounds while i < perm.n
         if c[i] < i
             t = iseven(i) ? (swap!(p, 1, i+1); (1, i+1)) : (swap!(p, c[i]+1, i+1); (c[i]+1, i+1))
-            c[i] += one(PermElType)
+            c[i] += one(PermEltype)
             return (SmallVector(p), !s, t), (p, c, !s)
         else
             c[i] = 0
