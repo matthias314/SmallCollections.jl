@@ -8,6 +8,12 @@ DocTestSetup = :(using SmallCollections)
 Combinatorics
 ```
 
+# Compositions
+```@docs
+compositions
+weak_compositions
+```
+
 ## Subsets and set compositions
 
 When used with a `SmallBitSet` as first argument, the following functions internally use
