@@ -9,9 +9,11 @@ module Combinatorics
 
 using ..SmallCollections
 using SmallCollections: bitsize, padtail, unsafe_shl, unsafe_lshr,
-    blsi, blsr, blsmsk, pdep, _SmallBitSet
+    blsi, blsr, blsmsk, pdep
 
 using Base: Fix2, Generator
+
+_SmallBitSet(mask::U) where U <: Unsigned = convert(SmallBitSet{U}, mask)
 
 #
 # partitions
