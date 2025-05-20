@@ -64,14 +64,41 @@ See also [`$(@__MODULE__).bitsize`](@ref), [`$(@__MODULE__).AbstractBitInteger`]
     end
 end
 
+"""
+    $(@__MODULE__).blsi(x::T) where T <: Integer -> T
+
+Extract the lowest set bit of `x`.
+For hardware integers, this compiles to a single `BLSI` instruction from the
+[BMI1](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI1_(Bit_Manipulation_Instruction_Set_1))
+instruction set on `x86_64` and `i686` machines.
+
+See also [`$(@__MODULE__).blsr`](@ref), [`$(@__MODULE__).blsmsk`](@ref).
+"""
 blsi(x::Integer) = x & -x
-# extract lowest set bit, compiles to single blsi instruction
 
+"""
+    $(@__MODULE__).blsr(x::T) where T <: Integer -> T
+
+Reset the lowest set bit of `x`.
+For hardware integers, this compiles to a single `BLSR` instruction from the
+[BMI1](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI1_(Bit_Manipulation_Instruction_Set_1))
+instruction set on `x86_64` and `i686` machines.
+
+See also [`$(@__MODULE__).blsi`](@ref), [`$(@__MODULE__).blsmsk`](@ref).
+"""
 blsr(x::Integer) = x & (x-one(x))
-# reset lowest set bit, compiles to single blsr instruction
 
+"""
+    $(@__MODULE__).blsmsk(x::T) where T <: Integer -> T
+
+Get the bit mask up to lowest set bit of `x`.
+For hardware integers, this compiles to a single `BLSMSK` instruction from the
+[BMI1](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI1_(Bit_Manipulation_Instruction_Set_1))
+instruction set on `x86_64` and `i686` machines.
+
+See also [`$(@__MODULE__).blsi`](@ref), [`$(@__MODULE__).blsr`](@ref).
+"""
 blsmsk(x::Integer) = x ⊻ (x-one(x))
-# get mask up to lowest set bit, compiles to single blsmsk instruction
 
 """
     $(@__MODULE__).pdep(x::Unsigned, y::U) where U <: Unsigned -> U

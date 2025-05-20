@@ -25,5 +25,8 @@ SmallCollections.AbstractBitInteger
 SmallCollections.top_set_bit
 SmallCollections.unsafe_shl
 SmallCollections.unsafe_lshr
+SmallCollections.blsi
+SmallCollections.blsr
+SmallCollections.blsmsk
 SmallCollections.pdep
 ```
