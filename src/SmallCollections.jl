@@ -107,8 +107,9 @@ include("smallset.jl")
 include("combinatorics.jl")
 
 if VERSION > v"1.11-alpha"
-    eval(Expr(:public, :default, :bitsize, :FixedVectorStyle, :SmallVectorStyle,
-        :isfasttype, :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle))
+    eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,
+        :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle,
+        :bitsize, :unsafe_shl, :unsafe_lshr, :blsi, :blsr, :blsmsk, :pdep))
 end
 
 end
