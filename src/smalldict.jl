@@ -3,7 +3,8 @@
 #
 
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
-    setindex, push, delete, pop, invget
+    setindex, push, delete, pop, invget, getmin, getmax,
+    popmin, popmax, popmin!, popmax!
 
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
@@ -241,6 +242,22 @@ function invget(d::AbstractSmallDict{N,K,V}, val, default) where {N,K,V}
     i === nothing ? default : @inbounds d.keys[i]
 end
 
+@inline unsafe_get(d::AbstractSmallDict, i::Int) = @inbounds d.keys[i] => d.vals[i]
+
+"""
+    getmin(d::AbstractSmallDict) -> Pair{<:K,<:V}
+    getmax(d::AbstractSmallDict) -> Pair{<:K,<:V}
+
+Return a key-values pair that realizes the minimum (or maximum) among the values
+of the non-empty dictionary `d`.
+
+See also [`popmin`](@ref), [`popmin!`](@ref).
+"""
+getmin, getmax
+
+@propagate_inbounds getmin(d::AbstractSmallDict) = unsafe_get(d, last(findmin(d.vals)))
+@propagate_inbounds getmax(d::AbstractSmallDict) = unsafe_get(d, last(findmax(d.vals)))
+
 """
     push(d::AbstractSmallDict{N,K,V}, key1 => val1, key2 => val2, ...) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
 
@@ -364,6 +381,21 @@ function pop(d::AbstractSmallDict, key, default)
     e, last(kv)
 end
 
+"""
+    popmin(d::AbstractSmallDict) -> Tuple{SmallDict{N,K,V}, Pair{<:K,<:V}}
+    popmax(d::AbstractSmallDict) -> Tuple{SmallDict{N,K,V}, Pair{<:K,<:V}}
+
+Find a key-values pair that realizes the minimum (or maximum) among the values
+of the non-empty dictionary `d`. Return the pair together with a dictionary
+obtained from `d` by removing that pair.
+
+See also [`getmin`](@ref), [`popmin!`](@ref).
+"""
+popmin, popmax
+
+@propagate_inbounds popmin(d::AbstractSmallDict) = unsafe_pop(d, last(findmin(d.vals)))
+@propagate_inbounds popmax(d::AbstractSmallDict) = unsafe_pop(d, last(findmax(d.vals)))
+
 function filter(f, d::AbstractSmallDict{N,K,V}) where {N,K,V}
     if isbitstype(Tuple{K,V})
         e = MutableSmallDict(d)
@@ -454,6 +486,20 @@ function pop!(d::MutableSmallDict, key, default)
     i === nothing && return default
     last(unsafe_pop!(d, i))
 end
+
+"""
+    popmin!(d::AbstractSmallDict) -> Pair{<:K,<:V}
+    popmax!(d::AbstractSmallDict) -> Pair{<:K,<:V}
+
+Find a key-values pair that realizes the minimum (or maximum) among the values
+of the non-empty dictionary `d`. Return that pair and delete it from `d`.
+
+See also [`getmin`](@ref), [`popmin`](@ref).
+"""
+popmin!, popmax!
+
+@propagate_inbounds popmin!(d::MutableSmallDict) = unsafe_pop!(d, last(findmin(d.vals)))
+@propagate_inbounds popmax!(d::MutableSmallDict) = unsafe_pop!(d, last(findmax(d.vals)))
 
 function filter!(f, d::MutableSmallDict{N,K,V}) where {N,K,V}
     j = 0

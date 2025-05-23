@@ -190,6 +190,41 @@ end
     end
 end
 
+@testset "SmallDict getmin/popmin" begin
+    N = 16
+    for D in DS, K in (Int8, UInt16), V in (UInt8, Int32), m in (0, 1, N-2)
+        d = D{N,K,V}(rand(K) => rand(V) for _ in 1:m)
+        w = collect(d)
+        if m == 0
+            @test_throws Exception getmin(d)
+            @test_throws Exception getmax(d)
+            @test_throws Exception popmin(d)
+            @test_throws Exception popmax(d)
+            D <: MutableSmallDict || continue
+            @test_throws Exception popmin!(d)
+            @test_throws Exception popmax!(d)
+        else
+            v1 = minimum(last, w)
+            k1 = invget(d, v1)
+            kv1 = k1 => v1
+            v2 = maximum(last, w)
+            k2 = invget(d, v2)
+            kv2 = k2 => v2
+            @test_inferred getmin(d) kv1
+            @test_inferred getmax(d) kv2
+            @test_inferred popmin(d) (first(pop(d, k1)), kv1)
+            @test_inferred popmax(d) (first(pop(d, k2)), kv2)
+            D <: MutableSmallDict || continue
+            e = copy(d)
+            @test_inferred popmin!(e) kv1
+            @test e == first(pop(d, k1))
+            e = copy(d)
+            @test_inferred popmax!(e) kv2
+            @test e == first(pop(d, k2))
+        end
+    end
+end
+
 @testset "SmallDict filter" begin
     for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         (isbitstype(K) && isbitstype(V)) || continue

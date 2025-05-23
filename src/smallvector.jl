@@ -440,13 +440,13 @@ function findlast(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapSty
 end
 
 @inline function findmin(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
-    @boundscheck isempty(v) && error("vector must not be empty")
+    @boundscheck isempty(v) && error("argument must not be empty")
     m = minimum(v)
     m, findfirst(==(m), v.b)::Int
 end
 
 @inline function findmax(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
-    @boundscheck isempty(v) && error("vector must not be empty")
+    @boundscheck isempty(v) && error("argument must not be empty")
     m = maximum(v)
     m, findfirst(==(m), v.b)::Int
 end
