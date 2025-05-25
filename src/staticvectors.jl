@@ -42,12 +42,12 @@ function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
     Values{N,T}(t)
 end
 
-@generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: Union{Base.HWReal, Bool, Char}}
+@generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: HWType}
     M = if T == Float32
         "float"
     elseif T == Float64
         "double"
-    else # Bool, BitInteger or Char
+    else # Bool, BitInteger, Char, Enum
         string('i', 8*sizeof(T))
     end
     L = bitsize(SmallLength)
@@ -202,12 +202,12 @@ end
 
 rotate!(v::MutableFixedVector, ::Val{k}) where k = rotate!(v, k)
 
-function rotate!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: Union{Base.HWReal,Bool,Char,Enum}, K}
+function rotate!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: HWType, K}
     vec_rotate!(pointer(v), Val(N), Val(K))
     v
 end
 
-@inline @generated function vec_rotate!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: Union{Base.HWReal,Bool,Char,Enum}, K}
+@inline @generated function vec_rotate!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: HWType, K}
     b = sizeof(T)
     m = 8*b  # for Bool we need 8, not 1
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")

@@ -14,7 +14,7 @@ fast components.
 See `Base.HWReal`.
 """
 isfasttype(::Type) = false
-isfasttype(::Type{<:Union{Base.HWReal, Bool, Char, Enum}}) = true
+isfasttype(::Type{<:HWType}) = true
 
 isfasttype(::Type{Complex{T}}) where T = isfasttype(T)
 isfasttype(::Type{Pair{K,V}}) where {K,V} = isfasttype(K) && isfasttype(V)

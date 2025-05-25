@@ -40,6 +40,8 @@ and `BitIntegers.AbstractBitUnsigned`.
 """
 const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigned}
 
+const HWType = Union{Base.HWReal, Bool, Char, Enum}
+
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
