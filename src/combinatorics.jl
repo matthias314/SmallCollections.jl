@@ -260,7 +260,7 @@ See also [`setcompositions`](@ref), [`setcomposition_parity`](@ref).
 
 # Examples
 ```jldoctest
-julia> collect(setcompositions_parity(SmallBitSet([2, 4, 5]), 1, 2))
+julia> setcompositions_parity(SmallBitSet([2, 4, 5]), 1, 2) |> collect
 3-element Vector{Tuple{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}}, Bool}}:
  ((SmallBitSet([2]), SmallBitSet([4, 5])), 0)
  ((SmallBitSet([4]), SmallBitSet([2, 5])), 1)
@@ -415,13 +415,13 @@ See also [`subsets`](@ref subsets(::SmallBitSet, ::Integer)),
 
 # Examples
 ```jldoctest
-julia> collect(setcompositions(SmallBitSet([2, 4, 5]), 1, 2))
+julia> setcompositions(SmallBitSet([2, 4, 5]), 1, 2) |> collect
 3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([2]), SmallBitSet([4, 5]))
  (SmallBitSet([4]), SmallBitSet([2, 5]))
  (SmallBitSet([5]), SmallBitSet([2, 4]))
 
-julia> collect(setcompositions(1, 1, 1))
+julia> setcompositions(1, 1, 1) |> collect
 6-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([1]), SmallBitSet([2]), SmallBitSet([3]))
  (SmallBitSet([2]), SmallBitSet([1]), SmallBitSet([3]))
@@ -430,13 +430,13 @@ julia> collect(setcompositions(1, 1, 1))
  (SmallBitSet([2]), SmallBitSet([3]), SmallBitSet([1]))
  (SmallBitSet([3]), SmallBitSet([2]), SmallBitSet([1]))
 
-julia> collect(setcompositions(SmallBitSet([2, 4, 5]), 1, 0, 2))
+julia> setcompositions(SmallBitSet([2, 4, 5]), 1, 0, 2) |> collect
 3-element Vector{Tuple{SmallBitSet{UInt64}, SmallBitSet{UInt64}, SmallBitSet{UInt64}}}:
  (SmallBitSet([2]), SmallBitSet([]), SmallBitSet([4, 5]))
  (SmallBitSet([4]), SmallBitSet([]), SmallBitSet([2, 5]))
  (SmallBitSet([5]), SmallBitSet([]), SmallBitSet([2, 4]))
 
-julia> collect(setcompositions(SmallBitSet()))
+julia> setcompositions(SmallBitSet()) |> collect
 1-element Vector{Tuple{}}:
  ()
 ```
@@ -462,14 +462,14 @@ See also [`subsets(::Integer, ::Integer)`](@ref).
 
 # Examples
 ```jldoctest
-julia> collect(subsets(SmallBitSet{UInt8}([3, 5])))
+julia> subsets(SmallBitSet{UInt8}([3, 5])) |> collect
 4-element Vector{SmallBitSet{UInt8}}:
  SmallBitSet([])
  SmallBitSet([3])
  SmallBitSet([5])
  SmallBitSet([3, 5])
 
-julia> collect(subsets(2))
+julia> subsets(2) |> collect
 4-element Vector{SmallBitSet{UInt64}}:
  SmallBitSet([])
  SmallBitSet([1])
@@ -523,20 +523,20 @@ See also [`subsets(::Integer)`](@ref), [`setcompositions_parity`](@ref setcompos
 
 # Example
 ```jldoctest
-julia> collect(subsets(SmallBitSet{UInt8}(2:2:8), 3))
+julia> subsets(SmallBitSet{UInt8}(2:2:8), 3) |> collect
 4-element Vector{SmallBitSet{UInt8}}:
  SmallBitSet([2, 4, 6])
  SmallBitSet([2, 4, 8])
  SmallBitSet([2, 6, 8])
  SmallBitSet([4, 6, 8])
 
-julia> collect(subsets(3, 2))
+julia> subsets(3, 2) |> collect
 3-element Vector{SmallBitSet{UInt64}}:
  SmallBitSet([1, 2])
  SmallBitSet([1, 3])
  SmallBitSet([2, 3])
 
-julia> collect(subsets(3, 4))
+julia> subsets(3, 4) |> collect
 SmallBitSet{UInt64}[]
 ```
 """
@@ -580,7 +580,7 @@ See also [`permutations_parity_transposition`](@ref).
 
 # Examples
 ```jldoctest
-julia> collect(permutations(3))
+julia> permutations(3) |> collect
 6-element Vector{SmallVector{16, Int8}}:
  [1, 2, 3]
  [2, 1, 3]
@@ -589,7 +589,7 @@ julia> collect(permutations(3))
  [2, 3, 1]
  [3, 2, 1]
 
-julia> collect(permutations(0))
+julia> permutations(0) |> collect
 1-element Vector{SmallVector{16, Int8}}:
  0-element SmallVector{16, Int8}
 ```
@@ -616,7 +616,7 @@ See also [`permutations`](@ref).
 
 # Examples
 ```jldoctest
-julia> collect(permutations_parity_transposition(3))
+julia> permutations_parity_transposition(3) |> collect
 6-element Vector{Tuple{SmallVector{16, Int8}, Int64, Tuple{Int64, Int64}}}:
  ([1, 2, 3], 0, (0, 0))
  ([2, 1, 3], 1, (1, 2))
@@ -625,7 +625,7 @@ julia> collect(permutations_parity_transposition(3))
  ([2, 3, 1], 0, (1, 3))
  ([3, 2, 1], 1, (1, 2))
 
-julia> collect(permutations_parity_transposition(0))
+julia> permutations_parity_transposition(0) |> collect
 1-element Vector{Tuple{SmallVector{16, Int8}, Int64, Tuple{Int64, Int64}}}:
  ([], 0, (0, 0))
 ```
