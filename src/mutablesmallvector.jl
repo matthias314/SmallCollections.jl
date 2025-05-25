@@ -191,6 +191,13 @@ end
 
 @propagate_inbounds popfirst!(v::MutableSmallVector) = popat!(v, 1)
 
+@inline function popfirst!(v::MutableSmallVector{N,T}) where {N, T <: HWType}
+    @boundscheck isempty(v) && error("vector must not be empty")
+    v.n -= 1 % SmallLength
+    vec_rotate!(pointer(v), Val(N), Val(-1))
+    unsafe_swap!(pointer(v, N), default(T))
+end
+
 @inline function popat!(v::MutableSmallVector, i::Integer)
     @boundscheck checkbounds(v, i)
     @inbounds (x = v[i]; deleteat!(v, i))
@@ -226,6 +233,14 @@ end
 
 @propagate_inbounds pushfirst!(v::MutableSmallVector, xs::Vararg{Any,M}) where M =
     prepend!(v, xs)
+
+@inline function pushfirst!(v::MutableSmallVector{N,T}, x) where {N, T <: HWType}
+    @boundscheck v.n < N || error("vector cannot have more than $N elements")
+    v.n += 1 % SmallLength
+    vec_rotate!(pointer(v), Val(N), Val(1))
+    @inbounds v[1] = x
+    v
+end
 
 @inline function prepend!(v::MutableSmallVector{N,T}, w::MemoryVector{T}) where {N,T}
     n = length(v)+length(w)
