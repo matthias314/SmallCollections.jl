@@ -18,7 +18,9 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
 
 @inline function setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
+    i = i % SmallLength
     t = ntuple(Val(N)) do j
+        j = j % SmallLength
         ifelse(j == i, convert(T, x), v[j])
     end
     FixedVector{N,T}(t)
@@ -61,7 +63,9 @@ julia> $(@__MODULE__).padtail(v, 2, -1)
 ```
 """
 function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where {N,T}
+    i = i % SmallLength
     t = ntuple(Val(N)) do j
+        j = j % SmallLength
         ifelse(j <= i, v[j], convert(T, x))
     end
     Values{N,T}(t)
