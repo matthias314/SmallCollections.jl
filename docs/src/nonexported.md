@@ -14,6 +14,7 @@ SmallCollections.isfasttype
 SmallCollections.MapStyle
 SmallCollections.FixedVectorStyle
 SmallCollections.SmallVectorStyle
+SmallCollections.padtail
 ```
 
 ### Bit operations

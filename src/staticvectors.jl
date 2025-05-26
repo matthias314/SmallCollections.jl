@@ -35,7 +35,32 @@ See also [`setindex`](@ref setindex(::AbstractFixedVector, ::Any, ::Integer)).
     v + setindex(zero(v), x, i)
 end
 
-function padtail(v::Values{N,T}, i::Integer, x = default(T)) where {N,T}
+"""
+    $(@__MODULE__).padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where {N,T} -> FixedVector{N,T}
+
+Replace the elements of `v` after the `i`-th position by `x` and return the new vector.
+Providing an out-of-bounds index `i` does not produce an error.
+
+# Example
+```jldoctest
+julia> v = FixedVector{4,Int}(1:4);
+
+julia> $(@__MODULE__).padtail(v, 2)
+4-element FixedVector{4, Int64}:
+ 1
+ 2
+ 0
+ 0
+
+julia> $(@__MODULE__).padtail(v, 2, -1)
+4-element FixedVector{4, Int64}:
+  1
+  2
+ -1
+ -1
+```
+"""
+function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where {N,T}
     t = ntuple(Val(N)) do j
         ifelse(j <= i, v[j], convert(T, x))
     end

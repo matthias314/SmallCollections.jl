@@ -108,7 +108,7 @@ include("combinatorics.jl")
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,
-        :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle,
+        :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle, :padtail,
         :bitsize, :unsafe_shl, :unsafe_lshr, :blsi, :blsr, :blsmsk, :pdep))
 end
 
