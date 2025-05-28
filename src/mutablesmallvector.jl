@@ -1,7 +1,7 @@
 using Base: haslength
 
 import Base:
-    copy, copyto!, resize!, similar,
+    copy, copyto!, unsafe_copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
     append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!
@@ -134,6 +134,16 @@ function copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{M}) where {N,M
     else
         copyto!_merge(w, v)
     end
+end
+
+"""
+    unsafe_copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{N}) where N -> w
+
+Copy the vector `v` to `w`. Both are assumed to have the same length.
+"""
+@inline function unsafe_copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{N}) where N
+    w.b = v.b
+    w
 end
 
 similar(v::AbstractSmallVector{N}, ::Type{T}, (n,)::Tuple{Int}) where {N,T} =

@@ -32,6 +32,7 @@ AbstractSmallVector
 SmallVector
 MutableSmallVector
 empty(::AbstractSmallVector, ::Type)
+unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
 resize
 fasthash(::AbstractSmallVector, ::UInt)
 sum_fast(::AbstractSmallVector)
