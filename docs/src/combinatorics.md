@@ -15,7 +15,8 @@ partitions
 # Compositions
 ```@docs
 compositions
-weak_compositions
+weakcompositions
+weakcompositions_cumsum
 ```
 
 ## Subsets and set compositions
