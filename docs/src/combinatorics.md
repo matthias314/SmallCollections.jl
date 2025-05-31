@@ -15,6 +15,7 @@ partitions
 # Compositions
 ```@docs
 compositions
+compositions_cumsum
 weakcompositions
 weakcompositions_cumsum
 ```

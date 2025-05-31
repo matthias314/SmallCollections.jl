@@ -167,7 +167,7 @@ end
 # compositions
 #
 
-export compositions, weakcompositions, weakcompositions_cumsum
+export compositions, weakcompositions, compositions_cumsum, weakcompositions_cumsum
 
 import Base: IteratorSize, HasLength, eltype, length, iterate
 
@@ -189,7 +189,7 @@ A weak composition of `n` of length `k` is a `k`-tuple of non-negative integers 
 The cumulative sum of such a composition is a vector with `k+1` elements, starting with `0` and ending with `n`.
 Each vector is of type `SmallVector{$CompN,$CompEltype}`, but this may change in the future.
 
-See also [`compositions`](@ref), [`weakcompositions`](@ref).
+See also [`weakcompositions`](@ref), [`compositions_cumsum`](@ref).
 
 # Examples
 ```jldoctest
@@ -249,6 +249,45 @@ end
 end
 
 """
+    compositions_cumsum(n::Integer, k::Integer)
+
+Return an iterator over the cumulative sums of the compositions of `n` of length `k`.
+A composition of `n` of length `k` is a `k`-tuple of positive integers that add up to `n`.
+The cumulative sum of such a composition is a vector with `k+1` elements, starting with `0` and ending with `n`.
+Each vector is of type `SmallVector{$CompN,$CompEltype}`, but this may change in the future.
+
+See also [`compositions`](@ref), [`weakcompositions_cumsum`](@ref).
+
+# Examples
+```jldoctest
+julia> compositions_cumsum(3, 2) |> collect
+2-element Vector{SmallVector{16, Int8}}:
+ [0, 1, 3]
+ [0, 2, 3]
+
+julia> compositions_cumsum(3, 0) |> collect
+SmallVector{16, Int8}[]
+
+julia> compositions_cumsum(0, 0) |> collect
+1-element Vector{SmallVector{16, Int8}}:
+ [0]
+```
+"""
+function compositions_cumsum(n::Integer, k::Integer)
+    (n >= 0 && k >= 0) || error("arguments must be non-negative")
+    k < CompN || error("only compositions into at most $(CompN-1) parts are supported")
+    Generator(Fix2(composition_cumsum, k), WeakCompositions(n-k, k))
+end
+
+@inline function composition_cumsum(v::AbstractSmallVector{N,T}, k) where {N,T}
+    t = ntuple(i -> ifelse(i <= k+1, T(i-1), zero(T)), Val(N))
+    w = SmallVector(FixedVector(t), k+1)
+    @inbounds v+w
+end
+
+eltype(::Type{<:Generator{WeakCompositions, <:Fix2{typeof(composition_cumsum)}}}) = eltype(WeakCompositions)
+
+"""
     weakcompositions(n::Integer, k::Integer)
 
 Return an iterator over the weak compositions of `n` of length `k`.
@@ -291,7 +330,7 @@ Return an iterator over the compositions of `n` of length `k`.
 A composition of `n` of length `k` is a `k`-tuple of positive integers that add up to `n`.
 Each composition is of type `SmallVector{$CompN,$CompEltype}`, but this may change in the future.
 
-See also [`weakcompositions`](@ref).
+See also [`weakcompositions`](@ref), [`compositions_cumsum`](@ref).
 
 # Examples
 ```jldoctest
