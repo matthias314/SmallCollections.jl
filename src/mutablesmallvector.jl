@@ -140,9 +140,25 @@ end
     unsafe_copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{N}) where N -> w
 
 Copy the vector `v` to `w`. Both are assumed to have the same length.
+
+See also [`unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N},NTuple{N}}) where N`](@ref)
 """
 @inline function unsafe_copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{N}) where N
     w.b = v.b
+    w
+end
+
+"""
+    unsafe_copyto!(w::MutableSmallVector{N}, v::Union{AbstractFixedVector{N},NTuple{N}}) where N -> w
+
+Copy the vector or tuple `v` to `w`. The length of `w` is not changed.
+The elements in `v` past the length of `w` are assumed to be default values.
+
+See also [`unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N`](@ref), [`$(@__MODULE__).default`](@ref).
+
+"""
+@inline function unsafe_copyto!(w::MutableSmallVector{N}, v::Union{AbstractFixedVector{N},NTuple{N}}) where N
+    w.b = v
     w
 end
 
