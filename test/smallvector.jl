@@ -324,6 +324,22 @@ end
     end
 end
 
+@testset "SmallVector circshift" begin
+    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        u = rand(T, m)
+        v = V{N,T}(u)
+        w = collect(v)
+        for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
+            @test_inferred circshift(v, k) circshift(w, k) SmallVector(v)
+            @test isvalid(circshift(v, k))
+            V <: MutableSmallVector || continue
+            v2 = copy(v)
+            @test_inferred circshift!(v2, k) circshift(w, k) v2
+            @test v2 == circshift(w, k)
+        end
+    end
+end
+
 using Base.FastMath: mul_fast
 
 @testset "SmallVector add/mul" begin

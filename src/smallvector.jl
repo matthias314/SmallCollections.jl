@@ -8,7 +8,7 @@ import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, findfirst, findlast, findmin, findmax, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
-    count, allequal, allunique
+    count, allequal, allunique, circshift
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -622,6 +622,32 @@ end
 end
 
 prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
+
+function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
+    n = length(v)
+    iszero(n) && return SmallVector(v)
+    m = mod1(k+1, n)
+    iszero(m) && return SmallVector(v)
+    if N <= 16 || !isbitstype(T)
+        t = ntuple(Val(N)) do i
+            i = i % SmallLength
+            @inbounds if i < m % SmallLength
+                v[(i-m+1)+n]
+            elseif i <= n % SmallLength
+                v[i-m+1]
+            else
+                default(T)
+            end
+        end
+        SmallVector{N,T}(t, n)
+    else
+        u = MutableSmallVector(v)
+        w = similar(v)
+        unsafe_copyto!(pointer(w, m), pointer(u, 1), n-(m-1))
+        unsafe_copyto!(pointer(w, 1), pointer(u, n-(m-1)+1), m-1)
+        SmallVector(w)
+    end
+end
 
 support(v::AbstractSmallVector) = support(v.b)
 # here we assume that the padding is via zeros

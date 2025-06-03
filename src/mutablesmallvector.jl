@@ -4,7 +4,8 @@ import Base:
     copy, copyto!, unsafe_copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
-    append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!
+    append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!,
+    circshift!
 
 export duplicate!
 
@@ -305,6 +306,30 @@ end
     GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
     v.n += 1 % SmallLength
     v
+end
+
+function circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
+    n = length(v)
+    iszero(n) && return v
+    m = mod1(k+1, n)
+    iszero(m) && return v
+    if N <= 16
+        w = ntuple(Val(N)) do i
+            i = i % SmallLength
+            @inbounds if i < m % SmallLength
+                v[(i-m+1)+n]
+            elseif i <= n % SmallLength
+                v[i-m+1]
+            else
+                default(T)
+            end
+        end
+    else
+        w = similar(v)
+        unsafe_copyto!(pointer(w, m), pointer(v, 1), n-(m-1))
+        unsafe_copyto!(pointer(w, 1), pointer(v, n-(m-1)+1), m-1)
+    end
+    unsafe_copyto!(v, w)
 end
 
 function filter!(f, v::MutableSmallVector)
