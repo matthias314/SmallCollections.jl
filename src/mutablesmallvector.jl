@@ -205,7 +205,7 @@ end
 @inline function popfirst!(v::MutableSmallVector{N,T}) where {N, T <: HWType}
     @boundscheck isempty(v) && error("vector must not be empty")
     v.n -= 1 % SmallLength
-    vec_rotate!(pointer(v), Val(N), Val(-1))
+    vec_circshift!(pointer(v), Val(N), Val(-1))
     unsafe_swap!(pointer(v, N), default(T))
 end
 
@@ -248,7 +248,7 @@ end
 @inline function pushfirst!(v::MutableSmallVector{N,T}, x) where {N, T <: HWType}
     @boundscheck v.n < N || error("vector cannot have more than $N elements")
     v.n += 1 % SmallLength
-    vec_rotate!(pointer(v), Val(N), Val(1))
+    vec_circshift!(pointer(v), Val(N), Val(1))
     @inbounds v[1] = x
     v
 end

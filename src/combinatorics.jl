@@ -317,7 +317,7 @@ weakcompositions(n::Integer, k::Integer) = Generator(Fix2(weakcomposition, k), w
 
 @inline function weakcomposition(v::AbstractSmallVector{N,T}, k) where {N,T}
     # @inbounds first(popfirst(v)) - first(pop(v))  # too slow
-    b = rotate(v.b, Val(-1)) - v.b
+    b = circshift(v.b, Val(-1)) - v.b
     SmallVector(padtail(b, k), k)
 end
 

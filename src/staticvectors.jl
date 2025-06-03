@@ -3,9 +3,9 @@
 #
 
 using Base: BitInteger, @assume_effects
-import Base: setindex
+import Base: setindex, circshift, circshift!
 
-export setindex, rotate, rotate!
+export setindex
 
 """
     setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T} -> FixedVector{N,T}
@@ -139,26 +139,26 @@ end
 end
 
 """
-    rotate(v::AbstractFixedVector{N,T}, k::Integer) -> FixedVector{N,T}
-    rotate(v::AbstractFixedVector{N,T}, ::Val{k}) where k -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, k::Integer) -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, ::Val{k}) where k -> FixedVector{N,T}
 
 Rotate `v` by `k` positions towards higher indices and return the result.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`rotate!`](@ref rotate!(::MutableFixedVector, ::Union{Integer,Val}).
+See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val}).
 
 # Examples
 ```jldoctest
 julia> v = FixedVector{4}(1:4);
 
-julia> rotate(v, 1)
+julia> circshift(v, 1)
 4-element FixedVector{4, Int64}:
  4
  1
  2
  3
 
-julia> rotate(v, Val(-1))
+julia> circshift(v, Val(-1))
 4-element FixedVector{4, Int64}:
  2
  3
@@ -166,16 +166,16 @@ julia> rotate(v, Val(-1))
  1
 ```
 """
-rotate(::AbstractFixedVector, ::Union{Integer,Val})
+circshift(::AbstractFixedVector, ::Union{Integer,Val})
 
-@inline function rotate(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
-    t = ntuple(i -> v[mod(i-k, 1:N)], Val(N))
+@inline function circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
+    t = ntuple(i -> v[mod1(i-k, N)], Val(N))
     FixedVector{N,T}(t)
 end
 
-rotate(v::AbstractFixedVector, ::Val{k}) where k = rotate(v, k)
+circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
 
-@generated function rotate(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: Union{Base.BitInteger,Bool,Char,Enum}, K}
+@generated function circshift(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: Union{Base.BitInteger,Bool,Char,Enum}, K}
     b = sizeof(T)
     m = 8*b  # for Bool we need 8, not 1
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
@@ -196,26 +196,26 @@ rotate(v::AbstractFixedVector, ::Val{k}) where k = rotate(v, k)
 end
 
 """
-    rotate!(v::MutableFixedVector{N,T}, k::Integer) -> v
-    rotate!(v::MutableFixedVector{N,T}, ::Val{k}) where k -> v
+    circshift!(v::MutableFixedVector{N,T}, k::Integer) -> v
+    circshift!(v::MutableFixedVector{N,T}, ::Val{k}) where k -> v
 
 Rotate `v` in-place by `k` positions towards higher indices and return `v`.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`rotate`](@ref rotate(::AbstractFixedVector, ::Union{Integer,Val}).
+See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val}).
 
 # Examples
 ```jldoctest
 julia> v = MutableFixedVector{4}(1:4);
 
-julia> rotate!(v, 1)
+julia> circshift!(v, 1)
 4-element MutableFixedVector{4, Int64}:
  4
  1
  2
  3
 
-julia> rotate!(v, Val(-1))  # undo previous step
+julia> circshift!(v, Val(-1))  # undo previous step
 4-element MutableFixedVector{4, Int64}:
  1
  2
@@ -223,20 +223,20 @@ julia> rotate!(v, Val(-1))  # undo previous step
  4
 ```
 """
-rotate!(::MutableFixedVector, ::Union{Integer,Val})
+circshift!(::MutableFixedVector, ::Union{Integer,Val})
 
-@inline function rotate!(v::MutableFixedVector, k::Integer)
-    v .= rotate(v, k)
+@inline function circshift!(v::MutableFixedVector, k::Integer)
+    v .= circshift(v, k)
 end
 
-rotate!(v::MutableFixedVector, ::Val{k}) where k = rotate!(v, k)
+circshift!(v::MutableFixedVector, ::Val{k}) where k = circshift!(v, k)
 
-function rotate!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: HWType, K}
-    vec_rotate!(pointer(v), Val(N), Val(K))
+function circshift!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: HWType, K}
+    vec_circshift!(pointer(v), Val(N), Val(K))
     v
 end
 
-@inline @generated function vec_rotate!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: HWType, K}
+@inline @generated function vec_circshift!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: HWType, K}
     b = sizeof(T)
     m = 8*b  # for Bool we need 8, not 1
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
