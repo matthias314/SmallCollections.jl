@@ -92,8 +92,8 @@ end
             resize!(v, i)
             SmallVector(v), (v, length(v), zero(PartEltype))
         else
-            v[i+1] = s
             resize!(v, i+1)
+            v[i+1] = s
             SmallVector(v), (v, length(v)-isone(s), PartEltype(isone(s)))
         end
     end
@@ -152,8 +152,10 @@ end
 
 @inline function iterate(p::Partitions2, v)
     @inbounds begin
-        c = v[1] - one(PartEltype)
-        c <= v[p.k] && return nothing
+        local c
+        if p.k == 0 || (c = v[1] - one(PartEltype); c <= v[p.k])
+            return nothing
+        end
         i = findfirst(<(c), v)::Int
         c = (v[i] += one(PartEltype))
         # unsafe_copyto!(v, map(Fix2(min, c), v; style = RigidStyle()))  # allocates
