@@ -171,6 +171,16 @@ function MapStyle(::Union{typeof.(
     iffasttypes(style, T, types...)
 end
 
+function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Type{Val{N}}) where {T,N}
+    if 1 <= N <= 3
+        iffasttypes(StrictStyle(), T)
+    elseif -2 <= N <= 0
+        iffasttypes(EagerStyle(), T)
+    else
+        LazyStyle()
+    end
+end
+
 MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StrictStyle()
 MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = RigidStyle()
 
