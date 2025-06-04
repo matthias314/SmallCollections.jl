@@ -781,10 +781,12 @@ function smallvector_bc(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
 end
 
 _eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
+_eltype(x::Base.RefValue{T}) where T = T
 _eltype(x::T) where T = T
 
 _getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
 _getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
+_getindex(x::Base.RefValue, i) = x[]
 _getindex(x, i) = x
 
 function smallvector_bc(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
