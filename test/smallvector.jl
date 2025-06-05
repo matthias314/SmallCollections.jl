@@ -564,6 +564,14 @@ end
             w = f.(v, t)
             @test w == f.(u, t) && w isa SmallVector{N,T}
         end
+
+        w = @test_inferred (v .^ 2) (u .^ 2) SmallVector{N,T}
+        @test isvalid(w)
+        @test v .^ -2 == u .^ -2  # TODO: @test_inferred doesn't work
+        @test isvalid(v .^ -2)
+
+        w = @test_inferred (v .* Ref(v)) (u .* Ref(u)) SmallVector{N,SmallVector{N,T}}
+        @test isvalid(w)
     end
 
     for T in (Int16, Float32)
