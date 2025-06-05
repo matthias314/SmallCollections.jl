@@ -159,7 +159,7 @@ end
         i = findfirst(<(c), v)::Int
         c = (v[i] += one(PartEltype))
         # unsafe_copyto!(v, map(Fix2(min, c), v; style = RigidStyle()))  # allocates
-        v.b = min.(v.b, c)
+        unsafe_copyto!(v, min.(fixedvector(v), c))
         v[1] += p.n % PartEltype - sum_fast(v)
     end
     SmallVector(v), v
@@ -319,7 +319,7 @@ weakcompositions(n::Integer, k::Integer) = Generator(Fix2(weakcomposition, k), w
 
 @inline function weakcomposition(v::AbstractSmallVector{N,T}, k) where {N,T}
     # @inbounds first(popfirst(v)) - first(pop(v))  # too slow
-    b = circshift(v.b, Val(-1)) - v.b
+    b = circshift(fixedvector(v), Val(-1)) - fixedvector(v)
     SmallVector(padtail(b, k), k)
 end
 

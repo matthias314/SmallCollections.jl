@@ -2,7 +2,7 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, resize, sum_fast, extrema_fast
+export AbstractSmallVector, SmallVector, fixedvector, resize, sum_fast, extrema_fast
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
@@ -83,6 +83,31 @@ end
 SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(v, n % SmallLength)
 
 capacity(::Type{<:AbstractSmallVector{N}}) where N = N
+
+"""
+    fixedvector(v::AbstractSmallVector{N,T}) where {N,T} -> FixedVector{N,T}
+
+Return the `FixedVector` underlying `v`. It agrees with `v` at all positions up to `length(v)`;
+the remaining elements are equal to `default(T)`.
+
+See also [`$(@__MODULE__).default`](@ref).
+
+# Example
+```jldoctest
+julia> v = SmallVector{4}(1:2)
+2-element SmallVector{4, Int64}:
+ 1
+ 2
+
+julia> fixedvector(v)
+4-element FixedVector{4, Int64}:
+ 1
+ 2
+ 0
+ 0
+```
+"""
+fixedvector(v::AbstractSmallVector) = v.b
 
 for cmp in (:(==), :(eq_fast))
     @eval $cmp(v::AbstractSmallVector, w::AbstractSmallVector) =

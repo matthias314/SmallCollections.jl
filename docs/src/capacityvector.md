@@ -31,6 +31,7 @@ support
 AbstractSmallVector
 SmallVector
 MutableSmallVector
+fixedvector
 empty(::AbstractSmallVector, ::Type)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
 unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N},NTuple{N}}) where N

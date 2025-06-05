@@ -19,6 +19,7 @@ end
             @test v === @inferred copy(v)
         end
         @test_inferred capacity(v) N Int
+        @test_inferred fixedvector(v) [i <= length(v) ? v[i] : default(T) for i in 1:N] FixedVector{N,T}
         @test_inferred v == u true
         @test isvalid(v)
         @test_inferred collect(v) u Vector{T}
