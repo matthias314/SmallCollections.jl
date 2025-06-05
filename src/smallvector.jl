@@ -736,7 +736,7 @@ bc_mapstyle(::AbstractSmallVector) = StrictStyle()
 
 function bc_mapstyle(bc::Broadcasted)
     TT = map(bc_return_type, bc.args)
-    all(isconcretetype, TT) || return LazyStyle()
+    all(T -> isconcretetype(T) || T <: DataType, TT) || return LazyStyle()
     fstyle = MapStyle(bc.f, TT...)
     argstyles = map(bc_mapstyle, bc.args)
     if fstyle isa LazyStyle || any(Fix2(isa, LazyStyle), argstyles)
