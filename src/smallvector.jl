@@ -709,7 +709,7 @@ end
 using Base: Fix2
 
 using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, flatten, materialize
-import Base.Broadcast: BroadcastStyle, instantiate
+import Base.Broadcast: BroadcastStyle
 
 """
     $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
@@ -723,8 +723,6 @@ struct SmallVectorStyle <: AbstractArrayStyle{1} end
 BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
-
-instantiate(bc::Broadcasted{SmallVectorStyle}) = bc
 
 bc_return_type(x) = _eltype(x)
 
@@ -754,13 +752,7 @@ end
 
 function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
-    i = findfirst(Fix2(isa, AbstractSmallVector), bcflat.args)::Int
-    n = length(bcflat.args[i])
-    foreach(bcflat.args) do x
-        x isa Union{Tuple, AbstractSmallVector} && length(x) != n &&
-            error("vectors must have the same length")
-    end
-    @inline smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+    @inline smallvector_bc(bc_mapstyle(bc), size(bc)[1], bcflat.f, bcflat.args...)
 end
 
 _capacity(x) = typemax(Int)
