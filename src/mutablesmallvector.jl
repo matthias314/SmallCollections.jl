@@ -311,7 +311,7 @@ end
 function circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
     n = length(v)
     iszero(n) && return v
-    m = mod1(k+1, n)
+    m = mod1(k+1+n, n)  # we add n because mod1 seems to be faster for positive args
     iszero(m) && return v
     if N <= 16
         w = ntuple(Val(N)) do i

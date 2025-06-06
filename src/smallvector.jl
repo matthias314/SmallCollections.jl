@@ -651,7 +651,7 @@ prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w)
 function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
     n = length(v)
     iszero(n) && return SmallVector(v)
-    m = mod1(k+1, n)
+    m = mod1(k+1+n, n)  # we add n because mod1 seems to be faster for positive args
     iszero(m) && return SmallVector(v)
     if N <= 16 || !isbitstype(T)
         t = ntuple(Val(N)) do i
