@@ -329,14 +329,13 @@ end
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
-        w = collect(v)
         for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
-            @test_inferred circshift(v, k) circshift(w, k) SmallVector(v)
+            @test_inferred circshift(v, k) circshift(u, k) SmallVector(v)
             @test isvalid(circshift(v, k))
             V <: MutableSmallVector || continue
             v2 = copy(v)
-            @test_inferred circshift!(v2, k) circshift(w, k) v2
-            @test v2 == circshift(w, k)
+            v3 = @test_inferred circshift!(v2, k) circshift(u, k) v2
+            @test v3 === v2
         end
     end
 end

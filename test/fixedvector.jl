@@ -131,6 +131,27 @@ end
     end
 end
 
+@testset "FixedVector circshift" begin
+    for N in [1, 4, 7, 16], V in (FixedVector, MutableFixedVector)
+        for T in test_types
+            u = rand(T, N)
+            v = V{N,T}(u)
+            for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
+                @test_inferred circshift(v, k) circshift(u, k) FixedVector{N,T}
+                -N < k < N && @test_inferred circshift(v, Val(k)) circshift(u, k) FixedVector{N,T}
+                (V <: MutableFixedVector && isbitstype(T)) || continue
+                v2 = copy(v)
+                v3 = @test_inferred circshift!(v2, k) circshift(u, k) v2
+                @test v3 === v2
+                -N < k < N || continue
+                v2 = copy(v)
+                v3 = @test_inferred circshift!(v2, Val(k)) circshift(u, k) v2
+                @test v3 === v2
+            end
+        end
+    end
+end
+
 @testset "FixedVector sum/max" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
