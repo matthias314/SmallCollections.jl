@@ -233,6 +233,23 @@ end
     end
 end
 
+@testset "PackedVector circshift" begin
+    for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
+            T in (Int8, UInt8, Int16, UInt16, Int32, UInt32),
+            N in 1:3:bitsize(T)
+        c = bitsize(U)÷N
+        c == 0 && continue
+        for n in 0:4:c
+            w = packed_rand(N, T, n)
+            v = PackedVector{U,N,T}(w)
+            for k in (-2*c, -2*c+1, -3, -1, 0, 1, 7, c+5, 2*c+7)
+                @test_inferred circshift(v, k) circshift(w, k) v
+                @test isvalid(circshift(v, k))
+            end
+        end
+    end
+end
+
 function red_mod(N, v::AbstractVector{T}) where T <: Integer
     k = bitsize(T)-N
     map(x -> (x << k) >> k, v)

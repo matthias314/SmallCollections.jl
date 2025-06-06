@@ -3,7 +3,7 @@
 #
 
 import Base: ==, getindex, setindex, length, size, empty, iterate, rest, split_rest,
-    iszero, zero, +, -, *, convert
+    iszero, zero, +, -, *, convert, circshift
 
 export PackedVector, bits
 
@@ -396,6 +396,13 @@ prepend(v::PackedVector, ws...) = foldr((w, v) -> prepend(v, w), ws; init = v)
     m1 = v.m & mask
     m2 = (v.m & ~(mask >>> M)) << M
     PackedVector{U,M,T}(m1 | m2, v.n+1)
+end
+
+function circshift(v::PackedVector{U,M,T}, k::Integer) where {U,M,T}
+    v.n <= 1 && return v
+    k = mod(k+v.n, v.n)  # k+v.n because mod seems to be faster for positive args
+    mask = one(U) << ((M*v.n) % UInt) - one(U)
+    PackedVector{U,M,T}((unsafe_shl(v.m, M*k) | unsafe_lshr(v.m, M*v.n-M*k)) & mask, v.n)
 end
 
 @generated function bitcast_add(v::PackedVector{U,M,T}, w::PackedVector{U,M,T}) where {U,M,T}
