@@ -169,7 +169,16 @@ julia> circshift(v, Val(-1))
 circshift(::AbstractFixedVector, ::Union{Integer,Val})
 
 @inline function circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
-    t = ntuple(i -> v[mod1(i-k, N)], Val(N))
+    N == 1 && return FixedVector(v)
+    m = mod1(k+1, N)
+    t = ntuple(Val(N)) do i
+        i = i % SmallLength
+        @inbounds if i < m % SmallLength
+            v[(i-m+1)+N]
+        else
+            v[i-m+1]
+        end
+    end
     FixedVector{N,T}(t)
 end
 
