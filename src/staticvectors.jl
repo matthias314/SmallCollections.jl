@@ -163,7 +163,11 @@ julia> circshift(v, Val(-1))
 circshift(::AbstractFixedVector, ::Union{Integer,Val})
 
 @inline function circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
-    N == 1 && return FixedVector(v)
+    if N == 1
+        return FixedVector{N,T}(v)
+    elseif T <: HWType && ispow2(N) && 8 <= bitsize(T)*N <= 128  # for Bool one could go up to 512 bits
+        return convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
+    end
     m = mod1(k+1, N)
     t = ntuple(Val(N)) do i
         i = i % SmallLength
