@@ -2,7 +2,7 @@
 # extensions of FixedVector
 #
 
-using Base: BitInteger, @assume_effects
+using Base: @assume_effects
 import Base: setindex, circshift, circshift!, convert
 
 export setindex
@@ -72,13 +72,7 @@ function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where 
 end
 
 @generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: HWType}
-    M = if T == Float32
-        "float"
-    elseif T == Float64
-        "double"
-    else # Bool, BitInteger, Char, Enum
-        string('i', 8*sizeof(T))
-    end
+    M = llvm_type(T)
     L = bitsize(SmallLength)
     s = join(("i$L $k" for k in 0:N-1), ", ")
     ir = """
@@ -184,19 +178,19 @@ end
 
 circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
 
-@generated function circshift(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: Union{Base.BitInteger,Bool,Char,Enum}, K}
+@generated function circshift(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: HWType, K}
+    M = llvm_type(T)
     b = sizeof(T)
-    m = 8*b  # for Bool we need 8, not 1
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
     ir = VERSION > v"1.12-" ? """
-        %a = load <$N x i$m>, ptr %0, align $b
-        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
-        ret <$N x i$m> %b
+        %a = load <$N x $M>, ptr %0, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        ret <$N x $M> %b
     """ : """
-        %p = inttoptr i64 %0 to <$N x i$m>*
-        %a = load <$N x i$m>, <$N x i$m>* %p, align $b
-        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
-        ret <$N x i$m> %b
+        %p = inttoptr i64 %0 to <$N x $M>*
+        %a = load <$N x $M>, <$N x $M>* %p, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        ret <$N x $M> %b
     """
     quote
         b = Base.llvmcall($ir, NTuple{N,VecElement{T}}, Tuple{Ptr{T}}, pointer(v))
@@ -246,19 +240,19 @@ function circshift!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: HWType,
 end
 
 @inline @generated function vec_circshift!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: HWType, K}
+    M = llvm_type(T)
     b = sizeof(T)
-    m = 8*b  # for Bool we need 8, not 1
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
     ir = VERSION > v"1.12-" ? """
-        %a = load <$N x i$m>, ptr %0, align $b
-        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
-        store <$N x i$m> %b, ptr %0, align $b
+        %a = load <$N x $M>, ptr %0, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        store <$N x $M> %b, ptr %0, align $b
         ret void
     """ : """
-        %p = inttoptr i64 %0 to <$N x i$m>*
-        %a = load <$N x i$m>, <$N x i$m>* %p, align $b
-        %b = shufflevector <$N x i$m> %a, <$N x i$m> poison, <$N x i32> <$s>
-        store <$N x i$m> %b, <$N x i$m>* %p, align $b
+        %p = inttoptr i64 %0 to <$N x $M>*
+        %a = load <$N x $M>, <$N x $M>* %p, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        store <$N x $M> %b, <$N x $M>* %p, align $b
         ret void
     """
     quote
@@ -350,11 +344,11 @@ vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
 unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 
 """
-    bits(v::$TupleVector{N,T}) where {N, T <: Union{Base.BitInteger,Bool,Char,Enum}} -> Unsigned
+    bits(v::$TupleVector{N,T}) where {N, T <: $HWTypeExpr} -> Unsigned
 
 Convert the given vector to an unsigned integer.
 
-For bit integers, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))` provided that
+For bit integers, hardware floats, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))` provided that
 `U` is an unsigned integer type with `N*bitsize(T)` bits, possibly defined by the package
 `BitIntegers`. Otherwise the result will be zero-extended to the next unsigned integer type `U`
 whose bit length is a power of `2`.
@@ -365,8 +359,8 @@ If `N` is less than `8` or not a power of `2`, then the result will again be zer
 The inverse operation can be done with `convert`.
 
 See also
-[`Base.convert`](@ref convert(::Type{V}, ::Unsigned) where {N, T <: Union{Bool, Base.BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}}),
-[`$(@__MODULE__).bitsize`](@ref), `Base.BitInteger`, `Base.reinterpret`, `BitIntegers`.
+[`Base.convert`](@ref convert(::Type{V}, ::Unsigned) where {N, T <: HWType, V <: AbstractFixedVector{N,T}}),
+[`$(@__MODULE__).bitsize`](@ref), `Base.HWReal`, `Base.reinterpret`, `BitIntegers`.
 
 # Examples
 ```jldoctest
@@ -388,19 +382,19 @@ julia> $Values{22}(map(isodd, 1:22)) |> bits
 """
 bits(v::TupleVector)
 
-@generated function bits(v::TupleVector{N,T}) where {N, T <: Union{BitInteger,Char,Enum}}
-    s = bitsize(T)
-    b = N*s
+@generated function bits(v::TupleVector{N,T}) where {N, T <: HWType}
+    M = llvm_type(T)
+    b = N*bitsize(T)
     c = nextpow(2, b)
     U = Symbol(:UInt, c)
     if b == c
         ir = """
-            %b = bitcast <$N x i$s> %0 to i$b
+            %b = bitcast <$N x $M> %0 to i$b
             ret i$b %b
         """
     else
         ir = """
-            %b = bitcast <$N x i$s> %0 to i$b
+            %b = bitcast <$N x $M> %0 to i$b
             %c = zext i$b %b to i$c
             ret i$c %c
         """
@@ -445,14 +439,14 @@ end
 end
 
 """
-    convert(::Type{V}, x::Unsigned) where {N, T <: Union{Base.BitInteger, Bool, Char, Enum}, V <: AbstractFixedVector{N,T}}
+    convert(::Type{V}, x::Unsigned) where {N, T <: $HWTypeExpr, V <: AbstractFixedVector{N,T}}
 
 Convert the unsigned integer `x` to a `FixedVector{N,T}` or `MutableFixedVector{N,T}`.
 The bits of `x` are split into groups of size `bitsize(T)` and reinterpreted as elements of type `T`.
 Unused bits are ignored and missing bits are taken as `0`. This is the inverse operation to `bits`.
 
 See also [`bits`](@ref bits(::AbstractFixedVector)), [`$(@__MODULE__).bitsize`](@ref),
-`Base.BitInteger`, `BitIntegers`.
+`Base.HWReal`, `BitIntegers`.
 
 # Examples
 ```jldoctest
@@ -493,28 +487,28 @@ julia> convert(FixedVector{4,Int64}, uint256"0x300000000000000020000000000000001
  0
 ```
 """
-convert(::Type{V}, ::Unsigned) where {N, T <: Union{Bool, Base.BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}}
+convert(::Type{V}, ::Unsigned) where {N, T <: HWType, V <: AbstractFixedVector{N,T}}
 
-@generated function convert(::Type{V}, x::U) where {N, T <: Union{BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}, U <: Unsigned}
-    s = bitsize(T)
-    b = N*s
+@generated function convert(::Type{V}, x::U) where {N, T <: HWType, V <: AbstractFixedVector{N,T}, U <: Unsigned}
+    M = llvm_type(T)
+    b = N*bitsize(T)
     c = bitsize(U)
     if b == c
         ir = """
-            %b = bitcast i$b %0 to <$N x i$s>
-            ret <$N x i$s> %b
+            %b = bitcast i$b %0 to <$N x $M>
+            ret <$N x $M> %b
         """
     elseif b > c
         ir = """
             %b = zext i$c %0 to i$b
-            %a = bitcast i$b %b to <$N x i$s>
-            ret <$N x i$s> %a
+            %a = bitcast i$b %b to <$N x $M>
+            ret <$N x $M> %a
         """
     else
         ir = """
             %b = trunc i$c %0 to i$b
-            %a = bitcast i$b %b to <$N x i$s>
-            ret <$N x i$s> %a
+            %a = bitcast i$b %b to <$N x $M>
+            ret <$N x $M> %a
         """
     end
     quote

@@ -11,6 +11,11 @@ bitsize(::T) where T = bitsize(T)
 bitsize(::Type{T}) where T = 8*sizeof(T)
 bitsize(::Type{Bool}) = 1
 
+llvm_type(::Type{Float16}) = "half"
+llvm_type(::Type{Float32}) = "float"
+llvm_type(::Type{Float64}) = "double"
+llvm_type(::Type{T}) where T <: Union{Bool, BitInteger, Char, Enum} = string('i', 8*sizeof(T))
+
 """
     $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
 
