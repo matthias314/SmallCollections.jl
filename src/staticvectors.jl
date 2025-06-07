@@ -3,7 +3,7 @@
 #
 
 using Base: BitInteger, @assume_effects
-import Base: setindex, circshift, circshift!
+import Base: setindex, circshift, circshift!, convert
 
 export setindex
 
@@ -331,7 +331,11 @@ whose bit length is a power of `2`.
 If the element type is `Bool`, then each element only takes one bit in the return value.
 If `N` is less than `8` or not a power of `2`, then the result will again be zero-extended.
 
-See also [`$(@__MODULE__).bitsize`](@ref), `Base.BitInteger`, `Base.reinterpret`, `BitIntegers`.
+The inverse operation can be done with `convert`.
+
+See also
+[`Base.convert`](@ref convert(::Type{V}, ::Unsigned) where {N, T <: Union{Bool, Base.BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}}),
+[`$(@__MODULE__).bitsize`](@ref), `Base.BitInteger`, `Base.reinterpret`, `BitIntegers`.
 
 # Examples
 ```jldoctest
@@ -409,7 +413,58 @@ end
     end
 end
 
-@generated function _convert(::Type{Values{N,T}}, x::U) where {N, T <: BitInteger, U <: Unsigned}
+"""
+    convert(::Type{V}, x::Unsigned) where {N, T <: Union{Base.BitInteger, Bool, Char, Enum}, V <: AbstractFixedVector{N,T}}
+
+Convert the unsigned integer `x` to a `FixedVector{N,T}` or `MutableFixedVector{N,T}`.
+The bits of `x` are split into groups of size `bitsize(T)` and reinterpreted as elements of type `T`.
+Unused bits are ignored and missing bits are taken as `0`. This is the inverse operation to `bits`.
+
+See also [`bits`](@ref bits(::AbstractFixedVector)), [`$(@__MODULE__).bitsize`](@ref),
+`Base.BitInteger`, `BitIntegers`.
+
+# Examples
+```jldoctest
+julia> v = convert(FixedVector{4,Int8}, 0x030201)
+4-element FixedVector{4, Int8}:
+ 1
+ 2
+ 3
+ 0
+
+julia> bits(v)
+0x00030201
+
+julia> convert(FixedVector{6,Bool}, 0xf0)
+6-element FixedVector{6, Bool}:
+ 0
+ 0
+ 0
+ 0
+ 1
+ 1
+
+julia> x = FixedVector{2,Char}('a':'b') |> bits
+0x6200000061000000
+
+julia> convert(FixedVector{2,Char}, x)
+2-element FixedVector{2, Char}:
+ 'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)
+ 'b': ASCII/Unicode U+0062 (category Ll: Letter, lowercase)
+
+julia> using BitIntegers
+
+julia> convert(FixedVector{4,Int64}, uint256"0x300000000000000020000000000000001")
+4-element FixedVector{4, Int64}:
+ 1
+ 2
+ 3
+ 0
+```
+"""
+convert(::Type{V}, ::Unsigned) where {N, T <: Union{Bool, Base.BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}}
+
+@generated function convert(::Type{V}, x::U) where {N, T <: Union{BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}, U <: Unsigned}
     s = bitsize(T)
     b = N*s
     c = bitsize(U)
@@ -434,11 +489,11 @@ end
     quote
         $(Expr(:meta, :inline))
         v = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{$U}, x)
-        Values{N,T}(unvec(v))
+        V(unvec(v))
     end
 end
 
-@generated function _convert(::Type{Values{N,Bool}}, x::U) where {N, U <: Unsigned}
+@generated function convert(::Type{V}, x::U) where {N, V <: AbstractFixedVector{N,Bool}, U <: Unsigned}
     c = bitsize(U)
     N2 = nextpow(2, N)   # work around an LLVM bug
     if N2 == c
@@ -466,6 +521,6 @@ end
         $(Expr(:meta, :inline))
         v2 = Base.llvmcall($ir, NTuple{$N2, VecElement{Bool}}, Tuple{$U}, x)
         v = ntuple(Base.Fix1(getindex, v2), Val(N))
-        Values{N,Bool}(unvec(v))
+        V(unvec(v))
     end
 end

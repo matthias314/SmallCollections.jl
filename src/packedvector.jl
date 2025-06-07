@@ -684,7 +684,7 @@ support(v::PackedVector{U,1}) where U = convert(SmallBitSet{UInt}, bits(v))
         @boundscheck if N < capacity(PackedVector{U,M,S})
             length(v) <= N || error("vector cannot have more than $N elements")
         end
-        b = _convert(Values{N,T}, v.m)
+        b = convert(Values{N,T}, v.m)
         SmallVector{N,T}(b, length(v))
     else
         invoke(SmallVector{N,T}, Tuple{AbstractVector{S}}, v)

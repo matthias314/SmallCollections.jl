@@ -9,6 +9,7 @@ AbstractFixedVector
 FixedVector
 MutableFixedVector
 bits(::AbstractFixedVector)
+convert(::Type{V}, ::Unsigned) where {N, T <: Union{Bool, Base.BitInteger, Char, Enum}, V <: AbstractFixedVector{N,T}}
 fasthash(::AbstractFixedVector, ::UInt)
 setindex(::AbstractFixedVector, ::Any, ::Integer)
 addindex(::AbstractFixedVector, ::Any, ::Integer)
