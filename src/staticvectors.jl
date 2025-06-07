@@ -276,9 +276,40 @@ be any value of type `T`.
 
 This function has methods for number types, bits types, `Symbol`, `AbstractChar`, `AbstractString`,
 `Tuple`, `NamedTuple`, `AbstractFixedVector`, `AbstractSmallVector` und `SmallBitSet`.
-Methods for other types must be defined explicitly.
+Methods for other types must be defined explicitly, see the examples below.
 
 See also `Base.isbitstype`.
+
+# Examples
+
+We start by defining a default value for an immutable struct.
+```jldoctest default
+julia> import $(@__MODULE__): default
+
+julia> struct A x::Int end
+
+julia> default(::Type{A}) = A(0);
+```
+For a mutable struct one needs to create an object first.
+```jldoctest default
+julia> mutable struct B x::Int end
+
+julia> const b0 = B(0);
+
+julia> default(::Type{B}) = b0;
+```
+For mutable parametric types one can use a generated function.
+```jldoctest default
+julia> mutable struct C{T} x::T end
+
+julia> @generated default(::Type{C{T}}) where T = C(default(T));
+
+julia> default(C{Bool})
+C{Bool}(false)
+
+julia> default(C{Bool}) === default(C{Bool})  # do we always get the same object?
+true
+```
 """
 default(::T) where T = default(T)
 
