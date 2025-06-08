@@ -383,6 +383,26 @@ function smallbitset_filter(::LazyStyle, f::F, s::SmallBitSet) where F
     _SmallBitSet(q)
 end
 
+function filter(f::Fix2{typeof(<=),<:Real}, s::SmallBitSet{U}) where U <: Unsigned
+    k = round(Int, f.x, RoundDown)
+    s ∩ @inbounds SmallBitSet{U}(1:min(k, bitsize(U)))
+end
+
+function filter(f::Fix2{typeof(<),<:Real}, s::SmallBitSet{U}) where U <: Unsigned
+    k = round(Int, f.x, RoundUp)
+    setdiff(s, @inbounds SmallBitSet{U}(max(k, 1):bitsize(U)))
+end
+
+function filter(f::Fix2{typeof(>=),<:Real}, s::SmallBitSet{U}) where U <: Unsigned
+    k = round(Int, f.x, RoundUp)
+    s ∩ @inbounds SmallBitSet{U}(max(k, 1):bitsize(U))
+end
+
+function filter(f::Fix2{typeof(>),<:Real}, s::SmallBitSet{U}) where U <: Unsigned
+    k = round(Int, f.x, RoundDown)
+    setdiff(s, @inbounds SmallBitSet{U}(1:min(k, bitsize(U))))
+end
+
 function any(f::F, s::SmallBitSet; style::MapStyle = MapStyle(f, Int)) where F <: Function
     if style isa LazyStyle
         invoke(any, Tuple{F, AbstractSet}, f, s)
