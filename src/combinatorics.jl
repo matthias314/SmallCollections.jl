@@ -441,7 +441,7 @@ iterate(sh::SetCompositions{1}, _) = nothing
     mask = U(1) << k - U(1)
     lastmask = mask << l
 
-    set = S == Missing ? SmallBitSet{U}(1:k+l) : sh.set   # TODO: is SmallBitSet{U}(...) too slow?
+    set = S == Missing ? @inbounds(SmallBitSet{U}(1:k+l)) : sh.set
     part1 = _SmallBitSet(S == Missing ? mask : pdep(mask, bits(set)))
     part2 = symdiff(part1, set)
     signbit = isodd(signint)

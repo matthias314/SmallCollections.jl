@@ -148,17 +148,13 @@ SmallBitSet{U}() where U = _SmallBitSet(zero(U))
 
 @propagate_inbounds SmallBitSet{U}(iter) where U = _push(zero(U), iter)
 
-function SmallBitSet{U}(r::AbstractUnitRange{<:Integer}) where U
+@inline function SmallBitSet{U}(r::AbstractUnitRange{<:Integer}) where U
     r0, r1 = first(r), last(r)
-    if r0 <= 0 || r1 > bitsize(U)
+    @boundscheck if r0 <= r1 && (r0 < 1 || r1 > bitsize(U))
         error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
     end
-    if r1 < r0
-        _SmallBitSet(zero(U))
-    else
-        m = one(U) << (r1-r0+1) - one(U)
-        _SmallBitSet(m << (r0-1))
-    end
+    m = one(U) << unsigned(r1-(r0-1)) - one(U)
+    _SmallBitSet(unsafe_shl(m, r0-1))
 end
 
 isempty(s::SmallBitSet) = iszero(bits(s))
