@@ -487,6 +487,52 @@ end
     end
 end
 
+@testset "SmallVector find" begin
+    for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (SmallVector, MutableSmallVector), m in (0, 1, N-1, N)
+        T <: Number || continue
+        k = max(m ÷ 2, 1)
+        for u in (rand(T(0):(T == Bool ? true : T(2)), m), zeros(T, m), ones(T, m))
+            v = V{N,T}(u)
+            for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
+                @test_inferred support(!iszero, v; style) Set(findall(!iszero, u)) SmallBitSet
+                i = @inferred Nothing findfirst(!iszero, v; style)
+                @test i == findfirst(!iszero, u)
+                i = @inferred Nothing findlast(!iszero, v; style)
+                @test i == findlast(!iszero, u)
+                if !isempty(v)
+                    i = @inferred Nothing findnext(!iszero, v, k; style)
+                    @test i == findnext(!iszero, u, k)
+                    i = @inferred Nothing findprev(!iszero, v, k; style)
+                    @test i == findprev(!iszero, u, k)
+                end
+            end
+            if !isempty(v)
+                @test_inferred findmin(v) findmin(u) Tuple{T, Int}
+                @test_inferred findmax(v) findmax(u) Tuple{T, Int}
+                if T != Bool
+                    @test_inferred findmin(-, v) findmin(-, u) Tuple{T, Int}
+                    @test_inferred findmax(-, v) findmax(-, u) Tuple{T, Int}
+                end
+            end
+            @test_inferred allequal(v) allequal(u) Bool
+            @test_inferred allequal(isodd, v) allequal(isodd, u) Bool
+            @test_inferred allunique(v) allunique(u) Bool
+            @test_inferred allunique(-, v) allunique(-, u) Bool
+            @test_inferred any(isodd, v) any(isodd, u) Bool
+            @test_inferred all(isodd, v) all(isodd, u) Bool
+            @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
+            @test_inferred count(!iszero, v; init = Int32(0)) count(!iszero, u; init = Int32(0)) Int32
+            if T == Bool
+                @test_inferred support(v) Set(findall(u)) SmallBitSet
+                @test_inferred findall(v) findall(u) SmallVector{N,SmallLength}
+                @test_inferred any(v) any(u) Bool
+                @test_inferred all(v) all(u) Bool
+                @test_inferred count(v) count(u) Int
+            end
+        end
+    end
+end
+
 @testset "SmallVector rest" begin
     for V in VS
         v = V{8}(1:2)

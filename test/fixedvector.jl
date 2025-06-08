@@ -233,6 +233,48 @@ end
     @test eltype(w) == eltype(u5)
 end
 
+@testset "FixedVector find" begin
+    for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (FixedVector, MutableFixedVector)
+        T <: Number || continue
+        k = max(N ÷ 2, 1)
+        for u in (rand(T(0):(T == Bool ? true : T(2)), N), zeros(T, N), ones(T, N))
+            v = V{N,T}(u)
+            @test_inferred support(iszero, v) Set(findall(iszero, u)) SmallBitSet
+            for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
+                i = @inferred Nothing findfirst(!iszero, v; style)
+                @test i == findfirst(!iszero, u)
+                i = @inferred Nothing findlast(!iszero, v; style)
+                @test i == findlast(!iszero, u)
+                i = @inferred Nothing findnext(!iszero, v, k; style)
+                @test i == findnext(!iszero, u, k)
+                i = @inferred Nothing findprev(!iszero, v, k; style)
+                @test i == findprev(!iszero, u, k)
+            end
+            @test_inferred findmin(v) findmin(u) Tuple{T, Int}
+            @test_inferred findmax(v) findmax(u) Tuple{T, Int}
+            if T != Bool
+                @test_inferred findmin(-, v) findmin(-, u) Tuple{T, Int}
+                @test_inferred findmax(-, v) findmax(-, u) Tuple{T, Int}
+            end
+            @test_inferred allequal(v) allequal(u) Bool
+            @test_inferred allequal(isodd, v) allequal(isodd, u) Bool
+            @test_inferred allunique(v) allunique(u) Bool
+            @test_inferred allunique(-, v) allunique(-, u) Bool
+            @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
+            @test_inferred count(!iszero, v; init = 0.0) count(!iszero, u; init = 0.0) Float64
+            @test_inferred any(isodd, v) any(isodd, u) Bool
+            @test_inferred all(isodd, v) all(isodd, u) Bool
+            if T == Bool
+                @test_inferred support(v) Set(findall(u)) SmallBitSet
+                @test_inferred findall(v) findall(u) SmallVector{N,SmallLength}
+                @test_inferred any(v) any(u) Bool
+                @test_inferred all(v) all(u) Bool
+                @test_inferred count(v) count(u) Int
+            end
+        end
+    end
+end
+
 @testset "FixedVector support" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
