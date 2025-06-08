@@ -7,7 +7,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     minimum, maximum, extrema, any, all, allequal, allunique, in, reverse,
-    findfirst, findlast, findmin, findmax, vcat, copy, copyto!, convert,
+    vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
 """
@@ -330,6 +330,8 @@ Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothin
     allunique(f, v::AbstractFixedVector; [style::MapStyle])
     findfirst(f::Function, v::AbstractFixedVector; [style::MapStyle])
     findlast(f::Function, v::AbstractFixedVector; [style::MapStyle])
+    findnext(f::Function, v::AbstractFixedVector, k::Integer; [style::MapStyle])
+    findprev(f::Function, v::AbstractFixedVector, k::Integer; [style::MapStyle])
 
 With an `AbstractFixedVector` `v` as second argument, these functions accept
 the additional keyword argument `style`. If it equals `LazyStyle()`, then the
@@ -347,7 +349,9 @@ all(::Function, ::AbstractFixedVector),
 allequal(::Any, ::AbstractFixedVector),
 allunique(::Any, ::AbstractFixedVector),
 findfirst(::Function, ::AbstractFixedVector),
-findlast(::Function, ::AbstractFixedVector)
+findlast(::Function, ::AbstractFixedVector),
+findnext(::Function, ::AbstractFixedVector, ::Integer),
+findprev(::Function, ::AbstractFixedVector, ::Integer)
 
 function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
     if !(dims isa Colon) || style isa LazyStyle
@@ -448,36 +452,6 @@ function vcat(v1::AbstractFixedVector{N1,T1}, v2::AbstractFixedVector{N2,T2}, vs
     vcat(FixedVector{N1+N2,T}((v1..., v2...)), vs...)
  end
 
-function findfirst(v::AbstractFixedVector{N,Bool}) where N
-    m = bits(v)
-    iszero(m) ? nothing : trailing_zeros(m)+1
-end
-
-function findlast(v::AbstractFixedVector{N,Bool}) where N
-    m = bits(v)
-    iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
-end
-
-function findmin(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
-    m = minimum(v)
-    m, findfirst(==(m), v)::Int
-end
-
-function findmax(v::AbstractFixedVector{N,T}) where {N, T <: BitInteger}
-    m = maximum(v)
-    m, findfirst(==(m), v)::Int
-end
-
-for f in (:findfirst, :findlast)
-    @eval function $f(pred::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-        if style isa LazyStyle
-            invoke($f, Tuple{F,AbstractVector{T}}, pred, v)
-        else
-            $f(map(x -> pred(x)::Bool, v))
-        end
-    end
-end
-
 Base.hasfastin(::Type{<:AbstractFixedVector{N,T}}) where {N,T} = isfasttype(T)
 
 in(x, v::AbstractFixedVector) = any(==(x), v)
@@ -522,7 +496,7 @@ SmallBitSet{UInt8} with 2 elements:
   4
 ```
 """
-support(v::AbstractFixedVector) = _SmallBitSet(bits(map(!iszero, v)))
+support(v::AbstractFixedVector)
 
 """
     support(f, v::AbstractFixedVector) -> SmallBitSet

@@ -6,7 +6,7 @@ export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, ex
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
-    zero, map, reverse, findfirst, findlast, findmin, findmax, in,
+    zero, map, reverse, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
     count, allequal, allunique, circshift
 
@@ -457,40 +457,6 @@ for g in (:sum, :prod, :minimum, :maximum, :extrema)
     @eval $g(f::F, v::AbstractSmallVector;  kw...) where F = $g(map(f, v);  kw...)
 end
 
-findfirst(v::AbstractSmallVector{N,Bool}) where N = findfirst(v.b)
-findlast(v::AbstractSmallVector{N,Bool}) where N = findlast(v.b)
-
-function findfirst(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-    if style isa LazyStyle
-        invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
-    else
-        i = @inline findfirst(pred, v.b; style)
-        i === nothing || i > length(v) ? nothing : i
-    end
-end
-
-function findlast(pred::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(pred, T)) where {F <: Function, N, T}
-    if style isa LazyStyle
-        invoke(findfirst, Tuple{F,AbstractVector{T}}, pred, v)
-    else
-        m = bits(map(pred, v.b))
-        m &= one(m) << unsigned(length(v)) - one(m)
-        iszero(m) ? nothing : bitsize(m)-leading_zeros(m)
-    end
-end
-
-@inline function findmin(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
-    @boundscheck isempty(v) && error("argument must not be empty")
-    m = minimum(v)
-    m, findfirst(==(m), v.b)::Int
-end
-
-@inline function findmax(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
-    @boundscheck isempty(v) && error("argument must not be empty")
-    m = maximum(v)
-    m, findfirst(==(m), v.b)::Int
-end
-
 Base._any(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst(f, v; style) !== nothing
 Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst((!)∘f, v; style) === nothing
 
@@ -499,8 +465,11 @@ Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f
     all(f::Function, v::AbstractSmallVector; dims = :, [style::MapStyle])
     allequal(f, v::AbstractSmallVector; [style::MapStyle})
     allunique(f, v::AbstractSmallVector; [style::MapStyle])
+    findall(f::Function, v::AbstractSmallVector; [style::MapStyle])
     findfirst(f::Function, v::AbstractSmallVector; [style::MapStyle])
     findlast(f::Function, v::AbstractSmallVector; [style::MapStyle])
+    findnext(f::Function, v::AbstractSmallVector, k::Integer; [style::MapStyle])
+    findprev(f::Function, v::AbstractSmallVector, k::Integer; [style::MapStyle])
     count(f, v::AbstractSmallVector; dims = :, init = 0, [style::MapStyle])
 
 With an `AbstractSmallVector` `v` as second argument, these functions accept
@@ -518,8 +487,11 @@ any(::Function, ::AbstractSmallVector),
 all(::Function, ::AbstractSmallVector),
 allequal(::Any, ::AbstractSmallVector),
 allunique(::Any, ::AbstractSmallVector),
+findall(::Function, ::AbstractSmallVector),
 findfirst(::Function, ::AbstractSmallVector),
 findlast(::Function, ::AbstractSmallVector),
+findnext(::Function, ::AbstractSmallVector, ::Integer),
+findprev(::Function, ::AbstractSmallVector, ::Integer),
 count(::Any, ::AbstractSmallVector)
 
 function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
