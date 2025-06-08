@@ -31,7 +31,7 @@ support(::AbstractCapacityVector)
 AbstractSmallVector
 SmallVector
 MutableSmallVector
-fixedvector
+fixedvector(::AbstractSmallVector)
 bits(::AbstractSmallVector)
 empty(::AbstractSmallVector, ::Type)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
