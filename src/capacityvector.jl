@@ -217,7 +217,7 @@ See also [`SmallBitSet`](@ref), [`support(::Any, ::AbstractSmallVector)`](@ref).
 julia> v = SmallVector{8,Int8}([1, 0, 2, 0, 0, 3]);
 
 julia> support(v)
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{UInt8} with 3 elements:
   1
   3
   6
