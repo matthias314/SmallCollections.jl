@@ -95,8 +95,11 @@ SmallCollections.LazyStyle()
 julia> MapStyle(isfinite∘inv, Float64)   # function composition is recognized
 SmallCollections.EagerStyle()
 
-julia> MapStyle(!iszero, Int)   # function composition again
+julia> MapStyle(!isodd, Int)  # function composition again
 SmallCollections.EagerStyle()
+
+julia> MapStyle(!iszero, Int)   # separately defined to override EagerStyle
+SmallCollections.StrictStyle()
 
 julia> MapStyle(>=(1), Int)   # >=(1) is Base.Fix2(>=, 1), which is recognized
 SmallCollections.EagerStyle()
@@ -208,6 +211,10 @@ function MapStyle(f::ComposedFunction, types::Type...)
         StrictStyle()
     end
 end
+
+MapStyle(::ComposedFunction{typeof(!), <:Union{typeof.(
+        (~, iseven, iszero, isfinite, isfinite_fast)
+    )...}}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
 
 MapStyle(f::Base.Splat, ::Type{T}) where T <: Tuple = MapStyle(f.f, fieldtypes(T)...)
 
