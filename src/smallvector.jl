@@ -2,7 +2,7 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, fixedvector, resize, sum_fast, extrema_fast
+export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, extrema_fast
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
@@ -108,6 +108,21 @@ julia> fixedvector(v)
 ```
 """
 fixedvector(v::AbstractSmallVector) = v.b
+
+"""
+    bits(v::AbstractSmallVector) -> Unsigned
+
+Return the bit representation of `fixedvector(v)`.
+
+See also [`fixedvector`](@ref), [`bits(::AbstractFixedVector)`](@ref).
+
+# Example
+```jldoctest
+julia> SmallVector{4,Int8}(1:3) |> bits
+0x00030201
+```
+"""
+bits(v::AbstractSmallVector) = bits(fixedvector(v))
 
 for cmp in (:(==), :(eq_fast))
     @eval $cmp(v::AbstractSmallVector, w::AbstractSmallVector) =
