@@ -709,7 +709,7 @@ See also [`SmallBitSet`](@ref), [`support(::AbstractSmallVector)`](@ref),
 julia> v = SmallVector{8,Int8}(3:8);
 
 julia> support(isodd, v)
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{UInt8} with 3 elements:
   1
   3
   5

@@ -507,12 +507,12 @@ See also [`SmallBitSet`](@ref), [`support(::Any, ::AbstractFixedVector)`](@ref).
 julia> v = FixedVector{4,Int8}([1, 0, 0, 3]);
 
 julia> support(v)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{UInt8} with 2 elements:
   1
   4
 ```
 """
-support(v::AbstractFixedVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v)))
+support(v::AbstractFixedVector) = _SmallBitSet(bits(map(!iszero, v)))
 
 """
     support(f, v::AbstractFixedVector) -> SmallBitSet
@@ -527,7 +527,7 @@ See also [`SmallBitSet`](@ref), [`support(::AbstractFixedVector)`](@ref).
 julia> v = FixedVector{4,Int8}(3:6);
 
 julia> support(isodd, v)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{UInt8} with 2 elements:
   1
   3
 ```
