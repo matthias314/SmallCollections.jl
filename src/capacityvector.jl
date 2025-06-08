@@ -208,8 +208,9 @@ end
     support(v::AbstractCapacityVector) -> SmallBitSet
 
 Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
+If `v` has `Bool` elements, then this means the elements that are `true`.
 
-See also [`SmallBitSet`](@ref).
+See also [`SmallBitSet`](@ref), [`support(::Any, ::AbstractSmallVector)`](@ref).
 
 # Example
 ```jldoctest

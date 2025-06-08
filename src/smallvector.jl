@@ -677,6 +677,33 @@ end
 support(v::AbstractSmallVector) = support(v.b)
 # here we assume that the padding is via zeros
 
+"""
+    support(f, v::AbstractSmallVector; [style::MapStyle]) -> SmallBitSet
+
+Return the `SmallBitSet` with the indices of the elements `x` of `v` for which `f(x)` is non-zero.
+If `f` has `Bool` values, then this means that `f(x)` has to be `true`.
+
+The `style` keyword argument determines how the padding used for `AbstractSmallVector` is treated.
+As discussed under `MapStyle`, the default value is based on a list of known functions.
+
+See also [`SmallBitSet`](@ref), [`support(::AbstractSmallVector)`](@ref),
+[`$(@__MODULE__).MapStyle`](@ref).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}(3:8);
+
+julia> support(isodd, v)
+SmallBitSet{UInt64} with 3 elements:
+  1
+  3
+  5
+```
+"""
+support(::Any, ::AbstractSmallVector)
+
+support(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T} = support(map(f, v; style))
+
 #
 # map
 #

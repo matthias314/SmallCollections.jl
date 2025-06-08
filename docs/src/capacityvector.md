@@ -22,7 +22,7 @@ deleteat
 popat
 append
 prepend
-support
+support(::AbstractCapacityVector)
 ```
 
 ## [Small vectors](@id sec-smallvector)
@@ -41,6 +41,7 @@ sum_fast(::AbstractSmallVector)
 extrema_fast(::AbstractSmallVector)
 any(::Function, ::AbstractSmallVector)
 map
+support(::Any, ::AbstractSmallVector)
 ```
 
 ## [Packed vectors](@id sec-packedvector)

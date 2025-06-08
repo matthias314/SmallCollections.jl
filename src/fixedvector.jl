@@ -497,8 +497,9 @@ end
     support(v::AbstractFixedVector) -> SmallBitSet
 
 Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
+If `v` has `Bool` elements, then this means the elements that are `true`.
 
-See also [`SmallBitSet`](@ref).
+See also [`SmallBitSet`](@ref), [`support(::Any, ::AbstractFixedVector)`](@ref).
 
 # Example
 ```jldoctest
@@ -511,6 +512,28 @@ SmallBitSet{UInt64} with 2 elements:
 ```
 """
 support(v::AbstractFixedVector) = convert(SmallBitSet{UInt}, bits(map(!iszero, v)))
+
+"""
+    support(f, v::AbstractFixedVector) -> SmallBitSet
+
+Return the `SmallBitSet` with the indices of the elements `x` of `v` for which `f(x)` is non-zero.
+If `f` has `Bool` values, then this means that `f(x)` has to be `true`.
+
+See also [`SmallBitSet`](@ref), [`support(::AbstractFixedVector)`](@ref).
+
+# Example
+```jldoctest
+julia> v = FixedVector{4,Int8}(3:6);
+
+julia> support(isodd, v)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  3
+```
+"""
+support(::Any, ::AbstractFixedVector)
+
+support(f::F, v::AbstractFixedVector) where F = support(map(f, v))
 
 #
 # broadcast
