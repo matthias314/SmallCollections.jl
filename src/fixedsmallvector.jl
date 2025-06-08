@@ -4,7 +4,8 @@
 
 export support
 
-import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax
+import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
+    allequal, allunique
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -60,4 +61,26 @@ end
     @boundscheck isempty(v) && error("argument must not be empty")
     x = maximum(v)
     x, findfirst(==(x), fixedvector(v))::Int
+end
+
+allequal(v::AbstractFixedOrSmallVector) = isempty(v) ? true : all(isequal(@inbounds v[1]), v)
+
+function allequal(f::F, v::AbstractFixedOrSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    @inline
+    if style isa LazyStyle
+        invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allequal(map(f, v; style))
+    end
+end
+
+allunique(v::AbstractFixedOrSmallVector) = all(x -> count(isequal(x), v) == 1, v)
+
+function allunique(f::F, v::AbstractFixedOrSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    @inline
+    if style isa LazyStyle
+        invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
+    else
+        allunique(map(f, v; style))
+    end
 end

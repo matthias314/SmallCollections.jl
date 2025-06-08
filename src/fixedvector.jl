@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
-    minimum, maximum, extrema, any, all, allequal, allunique, in, reverse,
+    minimum, maximum, extrema, any, all, in, reverse,
     vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
@@ -366,26 +366,6 @@ function all(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapS
         invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._all(f, v, :)
-    end
-end
-
-allequal(v::AbstractFixedVector) = all(isequal(v[1]), v)
-
-function allequal(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa LazyStyle
-        invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
-    else
-        allequal(map(f, v))
-    end
-end
-
-allunique(v::AbstractFixedVector) = all(x -> count(isequal(x), v) == 1, v)
-
-function allunique(f::F, v::AbstractFixedVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa LazyStyle
-        invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
-    else
-        allunique(map(f, v))
     end
 end
 

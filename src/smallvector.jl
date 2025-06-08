@@ -8,7 +8,7 @@ import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
-    count, allequal, allunique, circshift
+    count, circshift
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -507,26 +507,6 @@ function all(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapS
         invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
         Base._all(f, v, :, style)
-    end
-end
-
-allequal(v::AbstractSmallVector) = isempty(v) ? true : all(isequal(@inbounds v[1]), v)
-
-function allequal(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa LazyStyle
-        invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
-    else
-        allequal(map(f, v; style))
-    end
-end
-
-allunique(v::AbstractSmallVector) = all(x -> count(isequal(x), v) == 1, v)
-
-function allunique(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
-    if style isa LazyStyle
-        invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
-    else
-        allunique(map(f, v; style))
     end
 end
 
