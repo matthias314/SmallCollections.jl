@@ -1,4 +1,4 @@
-export AbstractFixedVector, FixedVector, MutableFixedVector,
+export AbstractFixedVector, FixedVector, MutableFixedVector, fixedvector,
     sum_fast, extrema_fast, bits, fasthash
 
 using Base: @propagate_inbounds, tail, haslength, BitInteger,
@@ -163,6 +163,16 @@ end
         V(Tuple(t))
     end
 end
+
+"""
+    fixedvector(v::AbstractFixedVector{N,T}) where {N,T} -> FixedVector{N,T}
+
+Returns the argument as a `FixedVector`. The purpose of this function is to make is easier
+to write code that works for both `AbstractFixedVector` and `AbstractSmallVector`.
+
+See also [`fixedvector(::AbstractSmallVector)`](@ref).
+"""
+fixedvector(v::AbstractFixedVector{N,T}) where {N,T} = FixedVector{N,T}(v.t)
 
 convert(::Type{V}, v::V) where V <: AbstractFixedVector = v
 convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractFixedVector = V(v)

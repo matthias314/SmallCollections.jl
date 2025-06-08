@@ -90,7 +90,7 @@ capacity(::Type{<:AbstractSmallVector{N}}) where N = N
 Return the `FixedVector` underlying `v`. It agrees with `v` at all positions up to `length(v)`;
 the remaining elements are equal to `default(T)`.
 
-See also [`$(@__MODULE__).default`](@ref).
+See also [`$(@__MODULE__).default`](@ref), [`fixedvector(::AbstractFixedVector)`](@ref).
 
 # Example
 ```jldoctest
