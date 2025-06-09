@@ -8,7 +8,7 @@ import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
     zero, map, reverse, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
-    count, circshift
+    circshift
 
 import Base.FastMath: eq_fast, mul_fast
 
@@ -820,26 +820,4 @@ function smallvector_bc(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
         w = invoke(map, Tuple{F,VT...}, f, vs...)
         SmallVector{N}(w)
     end
-end
-
-#
-# count
-#
-
-count(v::AbstractSmallVector; kw...) = count(identity, v; kw...)
-
-count(f::F, v::AbstractSmallVector{N,T}; dims = :, init = 0, style::MapStyle = MapStyle(f, T)) where {F,N,T} =
-    smallvector_count(style, f, v, dims, init)
-
-smallvector_count(::MapStyle, f::F, v, dims, init) where F =
-    invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
-
-smallvector_count(::Union{StrictStyle,RigidStyle}, f::F, v, ::Colon, init) where F =
-    count(f, v.b; init)
-
-function smallvector_count(::EagerStyle, f::F, v, ::Colon, init::T) where {F,T}
-    c = @inline map(f, v.b)
-    eltype(c) == Bool || error("given function must return Bool values")
-    m = bits(c)
-    init + ifelse(isempty(v), 0, count_ones(unsafe_shl(m, bitsize(m)-length(v)))) % T
 end

@@ -369,12 +369,6 @@ function all(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapS
     end
 end
 
-function Base._count(f::F, v::AbstractFixedVector, ::Colon, init::T) where {F,T}
-    w = @inline map(f, v)
-    eltype(w) == Bool || error("given function must return Bool values")
-    init + count_ones(bits(w)) % T
-end
-
 Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; kw...)
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)
 Base._extrema(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(Base.ExtremaMap(f), Base._extrema_rf, v; kw...)

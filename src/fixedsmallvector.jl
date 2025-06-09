@@ -5,7 +5,7 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    allequal, allunique
+    allequal, allunique, count
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -82,5 +82,15 @@ function allunique(f::F, v::AbstractFixedOrSmallVector{N,T}; style::MapStyle = M
         invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
     else
         allunique(map(f, v; style))
+    end
+end
+
+count(v::AbstractFixedOrSmallVector; kw...) = count(identity, v; kw...)
+
+function count(f::F, v::AbstractFixedOrSmallVector; dims = :, init::T = 0, kw...) where {F,T}
+    if get(kw, :style, missing) isa LazyStyle || !(dims isa Colon)
+        invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init, kw...)
+    else
+        init + length(support(f, v; kw...)) % T
     end
 end
