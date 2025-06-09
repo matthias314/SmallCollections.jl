@@ -37,13 +37,14 @@ function findnext(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findnext, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        s = filter(>=(k), _support(assertbool(f), v; style))
-        isempty(s) ? nothing : first(s)
+        m = bits(filter(>=(k), @inline support(assertbool(f), fixedvector(v))))
+        i = trailing_zeros(m)+1
+        i <= length(v) ? i : nothing
     end
 end
 
 function findlast(f::F, v::AbstractFixedOrSmallVector{N,T}; style = MapStyle(f, T)) where {F <: Function, N, T}
-    findprev(f, v, N; style)  # TODO: better use length(v) ?
+    findprev(f, v, length(v); style)
 end
 
 function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = MapStyle(f, T)) where {F <: Function, N, T}
@@ -51,8 +52,9 @@ function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findprev, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        s = filter(<=(k), _support(assertbool(f), v; style))
-        isempty(s) ? nothing : last(s)
+        m = bits(filter(<=(k), @inline support(assertbool(f), fixedvector(v))))
+        i = bitsize(m)-leading_zeros(m)
+        0 != i <= length(v) ? i : nothing
     end
 end
 

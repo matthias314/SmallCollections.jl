@@ -474,7 +474,7 @@ SmallBitSet{UInt8} with 2 elements:
 """
 support(::Any, ::AbstractFixedVector)
 
-support(f::F, v::AbstractFixedVector) where F = support(map(f, v))
+support(f::F, v::AbstractFixedVector) where F = support(@inline map(f, v))
 
 #
 # broadcast
