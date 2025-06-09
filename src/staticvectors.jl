@@ -3,7 +3,7 @@
 #
 
 using Base: @assume_effects
-import Base: setindex, circshift, circshift!, convert
+import Base: setindex, circshift, circshift!, reverse!, convert
 
 export setindex
 
@@ -261,6 +261,28 @@ end
     """
     quote
         Base.llvmcall($ir, Cvoid, Tuple{Ptr{T}}, ptr)
+    end
+end
+
+@inline @generated function reverse!(v::MutableFixedVector{N,T}) where {N, T <: HWType}
+    M = llvm_type(T)
+    b = sizeof(T)
+    s = join(("i32 " * string(i) for i in N-1:-1:0), ", ")
+    ir = VERSION > v"1.12-" ? """
+        %a = load <$N x $M>, ptr %0, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        store <$N x $M> %b, ptr %0, align $b
+        ret void
+    """ : """
+        %p = inttoptr i64 %0 to <$N x $M>*
+        %a = load <$N x $M>, <$N x $M>* %p, align $b
+        %b = shufflevector <$N x $M> %a, <$N x $M> poison, <$N x i32> <$s>
+        store <$N x $M> %b, <$N x $M>* %p, align $b
+        ret void
+    """
+    quote
+        Base.llvmcall($ir, Cvoid, Tuple{Ptr{T}}, pointer(v))
+        v
     end
 end
 

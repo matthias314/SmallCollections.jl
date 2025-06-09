@@ -422,6 +422,7 @@ function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (miss
     end
 end
 
+
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
     @boundscheck checkbounds(v, start:stop)
     t = ntuple(Val(N)) do i
