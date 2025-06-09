@@ -14,8 +14,13 @@ support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 _support(f, v::AbstractFixedVector; style) = support(f, v)
 _support(f, v::AbstractSmallVector; style) = support(f, v; style)
 
+assertbool(f) = x -> f(x)::Bool
+
 findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
-findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F<:Function,N} = SmallVector{N,SmallLength}(support(f, v; kw...))
+
+function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F<:Function,N}
+    SmallVector{N,SmallLength}(support(assertbool(f), v; kw...))
+end
 
 findfirst(v::AbstractFixedOrSmallVector{N,Bool}) where N = findfirst(identity, v; style = StrictStyle())
 findlast(v::AbstractFixedOrSmallVector{N,Bool}) where N = findlast(identity, v; style = StrictStyle())
@@ -32,7 +37,7 @@ function findnext(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findnext, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        s = filter(>=(k), _support(f, v; style))
+        s = filter(>=(k), _support(assertbool(f), v; style))
         isempty(s) ? nothing : first(s)
     end
 end
@@ -46,7 +51,7 @@ function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findprev, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        s = filter(<=(k), _support(f, v; style))
+        s = filter(<=(k), _support(assertbool(f), v; style))
         isempty(s) ? nothing : last(s)
     end
 end
@@ -87,10 +92,10 @@ end
 
 count(v::AbstractFixedOrSmallVector; kw...) = count(identity, v; kw...)
 
-function count(f::F, v::AbstractFixedOrSmallVector; dims = :, init::T = 0, kw...) where {F,T}
-    if get(kw, :style, missing) isa LazyStyle || !(dims isa Colon)
-        invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init, kw...)
+function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, style = MapStyle(f, T)) where {F,N,T,S}
+    if style isa LazyStyle || !(dims isa Colon)
+        invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
     else
-        init + length(support(f, v; kw...)) % T
+        init + length(_support(assertbool(f), v; style)) % S
     end
 end
