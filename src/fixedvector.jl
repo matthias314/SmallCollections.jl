@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
-    minimum, maximum, extrema, any, all, in, reverse,
+    minimum, maximum, extrema, in, reverse,
     vcat, copy, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
@@ -320,8 +320,6 @@ See also `Base.sum`, `Base.@fastmath`.
 """
 sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
-Base._any(f, v::AbstractFixedVector, ::Colon) = findfirst(f, v) !== nothing
-Base._all(f, v::AbstractFixedVector, ::Colon) = findfirst((!)∘f, v) === nothing
 
 """
     any(f::Function, v::AbstractFixedVector; dims = :, [style::MapStyle])
@@ -352,22 +350,6 @@ findfirst(::Function, ::AbstractFixedVector),
 findlast(::Function, ::AbstractFixedVector),
 findnext(::Function, ::AbstractFixedVector, ::Integer),
 findprev(::Function, ::AbstractFixedVector, ::Integer)
-
-function any(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa LazyStyle
-        invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
-    else
-        Base._any(f, v, :)
-    end
-end
-
-function all(f::F, v::AbstractFixedVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa LazyStyle
-        invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
-    else
-        Base._all(f, v, :)
-    end
-end
 
 Base._minimum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, min, v; kw...)
 Base._maximum(f, v::AbstractFixedVector, ::Colon; kw...) = mapfoldl(f, max, v; kw...)

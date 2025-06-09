@@ -5,7 +5,7 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    allequal, allunique, count
+    any, all, allequal, allunique, count
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -66,6 +66,29 @@ end
     @boundscheck isempty(v) && error("argument must not be empty")
     x = maximum(v)
     x, findfirst(==(x), fixedvector(v))::Int
+end
+
+any(v::AbstractFixedOrSmallVector; kw...) = any(identity, v; kw...)
+all(v::AbstractFixedOrSmallVector; kw...) = all(identity, v; kw...)
+
+function any(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F<:Function,N,T}
+    @inline
+    if style isa LazyStyle || !(dims isa Colon)
+        invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        u = map(assertbool(f), fixedvector(v))
+        trailing_zeros(bits(u)) < length(v)
+    end
+end
+
+function all(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F<:Function,N,T}
+    @inline
+    if style isa LazyStyle || !(dims isa Colon)
+        invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
+    else
+        u = map(assertbool(f), fixedvector(v))
+        trailing_ones(bits(u)) >= length(v)
+    end
 end
 
 allequal(v::AbstractFixedOrSmallVector) = isempty(v) ? true : all(isequal(@inbounds v[1]), v)

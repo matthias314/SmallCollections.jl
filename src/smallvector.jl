@@ -457,9 +457,6 @@ for g in (:sum, :prod, :minimum, :maximum, :extrema)
     @eval $g(f::F, v::AbstractSmallVector;  kw...) where F = $g(map(f, v);  kw...)
 end
 
-Base._any(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst(f, v; style) !== nothing
-Base._all(f, v::AbstractSmallVector{N,T}, ::Colon, style ::MapStyle = MapStyle(f, T)) where {N,T} = findfirst((!)∘f, v; style) === nothing
-
 """
     any(f::Function, v::AbstractSmallVector; dims = :, [style::MapStyle])
     all(f::Function, v::AbstractSmallVector; dims = :, [style::MapStyle])
@@ -493,22 +490,6 @@ findlast(::Function, ::AbstractSmallVector),
 findnext(::Function, ::AbstractSmallVector, ::Integer),
 findprev(::Function, ::AbstractSmallVector, ::Integer),
 count(::Any, ::AbstractSmallVector)
-
-function any(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa LazyStyle
-        invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
-    else
-        Base._any(f, v, :, style)
-    end
-end
-
-function all(f::F, v::AbstractSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F <: Function, N, T}
-    if !(dims isa Colon) || style isa LazyStyle
-        invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
-    else
-        Base._all(f, v, :, style)
-    end
-end
 
 Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
 
