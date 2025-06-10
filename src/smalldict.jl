@@ -4,7 +4,7 @@
 
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
     setindex, push, delete, pop, invget, getmin, getmax,
-    popmin, popmax, popmin!, popmax!
+    popmin, popmax, popmin!, popmax!, findall
 
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
@@ -568,4 +568,25 @@ function replace(d::AbstractSmallDict, ps::Vararg{Pair{<:Pair,<:Pair},M}; count:
     e = MutableSmallDict(d)
     @inline smalldict_replace!(e, count, ps)
     SmallDict(e)
+end
+
+findall(d::AbstractSmallDict) = findall(identity, d)
+
+"""
+    findall(f::Function, d::AbstractSmallDict{N,K}; [style::MapStyle]) where {N,K} -> SmallVector{N,K}
+
+With an `AbstractSmallDict` `d` as second argument, this function accepts
+the keyword argument `style`. If it equals `LazyStyle()`, then the
+function `f` is only evaluated on the actual values of `d`. For any
+other value of `style`, `f` is evaluated on `values(d)` as well as on
+the default values used for padding this `SmallVector`. This is often faster for simple functions.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions.
+
+See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).MapStyle`](@ref).
+"""
+function findall(f::F, d::AbstractSmallDict{N,K}; kw...) where {F<:Function,N,K}
+    @inline
+    SmallVector{N,K}(@inbounds(d.keys[i]) for i in support(assertbool(f), d.vals; kw...))
 end
