@@ -2,6 +2,8 @@
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
 Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
+Collects = "08986516-18db-4a8b-8eaa-f5ef1828d8f1"
+FixedSizeArrays = "3821ddf9-e5b5-40d5-8e25-6813ab96b5e2"
 SIMD = "fdea26ae-647d-5447-a871-4b548cad5224"
 SmallCollections = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"

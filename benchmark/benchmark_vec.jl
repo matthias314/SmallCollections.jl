@@ -11,7 +11,7 @@ end
 
 using Markdown: parse
 
-using SmallCollections, StaticArrays
+using SmallCollections, StaticArrays, FixedSizeArrays, Collects
 using SmallCollections: push, pop
 using Base: Fix1, Fix2
 
@@ -28,6 +28,7 @@ function benchmark_vec(::Val{N}, ::Type{T}, M) where {N,T}
     qq2 = [rand(T, N) for k in 1:M]
 
     pq = [(pp, qq),
+        (map(FixedSizeVectorDefault, pp2), map(FixedSizeVectorDefault, qq2)),
         (map(MutableSmallVector{N}, pp), map(MutableSmallVector{N}, qq)),
         (map(MutableFixedVector{N}, pp2), map(MutableFixedVector{N}, qq2)),
         (map(MVector{N}, pp2), map(MVector{N}, qq2)),
@@ -51,6 +52,8 @@ function benchmark_vec(::Val{N}, ::Type{T}, M) where {N,T}
         # a[i, 3] = @bs similar(p) map!(v -> newcollect(v, T(x) for x in 1:length(v)), _, $e)
         a[i, 3] = if V <: Vector
             @bs similar(p) map!(y -> collect(k+y for k in T(1):T(N)), _, $e)
+        elseif V <: FixedSizeVector
+            @bs similar(p) map!(y -> collect_as(FixedSizeVectorDefault{T}, k+y for k in T(1):T(N)), _, $e)
         elseif V <: MutableSmallVector
             @bs similar(p) map!(y -> MutableSmallVector{N,T}(k+y for k in T(1):T(N)), _, $e)
         elseif V <: SmallVector
@@ -81,7 +84,7 @@ function benchmark_vec(::Val{N}, ::Type{T}, M) where {N,T}
             @bs similar(p) map!(+, _, $p, $q)
         end
 
-        a[i, 6] = if V <: Union{Vector,MutableSmallVector,MVector,MutableFixedVector}
+        a[i, 6] = if V <: Union{Vector,FixedSizeVector,MutableSmallVector,MVector,MutableFixedVector}
             @bs deepcopy(p) for (v, w) in zip(_, $q) v .+= w end evals = 1
         else
             "n/a"
@@ -139,6 +142,8 @@ function make_table_vec(a)
 
     c *= join(b, '\n') * '\n'
 
+    c = replace(c, r"FixedSizeArray{([[:alnum:]]+), \d+, Memory{[[:alnum:]]+}}" => s"FixedSizeVectorDefault{\1}")
+
     # c = replace(c, r"000 allocs: [^)]*" => " A")
     c = replace(c, r"\((\d)[^)]*\)" => s"**(\1)**", r"\bns\b" => "**ns**")
     return c
@@ -154,6 +159,8 @@ function make_table_vec_raw(a)
         """
 
     c *= join(b, '\n') * '\n'
+
+    c = replace(c, r"FixedSizeArray{([[:alnum:]]+), \d+, Memory{[[:alnum:]]+}}" => s"FixedSizeVectorDefault{\1}")
 
     # c = replace(c, r"000 allocs: [^)]*" => " A")
     c = replace(c, r"\((\d)[^)]*\)" => s"**(\1)**", r"\bns\b" => "**ns**")
