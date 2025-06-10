@@ -20,4 +20,5 @@ pop(::AbstractSmallDict, ::Any, Any)
 delete(::AbstractSmallDict, ::Any)
 popmin
 popmin!
+findall(::Function, ::AbstractSmallDict)
 ```
