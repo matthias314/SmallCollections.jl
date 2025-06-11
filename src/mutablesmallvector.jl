@@ -342,6 +342,10 @@ function filter!(f, v::MutableSmallVector)
     @inbounds resize!(v, j-1)
 end
 
+function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallVector{N,T}}) where {N,T}
+    MutableSmallVector(rand(rng, SmallVector{N,T}))
+end
+
 """
     map!(f, w::MutableSmallVector, v::AbstractSmallVector...; [style::MapStyle]) -> w
 

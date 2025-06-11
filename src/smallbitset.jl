@@ -464,3 +464,6 @@ setdiff(s::SmallBitSet, ts...) = foldl(setdiff, ts; init = s)
 symdiff(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask ⊻ t.mask)
 
 symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
+
+Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet{U}}) where U <: Unsigned = _SmallBitSet(rand(rng, U))
+Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet}) = rand(rng, SmallBitSet{UInt})

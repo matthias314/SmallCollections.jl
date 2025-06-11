@@ -347,3 +347,11 @@ The `init` keyword argument may not be used.
 See also `Base.extrema`, `Base.@fastmath`.
 """
 extrema_fast(s::AbstractSmallSet; kw...) = extrema_fast(values(s); kw...)
+
+function Random.rand(rng::AbstractRNG, ::SamplerType{SmallSet{N,T}}) where {N,T}
+    _SmallSet(rand(rng, SmallDict{N,T,Nothing}))
+end
+
+function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallSet{N,T}}) where {N,T}
+    _MutableSmallSet(rand(rng, MutableSmallDict{N,T,Nothing}))
+end

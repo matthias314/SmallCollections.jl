@@ -283,3 +283,10 @@ end
         @test_inferred support(v) Set{Int}(i for i in 1:N if u[i] != 0) SmallBitSet
     end
 end
+
+@testset "FixedVector rand" begin
+    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+        v = @inferred rand(V{N,T})
+        @test v isa V{N,T}
+    end
+end

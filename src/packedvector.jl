@@ -678,6 +678,12 @@ end
 
 support(v::PackedVector{U,1}) where U = convert(SmallBitSet{UInt}, bits(v))
 
+function Random.rand(rng::AbstractRNG, ::SamplerType{PackedVector{U,M,T}}) where {U,M,T}
+    n = rand(0:capacity(PackedVector{U,M,T}))
+    mask = one(U) << unsigned(M*n) - one(U)
+    PackedVector{U,M,T}(rand(U) & mask, n)
+end
+
 #
 # conversion to SmallVector
 #

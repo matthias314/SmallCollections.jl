@@ -6,6 +6,7 @@ version = "0.4.1-DEV"
 [deps]
 BitIntegers = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
 CpuId = "adafc99b-e345-5852-983c-f28acb93d879"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [weakdeps]
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
@@ -16,15 +17,15 @@ BangBangExt = "BangBang"
 StaticArraysExt = "StaticArrays"
 
 [compat]
-julia = "1.10"
+BangBang = "0.4"
 BitIntegers = "0.3"
 CpuId = "0.3"
-BangBang = "0.4"
 StaticArrays = "1.5"
+julia = "1.10"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 StructEqualHash = "8bd03d06-bfef-4aaf-8250-1a26cbb401bf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "BangBang", "StructEqualHash"]

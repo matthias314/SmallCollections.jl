@@ -120,3 +120,12 @@ end
         @test_inferred symdiff(s1, s2) symdiff(t1, t2) SmallBitSet{U}
     end
 end
+
+@testset "SmallBitSet rand" begin
+    for U in unsigned_types
+        s = @inferred rand(SmallBitSet{U})
+        @test s isa SmallBitSet{U}
+    end
+    s = @inferred rand(SmallBitSet)
+    @test s isa SmallBitSet{UInt}
+end

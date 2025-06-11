@@ -590,3 +590,25 @@ function findall(f::F, d::AbstractSmallDict{N,K}; kw...) where {F<:Function,N,K}
     @inline
     SmallVector{N,K}(@inbounds(d.keys[i]) for i in support(assertbool(f), d.vals; kw...))
 end
+
+function Random.rand(rng::AbstractRNG, ::SamplerType{SmallDict{N,K,V}}) where {N,K,V}
+    keys = SmallVector{N,K}()
+    for _ in 1:rand(0:N)
+        key = rand(K)
+        if !(key in keys)
+            keys = @inbounds push(keys, key)
+        end
+    end
+    vals = smallvector_rand(rng, Val(N), V, length(keys))
+    SmallDict(keys, vals)
+end
+
+function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallDict{N,K,V}}) where {N,K,V}
+    keys = MutableSmallVector{N,K}()
+    for _ in 1:rand(0:N)
+        key = rand(K)
+        key in keys || @inbounds push!(keys, key)
+    end
+    vals = smallvector_rand(rng, Val(N), V, length(keys))
+    MutableSmallDict(keys, vals)
+end

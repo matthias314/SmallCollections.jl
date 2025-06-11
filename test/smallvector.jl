@@ -4,11 +4,6 @@ using Base.FastMath: eq_fast
 
 const VS = (SmallVector, MutableSmallVector)
 
-function isvalid(v::AbstractSmallVector{N,T}) where {N,T}
-    n = length(v)
-    0 <= n <= N && all(==(default(T)), view(v.b, n+1:N))
-end
-
 @testset "SmallVector" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
@@ -575,6 +570,13 @@ end
         u = rand(0:2, m)
         v = V{N,T}(u)
         @test_inferred support(v) Set{Int}(i for i in 1:m if u[i] != 0) SmallBitSet
+    end
+end
+
+@testset "SmallVector rand" begin
+    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        v = @inferred rand(V{N,T})
+        @test v isa V{N,T} && isvalid(v)
     end
 end
 

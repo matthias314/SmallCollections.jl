@@ -244,3 +244,11 @@ end
         @test w === u
     end
 end
+
+@testset "SmallSet rand" begin
+    for S in SS, N in (1, 2, 9, 16), T in test_types
+        S <: MutableSmallSet && !isbitstype(T) && continue
+        s = @inferred rand(S{N,T})
+        @test s isa S{N,T} && isvalid(s)
+    end
+end

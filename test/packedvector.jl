@@ -11,12 +11,6 @@ function checkvalue(::Type{Bool}, N, x::T) where T
     end
 end
 
-function isvalid(v::PackedVector{U,N,T}) where {U,N,T}
-    n = length(v)
-    mask = one(U) << (n*N) - one(U)
-    iszero(v.m & ~mask)
-end
-
 function packed_rand(N, T)
     if T <: Unsigned || T == Bool
         rand(T(0):T(BigInt(2)^N-1))
@@ -355,5 +349,14 @@ end
             v = @inferred PackedVector{U,N,T}(u)
             @test_inferred support(v) Set{Int}(i for i in 1:m if u[i] != 0) SmallBitSet
         end
+    end
+end
+
+@testset "PackedVector rand" begin
+    for U in (UInt8, UInt32, UInt128), T in (Bool, Int8, UInt32), M in 1:3:bitsize(T)
+        c = bitsize(U)÷M
+        c == 0 && continue
+        v = @inferred rand(PackedVector{U,M,T})
+        @test v isa PackedVector{U,M,T} && isvalid(v)
     end
 end
