@@ -149,6 +149,9 @@ MapStyle(::Union{typeof.(
 
 # definitions depending on specific types
 
+MapStyle(::Fix1{typeof(<), U}, ::Type{T}) where {T, U <: Unsigned} = iffasttypes(StrictStyle(), T, U)
+MapStyle(::Fix2{typeof(>), U}, ::Type{T}) where {T, U <: Unsigned} = iffasttypes(StrictStyle(), T, U)
+
 MapStyle(::typeof(rem), ::Type{T}, ::Type{Type{U}}) where {T,U} = iffasttypes(StrictStyle(), T, U)
 MapStyle(::Fix2{typeof(rem),U}, ::Type{T}) where {T,U} = iffasttypes(StrictStyle(), T, U)
 
