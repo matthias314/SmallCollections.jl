@@ -29,7 +29,10 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 
 @testset "PackedVector" begin
     for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
-        bitsize(T) < N && continue
+        if bitsize(T) < N
+            @test_throws Exception PackedVector{U,N,T}()
+            continue
+        end
         c = bitsize(U)÷N
         c == 0 && continue
     for m in (0, 1, round(Int, 0.7*c), c-1, c)
@@ -78,7 +81,7 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
         @test_inferred length(v) length(u) Int
         @test_inferred PackedVector{U,N,T}() PackedVector{U,N,T}(())
         @test_inferred empty(v) PackedVector{U,N,T}()
-        @test_inferred empty(v, Int) PackedVector{U,N,Int}()
+        N <= bitsize(Int) && @test_inferred empty(v, Int) PackedVector{U,N,Int}()
     end
     end
 end

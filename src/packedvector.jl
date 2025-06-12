@@ -76,6 +76,10 @@ julia> Int8(2)*v
 struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractCapacityVector{T}
     m::U
     n::Int
+    function PackedVector{U,M,T}(m::U, n::Int) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
+        bitsize(T) < M && error("type $T has fewer than $M bits")
+        new{U,M,T}(m, n)
+    end
 end
 
 PackedVector{U,M,T}(v::PackedVector{U,M,T}) where {U,M,T} = v
@@ -233,7 +237,6 @@ end
 
 @inline function checkvalue(M, x::T) where T
     bitsize(T) == M && return
-    bitsize(T) < M && error("type $T has fewer than $M bits")
     if T <: Signed
         -one(T) << (M-1) <= x < one(T) << (M-1) || error("value $x out of range for $M bits signed integer")
     else
