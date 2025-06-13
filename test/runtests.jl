@@ -1,5 +1,7 @@
 using Test, SmallCollections, BitIntegers
 
+using SmallCollections: LazyStyle, EagerStyle, RigidStyle, StrictStyle, SmallLength
+
 macro test_inferred(expr, good, goodtype = missing)
     msg = """
 
