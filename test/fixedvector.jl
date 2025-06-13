@@ -214,15 +214,15 @@ end
     for N in (1, 2, 9, 16), T1 in test_types, V in (FixedVector, MutableFixedVector)
         T1 <: Number || continue
         u1 = rand(T1, N)
-        v1 = SmallVector{N}(u1)
+        v1 = V{N}(u1)
         u3 = map(f, u1)
-        w = @test_inferred map(f, v1) u3 SmallVector{N,eltype(u3)}
+        w = @test_inferred map(f, v1) u3 FixedVector{N,eltype(u3)}
         for T2 in test_types
             T2 <: Number || continue
             u2 = rand(T2, N+1)
-            v2 = SmallVector{N+1}(u2)
+            v2 = V{N+1}(u2)
             u4 = map(f, u1, u2)
-            w = @test_inferred map(f, v1, v2) u4 SmallVector{N,eltype(u4)}
+            w = @test_inferred map(f, v1, v2) u4 FixedVector{N,eltype(u4)}
         end
     end
     v = FixedVector{8}(1:8)
@@ -237,7 +237,7 @@ end
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         u = rand(0:2, N)
-        v = @inferred SmallVector{N,T}(u)
+        v = V{N,T}(u)
         @test_inferred support(v) Set{Int}(i for i in 1:N if u[i] != 0) SmallBitSet
     end
 end
