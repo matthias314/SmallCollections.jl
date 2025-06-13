@@ -14,6 +14,9 @@ support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 _support(f, v::AbstractFixedVector; style) = support(f, v)
 _support(f, v::AbstractSmallVector; style) = support(f, v; style)
 
+_map(f, v::AbstractFixedVector; style) = map(f, v)
+_map(f, v::AbstractSmallVector; style) = map(f, v; style)
+
 assertbool(f) = x -> f(x)::Bool
 
 findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
@@ -100,7 +103,7 @@ function allequal(f::F, v::AbstractFixedOrSmallVector{N,T}; style::MapStyle = Ma
     if style isa LazyStyle
         invoke(allequal, Tuple{F,AbstractVector{T}}, f, v)
     else
-        allequal(map(f, v; style))
+        allequal(_map(f, v; style))
     end
 end
 
@@ -111,7 +114,7 @@ function allunique(f::F, v::AbstractFixedOrSmallVector{N,T}; style::MapStyle = M
     if style isa LazyStyle
         invoke(allunique, Tuple{F,AbstractVector{T}}, f, v)
     else
-        allunique(map(f, v; style))
+        allunique(_map(f, v; style))
     end
 end
 
