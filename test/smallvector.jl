@@ -660,7 +660,7 @@ end
             @test_inferred any(isodd, v) any(isodd, u) Bool
             @test_inferred all(isodd, v) all(isodd, u) Bool
             @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
-            @test_inferred count(!iszero, v) count(!iszero, u) Int
+            @test_inferred count(!iszero, v; init = Int32(0)) count(!iszero, u; init = Int32(0)) Int32
             if T == Bool
                 @test_inferred support(v) Set(findall(u)) SmallBitSet
                 @test_inferred findall(v) findall(u) SmallVector{N,SmallLength}

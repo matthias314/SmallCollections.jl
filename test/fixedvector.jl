@@ -274,7 +274,7 @@ end
             @test_inferred allunique(v) allunique(u) Bool
             @test_inferred allunique(-, v) allunique(-, u) Bool
             @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
-            @test_inferred count(!iszero, v) count(!iszero, u) Int
+            @test_inferred count(!iszero, v; init = 0.0) count(!iszero, u; init = 0.0) Float64
             @test_inferred any(isodd, v) any(isodd, u) Bool
             @test_inferred all(isodd, v) all(isodd, u) Bool
             if T == Bool

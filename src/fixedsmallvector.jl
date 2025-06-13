@@ -124,6 +124,7 @@ function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, 
     if style isa LazyStyle || !(dims isa Colon)
         invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
     else
-        init + length(_support(assertbool(f), v; style)) % S
+        k = length(_support(assertbool(f), v; style))
+        init + (S <: Integer ? k % S : k)
     end
 end
