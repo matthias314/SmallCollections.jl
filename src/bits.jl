@@ -126,11 +126,30 @@ function pdep(x::Unsigned, y::U) where U <: Unsigned
     a
 end
 
+"""
+    $(@__MODULE__).pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} -> U
+
+The bits in `x` corresponding to the `1`-bits in `y` are compressed to the lowest bits of the result;
+the higher bits are set to `0`.
+
+This function is only available on `x86_64` and `i686` machines and uses the corresponding instruction from the
+[BMI2](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI2) instruction set.
+"""
+pext(x::Unsigned, y::Union{UInt8,UInt16,UInt32,UInt})
+
 using CpuId: cpufeature
 
 if (Sys.ARCH == :x86_64 || Sys.ARCH == :i686) && cpufeature(:BMI2)
     const llvm_pdep = "llvm.x86.bmi.pdep.$(bitsize(UInt))"
+    const llvm_pext = "llvm.x86.bmi.pext.$(bitsize(UInt))"
 
     pdep(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
         ccall(llvm_pdep, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+
+    pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
+            ccall(llvm_pext, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+
+    const HAS_PEXT = true
+else
+    const HAS_PEXT = false
 end
