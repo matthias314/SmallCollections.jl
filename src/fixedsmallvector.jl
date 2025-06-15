@@ -5,7 +5,7 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    any, all, allequal, allunique, count
+    any, all, allequal, allunique, count, getindex
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -126,5 +126,39 @@ function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, 
     else
         k = length(_support(assertbool(f), v; style))
         init + (S <: Integer ? k % S : k)
+    end
+end
+
+"""
+    getindex(v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}, s::SmallBitSet) where {N,T} -> SmallVector{N,T}
+
+Returns the vector with elements `v[i]` where `i` runs through the elements of `s` in increasing order.
+For `AbstractSmallVector` this is the same as `v[collect(s)]`, but faster.
+
+# Example
+```jldoctest
+julia> v = SmallVector{8}('a':'f'); s = SmallBitSet{UInt16}(1:2:5)
+SmallBitSet{UInt16} with 3 elements:
+  1
+  3
+  5
+
+julia> v[s]
+3-element SmallVector{8, Char}:
+ 'a': ASCII/Unicode U+0061 (category Ll: Letter, lowercase)
+ 'c': ASCII/Unicode U+0063 (category Ll: Letter, lowercase)
+ 'e': ASCII/Unicode U+0065 (category Ll: Letter, lowercase)
+```
+"""
+getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
+
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, s::SmallBitSet{U}) where {N,T,U}
+    @boundscheck isempty(s) || checkbounds(v, last(s))
+    if HAS_PEXT && T == Bool && bitsize(U) <= bitsize(UInt)
+        m = pext(bits(fixedvector(v)), bits(s))
+        b = convert(FixedVector{N,Bool}, m)
+        SmallVector(b, length(s))
+    else
+        SmallVector{N,T}(@inbounds v[i] for i in s)
     end
 end

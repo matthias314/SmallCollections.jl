@@ -27,6 +27,7 @@ SmallCollections.blsi
 SmallCollections.blsr
 SmallCollections.blsmsk
 SmallCollections.pdep
+SmallCollections.pext
 ```
 
 ## Internal names

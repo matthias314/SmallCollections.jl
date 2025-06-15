@@ -33,6 +33,7 @@ SmallVector
 MutableSmallVector
 fixedvector(::AbstractSmallVector)
 bits(::AbstractSmallVector)
+getindex(::AbstractSmallVector, ::SmallBitSet)
 empty(::AbstractSmallVector, ::Type)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
 unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N},NTuple{N}}) where N
