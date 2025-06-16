@@ -291,6 +291,47 @@ end
     @inbounds V(@inbounds(v[i]) for i in ii)
 end
 
+"""
+    getindex(v::V, s::SmallBitSet) where V <: PackedVector -> V
+
+Returns the vector with elements `v[i]` where `i` runs through the elements of `s` in increasing order.
+This is the same as `v[collect(s)]`, but faster.
+
+# Example
+```jldoctest
+julia> v = PackedVector{UInt64,6,Int8}(-2:2)
+5-element PackedVector{UInt64, 6, Int8}:
+ -2
+ -1
+  0
+  1
+  2
+
+julia> s = SmallBitSet((1, 3, 4))
+SmallBitSet{UInt64} with 3 elements:
+  1
+  3
+  4
+
+julia> v[s]
+3-element PackedVector{UInt64, 6, Int8}:
+ -2
+  0
+  1
+```
+"""
+getindex(v::PackedVector, s::SmallBitSet)
+
+@inline function getindex(v::V, s::SmallBitSet{U}) where {W, M, V <: PackedVector{W, M}, U}
+    @boundscheck isempty(s) || checkbounds(v, last(s))
+    if HAS_PEXT && M == 1 && bitsize(U) < bitsize(UInt)
+        m = pext(v.m, bits(s))
+        V(m % W, length(s))
+    else
+        V(@inbounds v[i] for i in s)
+    end
+end
+
 @inline function setindex(v::PackedVector{U,M,T}, x, i::Integer) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
