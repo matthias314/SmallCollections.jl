@@ -231,7 +231,7 @@ end
             @test_throws Exception prepend(v, (x,), [y])
         end
         if T <: Integer
-            @test_inferred filter(isodd, v) filter(isodd, u) v
+            @test_inferred filter(isodd, v) filter(isodd, u) SmallVector(v)
         end
     end
 end
