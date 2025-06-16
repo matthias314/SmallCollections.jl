@@ -332,14 +332,10 @@ function circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
     unsafe_copyto!(v, w)
 end
 
-function filter!(f, v::MutableSmallVector)
-    j = 1
-    @inbounds for i in eachindex(v)
-        f(v[i]) || continue
-        v[j] = v[i]
-        j += 1
-    end
-    @inbounds resize!(v, j-1)
+function filter!(f::F, v::MutableSmallVector; kw...) where F
+    w = filter(f, v; kw...)
+    v.b, v.n = w.b, w.n
+    v
 end
 
 if VERSION >= v"1.11"

@@ -468,6 +468,8 @@ end
     findnext(f::Function, v::AbstractSmallVector, k::Integer; [style::MapStyle])
     findprev(f::Function, v::AbstractSmallVector, k::Integer; [style::MapStyle])
     count(f, v::AbstractSmallVector; dims = :, init = 0, [style::MapStyle])
+    filter(f, v::AbstractSmallVector; [style::MapStyle])
+    filter!(f, v::MutableSmallVector; [style::MapStyle])
 
 With an `AbstractSmallVector` `v` as second argument, these functions accept
 the additional keyword argument `style`. If it equals `LazyStyle()`, then the

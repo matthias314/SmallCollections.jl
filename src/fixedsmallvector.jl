@@ -5,7 +5,7 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    any, all, allequal, allunique, count, getindex
+    any, all, allequal, allunique, count, getindex, filter
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -161,4 +161,8 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
     else
         SmallVector{N,T}(@inbounds v[i] for i in s)
     end
+end
+
+function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
+    @inbounds v[support(f, v; kw...)]
 end
