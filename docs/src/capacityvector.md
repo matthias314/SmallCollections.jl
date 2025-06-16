@@ -51,6 +51,7 @@ support(::Any, ::AbstractSmallVector)
 ```@docs
 PackedVector
 bits(::PackedVector)
+getindex(::PackedVector, ::SmallBitSet)
 empty(::PackedVector, ::Type)
 fasthash(::PackedVector, ::UInt)
 SmallCollections.unsafe_add
