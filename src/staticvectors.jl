@@ -73,7 +73,11 @@ end
 
 @generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: HWType}
     M = llvm_type(T)
-    L = bitsize(SmallLength)
+    L = 8*sizeof(T)
+    if log2(N) >= L
+        L = bitsize(SmallLength)
+    end
+    U = Symbol(:UInt, L)
     s = join(("i$L $k" for k in 0:N-1), ", ")
     ir = """
         %b = insertelement <$N x i$L> poison, i$L %1, i8 0
@@ -84,7 +88,7 @@ end
         """
     quote
         @inline
-        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, SmallLength}, vec(Tuple(v)), n % SmallLength)
+        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, $U}, vec(Tuple(v)), n % $U)
         FixedVector{N,T}(unvec(b))
     end
 end
