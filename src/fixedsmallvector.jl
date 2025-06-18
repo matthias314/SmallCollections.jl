@@ -138,6 +138,11 @@ function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSma
     end
 end
 
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange) where {N,T}
+    @boundscheck checkbounds(v, ii)
+    @inbounds SmallVector{N,T}(v[i] for i in ii)
+end
+
 """
     getindex(v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}, s::SmallBitSet) where {N,T} -> SmallVector{N,T}
 
@@ -178,6 +183,15 @@ end
     @boundscheck checkbounds(v, ii)
     @inbounds v[support(ii)]
 end
+
+@inline function getindex_vec(v, ii)
+    @boundscheck checkbounds(v, ii)
+    map(i -> @inbounds(v[i]), ii)
+end
+
+@propagate_inbounds getindex(v::AbstractVector, ii::AbstractFixedOrSmallVector{N,T}) where {N, T <: Integer} = getindex_vec(v, ii)
+@propagate_inbounds getindex(v::AbstractFixedOrSmallVector, ii::AbstractVector{T}) where T <: Integer = getindex_vec(v, ii)
+@propagate_inbounds getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{N,T}) where {N, T <: Integer} = getindex_vec(v, ii)
 
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]

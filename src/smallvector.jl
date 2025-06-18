@@ -196,23 +196,6 @@ end
     @inbounds v.b[i]
 end
 
-#=
-@propagate_inbounds getindex(v::V, ii::AbstractVector{<:Integer}) where V <: AbstractSmallVector =
-    V(v[i] for i in ii)
-=#
-
-@inline function getindex(v::AbstractSmallVector{N,T}, ii::AbstractVector{<:Integer}) where {N,T}
-    n = length(ii)
-    @boundscheck begin
-        n <= N || error("vector cannot have more than $N elements")
-        checkbounds(v, ii)
-    end
-    t = ntuple(Val(N)) do i
-        @inbounds i <= n ? v[ii[i]] : default(T)
-    end
-    SmallVector(Values{N,T}(t), n)
-end
-
 @inline function setindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds setindex(v.b, x, i)), length(v))
