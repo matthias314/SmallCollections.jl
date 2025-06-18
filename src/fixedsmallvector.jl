@@ -138,6 +138,11 @@ function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSma
     end
 end
 
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange) where {N,T}
+    @boundscheck checkbounds(v, ii)
+    @inbounds SmallVector{N,T}(v[i] for i in ii)
+end
+
 """
     getindex(v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}, s::SmallBitSet) where {N,T} -> SmallVector{N,T}
 
@@ -178,6 +183,24 @@ end
         ii::Union{AbstractFixedOrSmallVector{N,Bool},PackedVector{U,1,Bool}}) where {N,U}
     @boundscheck checkbounds(v, ii)
     @inbounds v[support(ii)]
+end
+
+@inline function getindex(v::V, ii::AbstractFixedOrSmallVector{N,T}) where {V <: AbstractVector, N, T <: Integer}
+    @boundscheck checkbounds(v, ii)
+    if T == Bool
+        @inbounds invoke(getindex, Tuple{V,AbstractVector{Bool}}, v, ii)
+    else
+        map(i -> @inbounds(v[i]), ii)
+    end
+end
+
+@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{N,T}) where {N, T <: Integer}
+    @boundscheck checkbounds(v, ii)
+    map(i -> @inbounds(v[i]), ii)
+end
+
+@propagate_inbounds function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::V) where {N, T, V <: AbstractVector}
+    invoke(getindex, Tuple{AbstractVector{T},V}, v, ii)
 end
 
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
