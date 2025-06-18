@@ -16,6 +16,14 @@ llvm_type(::Type{Float32}) = "float"
 llvm_type(::Type{Float64}) = "double"
 llvm_type(::Type{T}) where T <: Union{Bool, BitInteger, Char, Enum} = string('i', 8*sizeof(T))
 
+function llvm_type(N, ::Type{T}) where T
+    if T <: AbstractFloat
+        string('v', N, 'f', bitsize(T))
+    else
+        string('v', N, 'i', 8*sizeof(T))
+    end
+end
+
 """
     $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
 
