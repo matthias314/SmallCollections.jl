@@ -174,6 +174,12 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
     end
 end
 
+@inline function getindex(v::Union{AbstractFixedOrSmallVector,PackedVector},
+        ii::Union{AbstractFixedOrSmallVector{N,Bool},PackedVector{U,1,Bool}}) where {N,U}
+    @boundscheck checkbounds(v, ii)
+    @inbounds v[support(ii)]
+end
+
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]
 end
