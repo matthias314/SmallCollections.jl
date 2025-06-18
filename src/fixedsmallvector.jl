@@ -5,7 +5,7 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    any, all, allequal, allunique, count, getindex, filter
+    any, all, allequal, allunique, count, getindex, filter, checkindex
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
@@ -126,6 +126,15 @@ function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, 
     else
         k = length(_support(assertbool(f), v; style))
         init + (S <: Integer ? k % S : k)
+    end
+end
+
+function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSmallVector{N,T}) where {N, T <: Base.HWReal}
+    if isempty(v)
+        true
+    else
+        min, max = extrema(v)
+        first(inds) <= min && max <= last(inds)
     end
 end
 
