@@ -579,3 +579,46 @@ end
         V(unvec(v))
     end
 end
+
+@generated function compress(v::AbstractFixedVector{N,T}, s::SmallBitSet{U}) where {N, T <: HWType, U}
+    L = llvm_type(T)
+    NL = llvm_type(N, T)
+    M = bitsize(U)
+    resize2 = if M == N
+        "select i1 1, i$N %2, i$N 0"
+    elseif M > N
+        "trunc i$M %2 to i$N"
+    else # M < N
+        "zext i$M %2 to i$N"
+    end
+    ir = if VERSION > v"1.12-"
+        """
+        declare void @llvm.masked.compressstore.$NL (<$N x $L>, ptr, <$N x i1>)
+        define void @compress(ptr, <$N x $L>, i$M) #0 {
+            %a = $resize2
+            %b = bitcast i$N %a to <$N x i1>
+            call void @llvm.masked.compressstore.$NL(<$N x $L> %1, ptr %0, <$N x i1> %b)
+            ret void
+        }
+        attributes #0 = { alwaysinline }
+        """
+    else
+        """
+        declare void @llvm.masked.compressstore.$NL (<$N x $L>, ptr, <$N x i1>)
+        define void @compress(i64, <$N x $L>, i$M) #0 {
+            %a = $resize2
+            %b = bitcast i$N %a to <$N x i1>
+            %p = inttoptr i64 %0 to <$N x $L>*
+            call void @llvm.masked.compressstore.$NL(<$N x $L> %1, <$N x $L>* %p, <$N x i1> %b)
+            ret void
+        }
+        attributes #0 = { alwaysinline }
+        """
+    end
+    quote
+        @inline
+        w = default(MutableFixedVector{N,T})
+        Base.llvmcall(($ir, "compress"), Cvoid, Tuple{Ptr{T},NTuple{N,VecElement{T}},U}, pointer(w), vec(Tuple(v)), bits(s))
+        FixedVector(w)
+    end
+end

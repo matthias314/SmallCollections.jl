@@ -158,6 +158,8 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
         m = pext(bits(fixedvector(v)), bits(s))
         b = convert(FixedVector{N,Bool}, m)
         SmallVector(b, length(s))
+    elseif T <: HWType && N <= 32  # slows down for larger N
+        SmallVector(compress(fixedvector(v), s), length(s))
     else
         SmallVector{N,T}(@inbounds v[i] for i in s)
     end
