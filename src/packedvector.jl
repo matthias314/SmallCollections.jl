@@ -3,7 +3,7 @@
 #
 
 import Base: ==, getindex, setindex, length, size, empty, iterate, rest, split_rest,
-    iszero, zero, +, -, *, convert, circshift, filter
+    iszero, zero, +, -, *, convert, circshift, filter, reverse
 
 export PackedVector, bits
 
@@ -440,6 +440,15 @@ prepend(v::PackedVector, ws...) = foldr((w, v) -> prepend(v, w), ws; init = v)
     m1 = v.m & mask
     m2 = (v.m & ~(mask >>> M)) << M
     PackedVector{U,M,T}(m1 | m2, v.n+1)
+end
+
+function reverse(v::P, start::Integer = 1, stop::Integer = length(v)) where P <: PackedVector
+    @inbounds P(start <= i <= stop ? v[stop+start-i] : v[i] for i in eachindex(v))
+end
+
+function reverse(v::PackedVector{U,1,T}) where {U,T}
+    m = unsafe_lshr(bitreverse(v.m), bitsize(U)-length(v))  # this is safe: if length(v) == 0, then also v.m == 0
+    PackedVector{U,1,T}(m, v.n)
 end
 
 function circshift(v::PackedVector{U,M,T}, k::Integer) where {U,M,T}
