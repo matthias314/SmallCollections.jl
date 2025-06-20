@@ -510,9 +510,9 @@ end
                 end
             end
             @test_inferred allequal(v) allequal(u) Bool
-            @test_inferred allequal(isodd, v) allequal(isodd, u) Bool
+            VERSION >= v"1.11" && @test_inferred allequal(isodd, v) allequal(isodd, u) Bool
             @test_inferred allunique(v) allunique(u) Bool
-            @test_inferred allunique(-, v) allunique(-, u) Bool
+            VERSION >= v"1.11" && @test_inferred allunique(-, v) allunique(-, u) Bool
             @test_inferred any(isodd, v) any(isodd, u) Bool
             @test_inferred all(isodd, v) all(isodd, u) Bool
             @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
