@@ -591,6 +591,8 @@ function findall(f::F, d::AbstractSmallDict{N,K}; kw...) where {F<:Function,N,K}
     SmallVector{N,K}(@inbounds(d.keys[i]) for i in support(assertbool(f), d.vals; kw...))
 end
 
+if VERSION >= v"1.11"
+
 function Random.rand(rng::AbstractRNG, ::SamplerType{SmallDict{N,K,V}}) where {N,K,V}
     keys = SmallVector{N,K}()
     for _ in 1:rand(0:N)
@@ -611,4 +613,6 @@ function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallDict{N,K,V}}) w
     end
     vals = smallvector_rand(rng, Val(N), V, length(keys))
     MutableSmallDict(keys, vals)
+end
+
 end

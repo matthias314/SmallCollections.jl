@@ -702,6 +702,8 @@ function minlength(vs)
     end
 end
 
+if VERSION >= v"1.11"
+
 function smallvector_rand(rng::AbstractRNG, ::Val{N}, ::Type{T}, n::Integer) where {N,T}
     SmallVector(padtail(rand(rng, FixedVector{N,T}), n), n)
 end
@@ -712,6 +714,8 @@ end
 
 function Random.rand(rng::AbstractRNG, ::SamplerType{SmallVector{N,T}}) where {N,T}
     smallvector_rand(rng, Val(N), T, rand(0:N))
+end
+
 end
 
 #

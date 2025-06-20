@@ -245,7 +245,7 @@ end
     end
 end
 
-@testset "SmallSet rand" begin
+VERSION >= v"1.11" && @testset "SmallSet rand" begin
     for S in SS, N in (1, 2, 9, 16), T in test_types
         S <: MutableSmallSet && !isbitstype(T) && continue
         s = @inferred rand(S{N,T})

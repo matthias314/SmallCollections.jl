@@ -277,7 +277,7 @@ end
     end
 end
 
-@testset "SmallDict rand" begin
+VERSION >= v"1.11" && @testset "SmallDict rand" begin
     for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types
         D <: MutableSmallDict && !isbitstype(Tuple{K,V}) && continue
         d = @inferred rand(D{N,K,V})

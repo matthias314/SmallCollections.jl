@@ -342,8 +342,12 @@ function filter!(f, v::MutableSmallVector)
     @inbounds resize!(v, j-1)
 end
 
+if VERSION >= v"1.11"
+
 function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallVector{N,T}}) where {N,T}
     MutableSmallVector(rand(rng, SmallVector{N,T}))
+end
+
 end
 
 """

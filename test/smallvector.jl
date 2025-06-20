@@ -573,7 +573,7 @@ end
     end
 end
 
-@testset "SmallVector rand" begin
+VERSION >= v"1.11" && @testset "SmallVector rand" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T} && isvalid(v)

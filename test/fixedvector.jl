@@ -284,7 +284,7 @@ end
     end
 end
 
-@testset "FixedVector rand" begin
+VERSION >= v"1.11" && @testset "FixedVector rand" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T}
