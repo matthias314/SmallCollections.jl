@@ -206,10 +206,10 @@ uuid = "fdea26ae-647d-5447-a871-4b548cad5224"
 version = "3.7.1"
 
 [[deps.SmallCollections]]
-deps = ["BitIntegers", "CpuId"]
+deps = ["BitIntegers", "CpuId", "Random"]
 path = ".."
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
-version = "0.4.1-DEV"
+version = "0.4.1"
 weakdeps = ["BangBang", "StaticArrays"]
 
     [deps.SmallCollections.extensions]
