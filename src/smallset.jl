@@ -228,7 +228,25 @@ function pop(s::AbstractSmallSet, x, default)
     _SmallSet(d), first(kv)
 end
 
-filter(f::F, s::AbstractSmallSet) where F = _SmallSet(filter(f∘first, s.d))
+"""
+    filter(f, v::AbstractSmallSet; [style::MapStyle])
+    filter!(f, v::MutableSmallSet; [style::MapStyle])
+
+With an `AbstractSmallSet` `s` as second argument, these functions accept
+the additional keyword argument `style`. If it equals `LazyStyle()`, then the
+function `f` is only evaluated until the result has been determined. For any
+other value of `style`, `f` is evaluated on all elements of `s` as well as on
+the default values used for padding. This is often faster for simple functions.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions.
+
+See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).MapStyle`](@ref).
+"""
+filter(f, s::AbstractSmallSet),
+filter!(f, s::MutableSmallSet)
+
+filter(f::F, s::AbstractSmallSet{N}; kw...) where {F,N} = SmallSet{N}(filter(f, values(s); kw...); unique = true)
 
 function replace(s::AbstractSmallSet, ps::Vararg{Pair,M}; kw...) where M
     qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
@@ -258,7 +276,10 @@ function pop!(s::MutableSmallSet, x, default)
     first(unsafe_pop!(s.d, i))
 end
 
-filter!(f::F, s::MutableSmallSet) where F = (@inline filter!(f∘first, s.d); s)
+function filter!(f::F, s::MutableSmallSet; kw...) where F
+    filter!(f, s.d.keys; kw...)
+    s
+end
 
 function replace!(s::MutableSmallSet, ps::Vararg{Pair,M}; kw...) where M
     qs = map(p -> (p[1] => nothing) => (p[2] => nothing), ps)
