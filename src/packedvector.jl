@@ -282,13 +282,9 @@ end
     V(m, l)
 end
 
-@inline function getindex(v::V, ii::AbstractVector{<:Integer}) where V <: PackedVector
-    @boundscheck begin
-        c = capacity(v)
-        length(ii) <= c || error("vector cannot have more than $c elements")
-        checkbounds(v, ii)
-    end
-    @inbounds V(@inbounds(v[i]) for i in ii)
+@inline function getindex(v::V, ii::OrdinalRange{<:Integer}) where V <: PackedVector
+    @boundscheck checkbounds(v, ii)
+    @inbounds V(v[i] for i in ii)
 end
 
 """
