@@ -179,13 +179,14 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
     end
 end
 
-@inline function getindex(v::Union{AbstractFixedOrSmallVector,PackedVector},
-        ii::Union{AbstractFixedOrSmallVector{N,Bool},PackedVector{U,1,Bool}}) where {N,U}
+const AbstractFixedOrSmallOrPackedVector{T} = Union{AbstractFixedOrSmallVector{<:Any,T},PackedVector{<:Any,<:Any,T}}
+
+@inline function getindex(v::AbstractFixedOrSmallOrPackedVector, ii::AbstractFixedOrSmallOrPackedVector{Bool})
     @boundscheck checkbounds(v, ii)
     @inbounds v[support(ii)]
 end
 
-@inline function getindex(v::V, ii::AbstractFixedOrSmallVector{N,T}) where {V <: AbstractVector, N, T <: Integer}
+@inline function getindex(v::V, ii::AbstractFixedOrSmallOrPackedVector{T}) where {V <: AbstractVector, T <: Integer}
     @boundscheck checkbounds(v, ii)
     if T == Bool
         @inbounds invoke(getindex, Tuple{V,AbstractVector{Bool}}, v, ii)
@@ -194,13 +195,9 @@ end
     end
 end
 
-@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{N,T}) where {N, T <: Integer}
+@inline function getindex(v::AbstractFixedOrSmallOrPackedVector, ii::AbstractFixedOrSmallVector{T}) where T <: Integer
     @boundscheck checkbounds(v, ii)
     map(i -> @inbounds(v[i]), ii)
-end
-
-@propagate_inbounds function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::V) where {N, T, V <: AbstractVector}
-    invoke(getindex, Tuple{AbstractVector{T},V}, v, ii)
 end
 
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
