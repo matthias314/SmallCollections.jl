@@ -118,6 +118,69 @@ end
     end
 end
 
+@testset "PackedVector bool inds" begin
+    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+        bitsize(T) < M && continue
+        N = bitsize(U)÷M
+        N == 0 && continue
+    for m in (0, 1, round(Int, 0.7*N), N-1, N)
+        u = packed_rand(M, T, m)
+        v = PackedVector{U,M,T}(u)
+
+        if m > 0
+            jj = rand(Bool, m-1)
+            iis = Any[SmallVector{N+2}(jj), PackedVector{UInt64,1,Bool}(jj)]
+            m > 1 && pushfirst!(iis, FixedVector{m-1}(jj))
+            for ii in iis
+                @test_throws Exception v[ii]
+            end
+        end
+
+        jj = rand(Bool, m)
+        iis = Any[SmallVector{N+2}(jj), PackedVector{UInt64,1,Bool}(jj)]
+        m > 0 && pushfirst!(iis, FixedVector{m}(jj))
+        for ii in iis
+            @test_inferred v[ii] u[jj] v
+        end
+    end
+    end
+end
+
+@testset "PackedVector vec inds" begin
+    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+        bitsize(T) < M && continue
+        N = bitsize(U)÷M
+        N == 0 && continue
+    for m in (0, 1, round(Int, 0.7*N), N-1, N)
+        u = packed_rand(M, T, m)
+        v = PackedVector{U,M,T}(u)
+
+        ii = 1:max(0, m-2)
+        @test_inferred v[ii] u[ii] v
+        ii = collect(ii)
+        @test_inferred v[ii] u[ii] Vector{T}
+
+        m > 0 || continue
+
+        let M = 7
+            jj = rand(Int8(1):Int8(m), M)
+            ii = jj
+            @test_inferred v[ii] u[ii] u
+            ii = FixedVector{M}(jj)
+            @test_inferred v[ii] u[ii] FixedVector{M,T}
+            ii = SmallVector{M+1}(jj)
+            @test_inferred v[ii] u[ii] SmallVector{M+1,T}
+            ii = PackedVector{UInt128,9,Int16}(jj)
+            @test_inferred v[ii] u[ii] u
+            ii = 2:min(m, 5)
+            @test_inferred v[ii] u[ii] v
+            ii = 1:2:min(m, 7)
+            @test_inferred v[ii] u[ii] v
+        end
+    end
+    end
+end
+
 @testset "PackedVector zeros" begin
     for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue

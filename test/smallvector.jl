@@ -111,6 +111,56 @@ end
     end
 end
 
+@testset "SmallVector bool inds" begin
+    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+        u = rand(T, m)
+        v = V{N,T}(u)
+
+        if m > 0
+            jj = rand(Bool, m-1)
+            iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
+            m > 1 && pushfirst!(iis, FixedVector{m-1}(jj))
+            for ii in iis
+                @test_throws Exception v[ii]
+            end
+        end
+
+        jj = rand(Bool, m)
+        iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
+        m > 0 && pushfirst!(iis, FixedVector{m}(jj))
+        for ii in iis
+            @test_inferred v[ii] u[jj] SmallVector{N,T}
+        end
+    end
+end
+
+@testset "SmallVector vec inds" begin
+    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+        u = rand(T, m)
+        v = V{N,T}(u)
+
+        ii = 1:max(0, m-2)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = collect(ii)
+        @test_inferred v[ii] u[ii] MutableSmallVector{N,T}  # type chosen in Base via `similar`
+
+        m > 0 || continue
+
+        M = 7
+        jj = rand(Int8(1):Int8(m), M)
+        ii = FixedVector{M}(jj)
+        @test_inferred v[ii] u[ii] FixedVector{M,T}
+        ii = SmallVector{M+1}(jj)
+        @test_inferred v[ii] u[ii] SmallVector{M+1,T}
+        ii = PackedVector{UInt128,7,Int8}(jj)
+        @test_inferred v[ii] u[ii] u
+        ii = 2:min(m, 5)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = 1:2:min(m, 7)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+    end
+end
+
 @testset "SmallVector zeros" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue

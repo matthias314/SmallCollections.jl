@@ -76,6 +76,52 @@ end
     end
 end
 
+@testset "FixedVector bool inds" begin
+    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (FixedVector, MutableFixedVector)
+        u = rand(T, N)
+        v = V{N,T}(u)
+
+        jj = rand(Bool, N-1)
+        iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
+        N > 1 && pushfirst!(iis, FixedVector{N-1}(jj))
+        for ii in iis
+            @test_throws Exception v[ii]
+        end
+
+        jj = rand(Bool, N)
+        for ii in [FixedVector{N}(jj), SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
+            @test_inferred v[ii] u[jj] SmallVector{N,T}
+        end
+    end
+end
+
+@testset "FixedVector vec inds" begin
+    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (FixedVector, MutableFixedVector)
+        u = rand(T, N)
+        v = V{N,T}(u)
+
+        ii = 1:max(0, N-2)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = collect(ii)
+        @test_inferred v[ii] u[ii] Vector{T}
+
+        M = 7
+        jj = rand(Int8(1):Int8(N), M)
+        ii = jj
+        @test_inferred v[ii] u[ii] u
+        ii = FixedVector{M}(jj)
+        @test_inferred v[ii] u[ii] FixedVector{M,T}
+        ii = SmallVector{M+1}(jj)
+        @test_inferred v[ii] u[ii] SmallVector{M+1,T}
+        ii = PackedVector{UInt128,7,Int8}(jj)
+        @test_inferred v[ii] u[ii] u
+        ii = 2:min(N, 5)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = 1:2:min(N, 7)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
+    end
+end
+
 @testset "FixedVector reverse" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
