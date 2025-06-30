@@ -137,13 +137,13 @@ end
 end
 
 """
-    circshift(v::AbstractFixedVector{N,T}, k::Integer) -> FixedVector{N,T}
-    circshift(v::AbstractFixedVector{N,T}, ::Val{k}) where k -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T} -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, ::Val{k}) where {N,T,k} -> FixedVector{N,T}
 
 Rotate `v` by `k` positions towards higher indices and return the result.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val}).
+See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val})).
 
 # Examples
 ```jldoctest
@@ -165,6 +165,19 @@ julia> circshift(v, Val(-1))
 ```
 """
 circshift(::AbstractFixedVector, ::Union{Integer,Val})
+
+"""
+    unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T} -> FixedVector{N,T}
+    unsafe_circshift!(v::MutableFixedVector, k::Integer) -> v
+
+These are faster versions of `circshift` and `circshift!`. They assume `-N ≤ k < N`.
+This avoids the comparatively costly integer division with remainder.
+
+See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val})),
+[`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val})).
+"""
+unsafe_circshift(::AbstractFixedVector, ::Integer),
+unsafe_circshift!(::MutableFixedVector, ::Integer)
 
 @inline function unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
     M = shufflewidth(v)
@@ -227,13 +240,13 @@ circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
 end
 
 """
-    circshift!(v::MutableFixedVector{N,T}, k::Integer) -> v
-    circshift!(v::MutableFixedVector{N,T}, ::Val{k}) where k -> v
+    circshift!(v::MutableFixedVector, k::Integer) -> v
+    circshift!(v::MutableFixedVector, ::Val{k}) where k -> v
 
 Rotate `v` in-place by `k` positions towards higher indices and return `v`.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val}).
+See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val})).
 
 # Examples
 ```jldoctest
