@@ -308,6 +308,18 @@ end
     v
 end
 
+"""
+    unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T} -> SmallVector{N,T}
+    unsafe_circshift!(v::MutableSmallVector, k::Integer) -> v
+
+These are faster versions of `circshift` and `circshift!`. They assume `-length(v) ≤ k < length(v)`.
+This avoids the comparatively costly integer division with remainder.
+
+See also `Base.circshift`, `Base.circshift!`.
+"""
+unsafe_circshift(::AbstractSmallVector, ::Integer),
+unsafe_circshift!(::MutableSmallVector, ::Integer)
+
 function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
     M = shufflewidth(v)
     if M != 0

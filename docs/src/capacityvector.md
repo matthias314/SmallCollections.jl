@@ -39,6 +39,7 @@ unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
 unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N},NTuple{N}}) where N
 resize
 fasthash(::AbstractSmallVector, ::UInt)
+unsafe_circshift(::AbstractSmallVector, ::Integer)
 sum_fast(::AbstractSmallVector)
 extrema_fast(::AbstractSmallVector)
 any(::Function, ::AbstractSmallVector)
