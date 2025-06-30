@@ -597,7 +597,7 @@ end
 
 function circshift(v::PackedVector{U,M,T}, k::Integer) where {U,M,T}
     v.n <= 1 && return v
-    k = mod(k+v.n, v.n)  # k+v.n because mod seems to be faster for positive args
+    k = unsafe_mod(k, v.n % UInt16) % Int
     mask = one(U) << ((M*v.n) % UInt) - one(U)
     PackedVector{U,M,T}((unsafe_shl(v.m, M*k) | unsafe_lshr(v.m, M*v.n-M*k)) & mask, v.n)
 end

@@ -7,7 +7,7 @@ import Base:
     append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!,
     circshift!
 
-export duplicate!
+export duplicate!, unsafe_circshift!
 
 # functions also for Variables
 
@@ -308,28 +308,51 @@ end
     v
 end
 
-function circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
-    n = length(v)
-    iszero(n) && return v
-    m = mod1(k+1+n, n)  # we add n because mod1 seems to be faster for positive args
-    iszero(m) && return v
-    if N <= 16
+"""
+    unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T} -> SmallVector{N,T}
+    unsafe_circshift!(v::MutableSmallVector, k::Integer) -> v
+
+These are faster versions of `circshift` and `circshift!`. They assume `-length(v) ≤ k < length(v)`.
+This avoids the comparatively costly integer division with remainder.
+
+See also `Base.circshift`, `Base.circshift!`.
+"""
+unsafe_circshift(::AbstractSmallVector, ::Integer),
+unsafe_circshift!(::MutableSmallVector, ::Integer)
+
+function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
+    M = shufflewidth(v)
+    if M != 0
+        w = unsafe_circshift(v, k)
+    elseif N <= 16 || !isbits(T)
+        n1 = length(v)
+        k1 = ifelse(signbit(k), (k % SmallLength) + v.n, k % SmallLength)
         w = ntuple(Val(N)) do i
             i = i % SmallLength
-            @inbounds if i < m % SmallLength
-                v[(i-m+1)+n]
-            elseif i <= n % SmallLength
-                v[i-m+1]
+            @inbounds if i <= k1
+                v[(i-k1)+n1]
+            elseif i <= n1 % SmallLength
+                v[i-k1]
             else
                 default(T)
             end
         end
     else
+        n2 = length(v)
+        k2 = ifelse(signbit(k), (k % Int) + n2, k % Int)
         w = similar(v)
-        unsafe_copyto!(pointer(w, m), pointer(v, 1), n-(m-1))
-        unsafe_copyto!(pointer(w, 1), pointer(v, n-(m-1)+1), m-1)
+        unsafe_copyto!(pointer(w, k2+1), pointer(v, 1), n2-k2)
+        unsafe_copyto!(pointer(w, 1), pointer(v, n2-k2+1), k2)
     end
     unsafe_copyto!(v, w)
+end
+
+function circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
+    if isempty(v)
+        v
+    else
+        unsafe_circshift!(v, unsafe_rem(k, unsigned(v.n)))
+    end
 end
 
 function filter!(f::F, v::MutableSmallVector; kw...) where F

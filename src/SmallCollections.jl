@@ -42,6 +42,8 @@ const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigne
 const HWTypeExpr = :( Union{Base.HWReal, Bool, Char, Enum} )
 @eval const HWType = $HWTypeExpr
 
+@generated inttype(::Type{T}) where T <: HWType = Symbol(:Int, 8*sizeof(T))
+
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
@@ -103,6 +105,12 @@ include("packedvector.jl")
 include("fixedsmallvector.jl")
 include("smalldict.jl")
 include("smallset.jl")
+
+if Sys.ARCH in (:x86_64, :i686)
+    include("arch/x86.jl")
+else
+    const HAS_PEXT = false
+end
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,

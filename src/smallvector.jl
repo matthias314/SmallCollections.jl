@@ -4,7 +4,7 @@
 
 export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, extrema_fast,
     capacity, support, setindex, addindex, push, pop, pushfirst, popfirst,
-    insert, duplicate, deleteat, popat, append, prepend
+    insert, duplicate, deleteat, popat, append, prepend, unsafe_circshift
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
@@ -482,6 +482,20 @@ extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) 
     SmallVector(b, length(v))
 end
 
+function reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType}
+    M = shufflewidth(v)
+    if M != 0
+        PT = inttype(T)
+        p = ntuple(Val(N)) do i
+            i = i % PT
+            (length(v) % PT) - i
+        end
+        SmallVector(shuffle(Val(M), fixedvector(v), p), length(v))
+    else
+        invoke(reverse, Tuple{AbstractSmallVector}, v)
+    end
+end
+
 for g in (:sum, :prod, :minimum, :maximum, :extrema)
     @eval $g(f::F, v::AbstractSmallVector;  kw...) where F = $g(map(f, v);  kw...)
 end
@@ -726,29 +740,48 @@ end
 
 prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
-function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
-    n = length(v)
-    iszero(n) && return SmallVector(v)
-    m = mod1(k+1+n, n)  # we add n because mod1 seems to be faster for positive args
-    iszero(m) && return SmallVector(v)
-    if N <= 16 || !isbitstype(T)
+function unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
+    M = shufflewidth(v)
+    if M != 0
+        P = inttype(T)
+        n1 = length(v) % P
+        k1 = ifelse(signbit(k), (k%P)+n1, k%P)
+        p = ntuple(Val(N)) do i
+            i = i % P
+            i-k1 + (i > k1 ? -P(1) : n1-P(1))
+        end
+        w = shuffle(Val(M), fixedvector(v), p)
+        SmallVector(padtail(w, length(v)), length(v))
+    elseif N <= 16 || !isbitstype(T)
+        n2 = length(v)
+        k2 = ifelse(signbit(k), (k % SmallLength) + v.n, k % SmallLength)
         t = ntuple(Val(N)) do i
             i = i % SmallLength
-            @inbounds if i < m % SmallLength
-                v[(i-m+1)+n]
-            elseif i <= n % SmallLength
-                v[i-m+1]
+            @inbounds if i <= k2
+                v[(i-k2)+n2]
+            elseif i <= n2 % SmallLength
+                v[i-k2]
             else
                 default(T)
             end
         end
-        SmallVector{N,T}(t, n)
+        SmallVector{N,T}(t, n2)
     else
+        n3 = length(v)
+        k3 = ifelse(signbit(k), k+n3, k) % Int
         u = MutableSmallVector(v)
         w = similar(v)
-        unsafe_copyto!(pointer(w, m), pointer(u, 1), n-(m-1))
-        unsafe_copyto!(pointer(w, 1), pointer(u, n-(m-1)+1), m-1)
+        unsafe_copyto!(pointer(w, k3), pointer(u, 1), n3-(k3-1))
+        unsafe_copyto!(pointer(w, 1), pointer(u, n3-(k3-1)+1), k3-1)
         SmallVector(w)
+    end
+end
+
+function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
+    if isempty(v)
+        SmallVector(v)
+    else
+        unsafe_circshift(v, unsafe_rem(k, unsigned(v.n)))
     end
 end
 

@@ -145,19 +145,42 @@ This function is only available on `x86_64` and `i686` machines and uses the cor
 """
 pext(x::Unsigned, y::Union{UInt8,UInt16,UInt32,UInt})
 
-using CpuId: cpufeature
+function unsafe_rem(x::BitInteger, y::Base.BitUnsigned32)
+    Base.llvmcall("""
+            %a = srem i64 %0, %1
+            ret i64 %a
+        """, Int64, Tuple{Int64, Int64}, x, y % Int64)
+end
 
-if (Sys.ARCH == :x86_64 || Sys.ARCH == :i686) && cpufeature(:BMI2)
-    const llvm_pdep = "llvm.x86.bmi.pdep.$(bitsize(UInt))"
-    const llvm_pext = "llvm.x86.bmi.pext.$(bitsize(UInt))"
+function unsafe_rem(x::T, y::Union{UInt8, UInt16}) where T <: Base.BitSigned32
+    Base.llvmcall("""
+            %a = srem i32 %0, %1
+            ret i32 %a
+        """, Int32, Tuple{Int32, Int32}, x % Int32, y % Int32) % T
+end
 
-    pdep(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
-        ccall(llvm_pdep, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+function unsafe_rem(x::UInt64, y::Base.BitUnsigned32)
+    Base.llvmcall("""
+            %a = urem i64 %0, %1
+            ret i64 %a
+        """, UInt64, Tuple{UInt64, UInt64}, x, y % UInt64)
+end
 
-    pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
-            ccall(llvm_pext, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+function unsafe_rem(x::T, y::Base.BitUnsigned32) where T <: Base.BitUnsigned32
+    Base.llvmcall("""
+            %a = urem i32 %0, %1
+            ret i32 %a
+        """, UInt32, Tuple{UInt32, UInt32}, x % UInt32, y % UInt32) % T
+end
 
-    const HAS_PEXT = true
-else
-    const HAS_PEXT = false
+unsafe_rem(x::Integer, y::Unsigned) = rem(x, y)
+
+function unsafe_mod(x::Integer, y::T) where T <: Unsigned
+    r = unsafe_rem(x, y)
+    ifelse(r < 0, r % T + y, r % T)
+end
+
+function unsafe_mod1(x::Integer, y::T) where T <: Unsigned
+    r = unsafe_rem(x, y)
+    ifelse(r <= 0, r % T + y, r % T)
 end

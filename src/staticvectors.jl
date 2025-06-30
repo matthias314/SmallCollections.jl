@@ -5,7 +5,7 @@
 using Base: @assume_effects
 import Base: setindex, circshift, circshift!, reverse!, convert
 
-export setindex
+export setindex, unsafe_circshift, unsafe_circshift!
 
 """
     setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T} -> FixedVector{N,T}
@@ -137,13 +137,13 @@ end
 end
 
 """
-    circshift(v::AbstractFixedVector{N,T}, k::Integer) -> FixedVector{N,T}
-    circshift(v::AbstractFixedVector{N,T}, ::Val{k}) where k -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T} -> FixedVector{N,T}
+    circshift(v::AbstractFixedVector{N,T}, ::Val{k}) where {N,T,k} -> FixedVector{N,T}
 
 Rotate `v` by `k` positions towards higher indices and return the result.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val}).
+See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val})).
 
 # Examples
 ```jldoctest
@@ -166,22 +166,55 @@ julia> circshift(v, Val(-1))
 """
 circshift(::AbstractFixedVector, ::Union{Integer,Val})
 
+"""
+    unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T} -> FixedVector{N,T}
+    unsafe_circshift!(v::MutableFixedVector, k::Integer) -> v
+
+These are faster versions of `circshift` and `circshift!`. They assume `-N ≤ k < N`.
+This avoids the comparatively costly integer division with remainder.
+
+See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val})),
+[`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Val})).
+"""
+unsafe_circshift(::AbstractFixedVector, ::Integer),
+unsafe_circshift!(::MutableFixedVector, ::Integer)
+
+@inline function unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
+    M = shufflewidth(v)
+    if N == 1
+        FixedVector{N,T}(v)
+    elseif T <: HWType && ispow2(N) && 8 <= bitsize(T)*N <= 64
+        convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
+    elseif M != 0
+        P = inttype(T)
+        k1 = ifelse(signbit(k), (k%P)+P(N), k%P)
+        p = ntuple(Val(N)) do i
+            i = i % P
+            i-k1 + (i > k1 ? -P(1) : P(N)-P(1))
+        end
+        shuffle(Val(M), fixedvector(v), p)
+    else
+        t = ntuple(Val(N)) do i
+            i = i % SmallLength
+            k2 = ifelse(signbit(k), k+N, k) % SmallLength
+            @inbounds if i <= k2
+                v[(i-k2)+N]
+            else
+                v[i-k2]
+            end
+        end
+        FixedVector{N,T}(t)
+    end
+end
+
 @inline function circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
     if N == 1
-        return FixedVector{N,T}(v)
+        FixedVector{N,T}(v)
     elseif T <: HWType && ispow2(N) && 8 <= bitsize(T)*N <= 128  # for Bool one could go up to 512 bits
-        return convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
+        convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
+    else
+        unsafe_circshift(v, unsafe_rem(k, UInt16(N)))
     end
-    m = mod1(k+1, N)
-    t = ntuple(Val(N)) do i
-        i = i % SmallLength
-        @inbounds if i < m % SmallLength
-            v[(i-m+1)+N]
-        else
-            v[i-m+1]
-        end
-    end
-    FixedVector{N,T}(t)
 end
 
 circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
@@ -207,13 +240,13 @@ circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
 end
 
 """
-    circshift!(v::MutableFixedVector{N,T}, k::Integer) -> v
-    circshift!(v::MutableFixedVector{N,T}, ::Val{k}) where k -> v
+    circshift!(v::MutableFixedVector, k::Integer) -> v
+    circshift!(v::MutableFixedVector, ::Val{k}) where k -> v
 
 Rotate `v` in-place by `k` positions towards higher indices and return `v`.
 A negative value of `k` corresponds to a rotation towards lower indices.
 
-See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val}).
+See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val})).
 
 # Examples
 ```jldoctest
@@ -235,6 +268,10 @@ julia> circshift!(v, Val(-1))  # undo previous step
 ```
 """
 circshift!(::MutableFixedVector, ::Union{Integer,Val})
+
+@inline function unsafe_circshift!(v::MutableFixedVector, k::Integer)
+    v .= unsafe_circshift(v, k)
+end
 
 @inline function circshift!(v::MutableFixedVector, k::Integer)
     v .= circshift(v, k)

@@ -199,11 +199,41 @@ end
     end
 end
 
-@inline function getindex(v::AbstractFixedOrSmallOrPackedVector, ii::AbstractFixedOrSmallVector{T}) where T <: Integer
+@inline function getindex(v::PackedVector, ii::AbstractFixedOrSmallVector{<:Integer})
     @boundscheck checkbounds(v, ii)
     map(i -> @inbounds(v[i]), ii)
+end
+
+function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector) where M
+    p1 = one(inttype(eltype(v)))
+    p = map(i -> (i % typeof(p1)) - p1, ii)
+    shuffle(Val(M), fixedvector(v), Tuple(p))
+end
+
+@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{<:Any,<:BitInteger})
+    @boundscheck checkbounds(v, ii)
+    M = shufflewidth(v, ii)
+    if M != 0
+        getindex_shuffle(Val(M), v, ii)
+    else
+        map(i -> @inbounds(v[i]), ii)
+    end
+end
+
+@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractSmallVector{<:Any,<:BitInteger})
+    @boundscheck checkbounds(v, ii)
+    M = shufflewidth(v, ii)
+    if M != 0
+        SmallVector(getindex_shuffle(Val(M), v, fixedvector(ii)), length(ii))
+    else
+        map(i -> @inbounds(v[i]), ii)
+    end
 end
 
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]
 end
+
+shufflewidth(::Val, ::Type) = 0
+shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(N), T)
+shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
