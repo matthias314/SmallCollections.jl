@@ -147,7 +147,7 @@ end
     getindex(v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}, s::SmallBitSet) where {N,T} -> SmallVector{N,T}
 
 Returns the vector with elements `v[i]` where `i` runs through the elements of `s` in increasing order.
-For `AbstractSmallVector` this is the same as `v[collect(s)]`, but faster.
+This operation is analogous to `v[collect(s)]`, but faster.
 
 # Example
 ```jldoctest
