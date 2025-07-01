@@ -185,6 +185,7 @@ end
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
+        @test_inferred reverse(v) reverse(u) SmallVector(v)
         for i in 0:m+2
             if 1 <= i <= m+1
                 @test_inferred reverse(v, i) reverse(u, i) SmallVector(v)
@@ -203,6 +204,9 @@ end
                 end
             end
         end
+        (V <: MutableFixedVector && isbitstype(T)) || continue
+        w = @test_inferred reverse!(v) reverse(u) v
+        @test w === v
     end
 end
 
