@@ -126,6 +126,7 @@ end
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
+        @test_inferred reverse(v) reverse(u) FixedVector(v)
         for i in 0:N+2
             if 1 <= i <= N+1
                 @test_inferred reverse(v, i) reverse(u, i) FixedVector(v)
