@@ -5,7 +5,7 @@ import Base:
     strides, elsize, unsafe_convert,
     getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
     append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!,
-    circshift!
+    circshift!, reverse!
 
 export duplicate!, unsafe_circshift!
 
@@ -306,6 +306,17 @@ end
     GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
     v.n += 1 % SmallLength
     v
+end
+
+reverse!(v::MutableSmallVector) = @inbounds reverse!(v, 1)
+
+@propagate_inbounds function reverse!(v::MutableSmallVector, start::Integer)
+    M = shufflewidth(v)
+    if M != 0
+        unsafe_copyto!(v, reverse(v, start))
+    else
+        invoke(reverse!, Tuple{AbstractVector,Integer}, v, start)
+    end
 end
 
 """

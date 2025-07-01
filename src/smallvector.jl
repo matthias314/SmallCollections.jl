@@ -477,22 +477,27 @@ extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) 
     @fastmath (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
 @inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
-    @boundscheck checkbounds(v, start:stop)
+    @boundscheck 0 < start <= stop+1 <= length(v)+1 || Base.throw_boundserror(v, start:stop)
     @inbounds b = reverse(v.b, start, stop)
     SmallVector(b, length(v))
 end
 
-function reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType}
+reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType} = @inbounds reverse(v, 1)
+
+@inline function reverse(v::AbstractSmallVector{N,T}, start::Integer) where {N, T <: HWType}
     M = shufflewidth(v)
     if M != 0
+        @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
         PT = inttype(T)
+        k = start % PT
+        l = (length(v) % PT) + k
         p = ntuple(Val(N)) do i
             i = i % PT
-            (length(v) % PT) - i
+            ifelse(i < k, i, l-i) - one(PT)
         end
         SmallVector(shuffle(Val(M), fixedvector(v), p), length(v))
     else
-        invoke(reverse, Tuple{AbstractSmallVector}, v)
+        invoke(reverse, Tuple{AbstractSmallVector,Integer}, v, start)
     end
 end
 
