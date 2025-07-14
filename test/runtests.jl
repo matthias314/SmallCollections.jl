@@ -95,7 +95,7 @@ isvalid(s::AbstractSmallSet) = isvalid(s.d)
 if isempty(ARGS)
     push!(ARGS,
         "bits.jl", "smallbitset.jl", "fixedvector.jl", "smallvector.jl",
-        "packedvector.jl", "smalldict.jl", "smallset.jl", "bangbang.jl", "combinatorics.jl")
+        "packedvector.jl", "smalldict.jl", "smallset.jl", "bangbang.jl")
 end
 
 foreach(include, ARGS)

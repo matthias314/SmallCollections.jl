@@ -8,9 +8,6 @@ variants because they don't allocate if `isbitstype` holds for the element type.
 At present, `FixedVector`, `SmallVector`, `SmallDict` and `SmallSet` and their
 mutable counterparts are defined as well as `PackedVector` and `SmallBitSet`.
 
-The submodule [`Combinatorics`](@ref) contains functions related to
-enumerative combinatorics.
-
 If the package `BangBang.jl` is loaded, then many functions defined by
 this package are also available in `!!`-form. For example, `setindex!!`
 with a `SmallVector` as first argument calls [`setindex`](@ref).
@@ -20,7 +17,7 @@ by using the `@inbounds` macro.
 
 See [`AbstractFixedVector`](@ref), [`AbstractSmallDict`](@ref),
 [`AbstractSmallSet`](@ref), [`AbstractSmallVector`](@ref),
-[`PackedVector`](@ref), [`SmallBitSet`](@ref), [`Combinatorics`](@ref),
+[`PackedVector`](@ref), [`SmallBitSet`](@ref),
 `Base.@inbounds`, `Base.isbitstype`,
 [Section "BangBang support"](@ref sec-bangbang).
 """
@@ -107,8 +104,6 @@ include("packedvector.jl")
 include("fixedsmallvector.jl")
 include("smalldict.jl")
 include("smallset.jl")
-
-include("combinatorics.jl")
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,
