@@ -189,16 +189,12 @@ end
         for i in 0:m+2
             if 1 <= i <= m+1
                 @test_inferred reverse(v, i) reverse(u, i) SmallVector(v)
-            elseif isempty(i:m)
-                @test_inferred reverse(v, i) SmallVector(v)
             else
                 @test_throws Exception reverse(v, i)
             end
             for j in i-2:m+1
                 if 1 <= i <= m+1 && i-1 <= j <= m
                     @test_inferred reverse(v, i, j) reverse(u, i, j) SmallVector(v)
-                elseif isempty(i:j)
-                    @test_inferred reverse(v, i, j) SmallVector(v)
                 else
                     @test_throws Exception reverse(v, i, j)
                 end
