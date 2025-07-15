@@ -308,12 +308,14 @@ end
     v
 end
 
-@inline function reverse!(v::MutableSmallVector)
+reverse!(v::MutableSmallVector) = @inbounds reverse!(v, 1)
+
+@propagate_inbounds function reverse!(v::MutableSmallVector, start::Integer)
     M = shufflewidth(v)
     if M != 0
-        unsafe_copyto!(v, reverse(v))
+        unsafe_copyto!(v, reverse(v, start))
     else
-        invoke(reverse!, Tuple{AbstractVector}, v)
+        invoke(reverse!, Tuple{AbstractVector,Integer}, v, start)
     end
 end
 
