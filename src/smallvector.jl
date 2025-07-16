@@ -82,8 +82,6 @@ end
 
 SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(v, n % SmallLength)
 
-capacity(::Type{<:AbstractSmallVector{N}}) where N = N
-
 """
     fixedvector(v::AbstractSmallVector{N,T}) where {N,T} -> FixedVector{N,T}
 

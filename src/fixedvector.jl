@@ -174,6 +174,19 @@ See also [`fixedvector(::AbstractSmallVector)`](@ref).
 """
 fixedvector(v::AbstractFixedVector{N,T}) where {N,T} = FixedVector{N,T}(v.t)
 
+"""
+    capacity(::Type{<:AbstractFixedVector{N}}) where N -> N
+    capacity(v::AbstractFixedVector{N}) where N -> N
+
+Return the number `N` of elements this vector type holds.
+This function is useful when writing code that works for both
+`AbstractFixedVector` and `AbstractSmallVector`.
+
+See also [`capacity(::AbstractSmallVector)`](@ref capacity(::Type{<:AbstractSmallVector})).
+"""
+capacity(::Type{<:AbstractFixedVector}),
+capacity(::AbstractFixedVector)
+
 convert(::Type{V}, v::V) where V <: AbstractFixedVector = v
 convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractFixedVector = V(v)
 

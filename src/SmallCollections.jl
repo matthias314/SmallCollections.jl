@@ -45,7 +45,7 @@ const HWTypeExpr = :( Union{Base.HWReal, Bool, Char, Enum} )
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
-capacity(::Type{Union{}}) = error("not defined")   # for JET analysis
+capacity(::Type) = error("capacity not defined for this type")
 
 fasthash(x) = fasthash(x, UInt(0))
 

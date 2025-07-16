@@ -6,6 +6,7 @@ using Base.FastMath: eq_fast
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
+        @test_inferred capacity(v) N
         if ismutabletype(V)
             @test v !== @inferred copy(v)
         else

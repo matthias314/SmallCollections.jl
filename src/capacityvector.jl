@@ -27,6 +27,8 @@ copy(v::AbstractCapacityVector) = v
     capacity(v::AbstractCapacityVector) -> Int
 
 Return the largest number of elements this vector type can hold.
+
+See also [`capacity(::AbstractFixedVector)`](@ref capacity(::Type{<:AbstractFixedVector})).
 """
 capacity(::Type{<:AbstractCapacityVector}),
 capacity(::AbstractCapacityVector)

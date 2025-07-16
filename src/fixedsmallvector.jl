@@ -9,6 +9,8 @@ import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
+capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
+
 support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 
 _support(f, v::AbstractFixedVector; style) = support(f, v)
