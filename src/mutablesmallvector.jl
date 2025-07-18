@@ -47,8 +47,8 @@ export MutableSmallVector
     MutableSmallVector{N,T}()
     MutableSmallVector{N,T}(iter)
     MutableSmallVector{N}(iter)
-    MutableSmallVector(v::PackedVector{T})
-    MutableSmallVector(v::AbstractSmallVector)
+    MutableSmallVector(v::PackedVector)
+    MutableSmallVector(v::Union{AbstractSmallVector, AbstractFixedVector})
 
     MutableSmallVector{N,T}(undef, n::Integer)
 

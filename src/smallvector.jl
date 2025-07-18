@@ -29,8 +29,8 @@ const SmallLength = Int16
     SmallVector{N,T}()
     SmallVector{N,T}(iter)
     SmallVector{N}(iter)
-    SmallVector(v::PackedVector{T})
-    SmallVector(v::AbstractSmallVector)
+    SmallVector(v::PackedVector)
+    SmallVector(v::Union{AbstractSmallVector, AbstractFixedVector})
 
 `SmallVector{N,T}` is an immutable vector type that can hold up to `N` elements of type `T`.
 Here `N` can be any (small) positive integer. However, at least for bit integer
@@ -40,7 +40,7 @@ The element type `T` can be omitted when creating the `SmallVector` from an iter
 that has an element type, for example from an `AbstractVector` or a tuple.
 In the latter case, `T` is determined by promoting the element types of the tuple.
 If no argument is given, then an empty vector is returned.
-If the `SmallVector` is created from an `AbstractSmallVector` or `PackedVector` `v`
+If the `SmallVector` is created from an `AbstractSmallVector`, `AbstractFixedVector` or `PackedVector` `v`
 and the parameter `N` is omitted, then it is set to capacity of `v`.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
@@ -269,6 +269,10 @@ function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
 end
 
 SmallVector(v::AbstractSmallVector{N,T}) where {N,T} = SmallVector{N,T}(v)
+
+function (::Type{V})(v::AbstractFixedVector{N,T}) where {V <: AbstractSmallVector, N, T}
+    V{N,T}(FixedVector(v), N)
+end
 
 +(v::AbstractSmallVector) = map(+, v)  # +true = 1::Int
 -(v::AbstractSmallVector) = map(-, v)

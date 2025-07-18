@@ -64,6 +64,11 @@ const VS = (SmallVector, MutableSmallVector)
         @test_inferred empty(v) V{N,T}()
         @test_inferred empty(v, Char) V{N,Char}()
     end
+
+    VERSION >= v"1.11" && for V in VS, W in (FixedVector, MutableFixedVector), N in (9, 16), T in test_types
+        w = rand(W{N,T})
+        @test_inferred V(w) w V{N,T}
+    end
 end
 
 @testset "SmallVector indices" begin
