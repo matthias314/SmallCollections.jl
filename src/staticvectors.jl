@@ -21,7 +21,7 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
     i = i % SmallLength
     t = ntuple(Val(N)) do j
         j = j % SmallLength
-        ifelse(j == i, convert(T, x), v[j])
+        j == i ? convert(T, x) : v[j]
     end
     FixedVector{N,T}(t)
 end
