@@ -131,16 +131,12 @@ end
         for i in 0:N+2
             if 1 <= i <= N+1
                 @test_inferred reverse(v, i) reverse(u, i) FixedVector(v)
-            elseif isempty(i:N)
-                @test_inferred reverse(v, i) FixedVector(v)
             else
                 @test_throws Exception reverse(v, i)
             end
             for j in i-2:N+1
                 if 1 <= i <= N+1 && i-1 <= j <= N
                     @test_inferred reverse(v, i, j) reverse(u, i, j) FixedVector(v)
-                elseif isempty(i:j)
-                    @test_inferred reverse(v, i, j) FixedVector(v)
                 else
                     @test_throws Exception reverse(v, i, j)
                 end

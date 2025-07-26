@@ -6,7 +6,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
-    minimum, maximum, extrema, in, reverse,
+    minimum, maximum, extrema, in, reverse, reverse!,
     vcat, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
@@ -403,13 +403,40 @@ function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (miss
     end
 end
 
-
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
-    @boundscheck checkbounds(v, start:stop)
+    @boundscheck 0 < start <= stop+1 <= N+1 || Base.throw_boundserror(v, start:stop)
     t = ntuple(Val(N)) do i
         @inbounds start <= i <= stop ? v[start+stop-i] : v[i]
     end
     FixedVector{N,T}(t)
+end
+
+@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer) where {N, T <: HWType}
+    M = shufflewidth(v)
+    if M != 0
+        @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
+        PT = inttype(T)
+        k = start % PT
+        l = (N-2) % PT + k
+        u1 = FixedVector{N,PT}(0:N-1)
+        u2 = l .- u1
+        p = ntuple(Val(N)) do i
+            i = i % PT
+            ifelse(i < k, u1[i], u2[i])
+        end
+        shuffle(Val(M), v, p)
+    else
+        invoke(reverse, Tuple{AbstractFixedVector,Integer}, v, start)
+    end
+end
+
+@propagate_inbounds function reverse!(v::MutableFixedVector, start::Integer)
+    M = shufflewidth(v)
+    if M != 0
+        copyto!(v, reverse(v, start))
+    else
+        invoke(reverse!, Tuple{AbstractVector,Integer}, v, start)
+    end
 end
 
 vcat(v::AbstractFixedVector) = v
