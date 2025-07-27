@@ -121,8 +121,7 @@ copy(v::MutableSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
 
 function copyto!_merge(w::MutableSmallVector{N}, v::AbstractVector) where N
     length(w) >= length(v) || error("destination vector too short")
-    w.b = ntuple(Val(N)) do i
-        i = i % SmallLength
+    w.b = ntuple(Val(N % SmallLength)) do i
         @inbounds ifelse(i <= v.n, v[i], w[i])
     end
     w
@@ -338,8 +337,7 @@ function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
     elseif N <= 16 || !isbits(T)
         n1 = length(v)
         k1 = ifelse(signbit(k), (k % SmallLength) + v.n, k % SmallLength)
-        w = ntuple(Val(N)) do i
-            i = i % SmallLength
+        w = ntuple(Val(N % SmallLength)) do i
             @inbounds if i <= k1
                 v[(i-k1)+n1]
             elseif i <= n1 % SmallLength

@@ -491,8 +491,7 @@ reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType} = @inbounds reverse(
         PT = inttype(T)
         k = start % PT
         l = (length(v) % PT) + k
-        p = ntuple(Val(N)) do i
-            i = i % PT
+        p = ntuple(Val(N % PT)) do i
             ifelse(i < k, i, l-i) - one(PT)
         end
         SmallVector(shuffle(Val(M), fixedvector(v), p), length(v))
@@ -751,8 +750,7 @@ function unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
         P = inttype(T)
         n1 = length(v) % P
         k1 = ifelse(signbit(k), (k%P)+n1, k%P)
-        p = ntuple(Val(N)) do i
-            i = i % P
+        p = ntuple(Val(N % P)) do i
             i-k1 + (i > k1 ? -P(1) : n1-P(1))
         end
         w = shuffle(Val(M), fixedvector(v), p)
@@ -760,8 +758,7 @@ function unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
     elseif N <= 16 || !isbitstype(T)
         n2 = length(v)
         k2 = ifelse(signbit(k), (k % SmallLength) + v.n, k % SmallLength)
-        t = ntuple(Val(N)) do i
-            i = i % SmallLength
+        t = ntuple(Val(N % SmallLength)) do i
             @inbounds if i <= k2
                 v[(i-k2)+n2]
             elseif i <= n2 % SmallLength

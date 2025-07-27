@@ -87,7 +87,7 @@ Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Tuple
 end
 
 ntuple(f, n) = Base.ntuple(f, n)
-@inline @generated ntuple(f, ::Val{N}) where N = :(Base.Cartesian.@ntuple $N i -> f(i))
+@inline @generated ntuple(f, ::Val{N}) where N = :(Base.Cartesian.@ntuple $(Int(N)) i -> f($(typeof(N))(i)))
 
 @noinline keyerror(key) = throw(KeyError(key))
 

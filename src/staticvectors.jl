@@ -19,8 +19,7 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
 @inline function setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
     i = i % SmallLength
-    t = ntuple(Val(N)) do j
-        j = j % SmallLength
+    t = ntuple(Val(N % SmallLength)) do j
         j == i ? convert(T, x) : v[j]
     end
     FixedVector{N,T}(t)
@@ -64,8 +63,7 @@ julia> $(@__MODULE__).padtail(v, 2, -1)
 """
 function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where {N,T}
     i = i % SmallLength
-    t = ntuple(Val(N)) do j
-        j = j % SmallLength
+    t = ntuple(Val(N % SmallLength)) do j
         ifelse(j <= i, v[j], convert(T, x))
     end
     FixedVector{N,T}(t)
@@ -188,14 +186,12 @@ unsafe_circshift!(::MutableFixedVector, ::Integer)
     elseif M != 0
         P = inttype(T)
         k1 = ifelse(signbit(k), (k%P)+P(N), k%P)
-        p = ntuple(Val(N)) do i
-            i = i % P
+        p = ntuple(Val(N % P)) do i
             i-k1 + (i > k1 ? -P(1) : P(N)-P(1))
         end
         shuffle(Val(M), fixedvector(v), p)
     else
-        t = ntuple(Val(N)) do i
-            i = i % SmallLength
+        t = ntuple(Val(N % SmallLength)) do i
             k2 = ifelse(signbit(k), k+N, k) % SmallLength
             @inbounds if i <= k2
                 v[(i-k2)+N]

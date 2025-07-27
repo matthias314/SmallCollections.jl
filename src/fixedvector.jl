@@ -420,8 +420,7 @@ end
         l = (N-2) % PT + k
         u1 = FixedVector{N,PT}(0:N-1)
         u2 = l .- u1
-        p = ntuple(Val(N)) do i
-            i = i % PT
+        p = ntuple(Val(N % PT)) do i
             ifelse(i < k, u1[i], u2[i])
         end
         shuffle(Val(M), v, p)
