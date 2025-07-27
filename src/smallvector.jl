@@ -2,11 +2,13 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, extrema_fast
+export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, extrema_fast,
+    capacity, support, setindex, addindex, push, pop, pushfirst, popfirst,
+    insert, duplicate, deleteat, popat, append, prepend
 
 import Base: ==, Tuple, empty, iterate,
     length, size, getindex, setindex, rest, split_rest,
-    zero, map, reverse, in,
+    zeros, ones, zero, map, reverse, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
     circshift
 
@@ -19,7 +21,7 @@ import Base.FastMath: eq_fast, mul_fast
 
 See also [`SmallVector`](@ref), [`MutableSmallVector`](@ref).
 """
-abstract type AbstractSmallVector{N,T} <: AbstractCapacityVector{T} end
+abstract type AbstractSmallVector{N,T} <: AbstractVector{T} end
 
 const SmallLength = Int16
 
@@ -51,7 +53,7 @@ Addition and subtraction of two `SmallVector`s is possible even if the vectors h
 capacity. (Of course, their lengths must agree.) The capacity of the result is the smaller
 of the arguments' capacities in this case.
 
-See also [`MutableSmallVector`](@ref), [`capacity`](@ref), [`$(@__MODULE__).default`](@ref),
+See also [`MutableSmallVector`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractSmallVector})), [`$(@__MODULE__).default`](@ref),
 `Base.IteratorEltype`, `promote_type`.
 
 # Examples
@@ -112,7 +114,7 @@ fixedvector(v::AbstractSmallVector) = v.b
 
 Return the bit representation of `fixedvector(v)`.
 
-See also [`fixedvector`](@ref), [`bits(::AbstractFixedVector)`](@ref).
+See also [`fixedvector`](@ref fixedvector(::AbstractSmallVector)), [`bits(::AbstractFixedVector)`](@ref).
 
 # Example
 ```jldoctest
@@ -138,7 +140,7 @@ with `fasthash` for a `AbstractSmallVector` having a different element type.
 Currently, `fasthash` differs from `hash` only if the element type of `v`
 is a bit integer type with at most 32 bits, `Bool` or `Char`.
 
-See also [`fasthash(::PackedVector, ::UInt)`](@ref), `Base.hash`.
+See also `Base.hash`.
 
 # Examples
 ```jldoctest
@@ -175,6 +177,15 @@ Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 
 size(v::AbstractSmallVector) = (v.n % Int,)
 
+"""
+    capacity(::Type{<:AbstractSmallVector{N}}) where N -> N
+    capacity(v::AbstractSmallVector{N}) where N -> N
+
+Return the largest number of elements this vector type can hold.
+"""
+capacity(::Type{<:AbstractSmallVector}),
+capacity(::AbstractSmallVector)
+
 @inline function iterate(v::AbstractSmallVector, i = 1)
     i <= length(v) ? (@inbounds v[i], i+1) : nothing
 end
@@ -194,25 +205,40 @@ end
     @inbounds v.b[i]
 end
 
+"""
+    setindex(v::AbstractSmallVector{N,T}, x, i::Integer) where {N,T} -> SmallVector{N,T}
+
+Substitute `x` for the `i`-th component of `v` and return the new vector.
+
+See also `Base.setindex`,  [`addindex`](@ref addindex(::AbstractSmallVector, ::Any, ::Integer)).
+"""
 @inline function setindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     SmallVector((@inbounds setindex(v.b, x, i)), length(v))
 end
 
+"""
+    addindex(v::AbstractSmallVector{N,T}, x, i::Integer) where {N,T} -> SmallVector{N,T}
+
+Add `x` to the `i`-th component of `v` and return the new vector.
+
+See also [`setindex`](@ref setindex(::AbstractSmallVector, ::Any, ::Integer)).
+"""
 @inline function addindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
     @inbounds v + setindex(zero(v), x, i)
 end
 
 """
-    empty(v::AbstractSmallVector{N}, S::Type) where {N,S} -> AbstractSmallVector{N,S}
+    empty(v::V) where V <: AbstractSmallVector -> V
+    empty(v::AbstractSmallVector{N}, T::Type) where {N,T} -> AbstractSmallVector{N,T}
 
-Return an empty `AbstractSmallVector` with the same capacity as `v` and element type `U`.
-The resulting vector is mutable if and only if `v` is so.
-
-See also [`empty(v::AbstractCapacityVector)`](@ref).
+In the first form, return an empty `AbstractSmallVector` of the same type as `v`.
+In the second form, the capacity is the same as for `v`,
+but the element type is `T`.
 """
-empty(v::AbstractSmallVector, ::Type)
+empty(::AbstractSmallVector),
+empty(::AbstractSmallVector, ::Type)
 
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
 
@@ -234,10 +260,28 @@ default(::Type{V}) where V <: AbstractSmallVector = V()
 
 @inline zero(v::V) where V <: AbstractSmallVector = V(zero(v.b), length(v))
 
+"""
+    zeros(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V
+
+Return an `AbstractSmallVector` of type `V` containing `n` zeros.
+
+See also [`ones`](@ref ones(::Type{<:AbstractSmallVector}, ::Integer)).
+"""
+zeros(::Type{<:AbstractSmallVector}, ::Integer)
+
 function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
     V(zero(Values{N,T}), n)
 end
+
+"""
+    ones(::Type{V}, n::Integer) where V <: AbstractSmallVector -> V
+
+Return an `AbstractSmallVector` of type `V` containing `n` ones.
+
+See also [`zeros`](@ref zeros(::Type{<:AbstractSmallVector}, ::Integer)).
+"""
+ones(::Type{<:AbstractSmallVector}, ::Integer)
 
 function ones(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
@@ -494,6 +538,13 @@ function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {
     end
 end
 
+"""
+    push(v::AbstractSmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by appending the arguments `xs`.
+
+See also `Base.push!`, `BangBang.push!!`.
+"""
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
 @propagate_inbounds function push(v::AbstractSmallVector{N,T}, x) where {N,T}
@@ -503,18 +554,45 @@ end
     @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
 end
 
+"""
+    pop(v::AbstractSmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T}, T}
+
+Return the tuple `(w, x)` where `x` is the last element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+See also `Base.pop!`, `BangBang.pop!!`.
+"""
+pop(::AbstractSmallVector)
+
 @inline function pop(v::AbstractSmallVector{N,T}) where {N,T}
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
     @inbounds SmallVector(setindex(v.b, default(T), n), n-1), v[n]
 end
 
+"""
+    pushfirst(v::AbstractSmallVector{N,T}, xs...) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by prepending the arguments `xs`.
+
+See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
+"""
 @inline function pushfirst(v::AbstractSmallVector{N}, xs...) where N
     n = length(xs)+length(v)
     @boundscheck n <= N || error("vector cannot have more than $N elements")
     SmallVector(pushfirst(v.b, xs...), n)
 end
 
+"""
+    popfirst(v::AbstractSmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T}, T}
+
+Return the tuple `(w, x)` where `x` is the first element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+See also `Base.popfirst!`, `BangBang.popfirst!!`.
+"""
 @inline function popfirst(v::AbstractSmallVector)
     n = length(v)
     @boundscheck iszero(n) && error("vector must not be empty")
@@ -522,6 +600,16 @@ end
     SmallVector(c, n-1), x
 end
 
+"""
+    insert(v::AbstractSmallVector{N,T}, i::Integer, x) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by inserting `x` at position `i`.
+The position `i` must be between `1` and `length(v)+1`.
+
+This is the non-mutating analog of `Base.insert!`.
+
+See also [`duplicate`](@ref duplicate(::AbstractSmallVector, ::Integer)).
+"""
 @inline function insert(v::AbstractSmallVector{N}, i::Integer, x) where N
     n = length(v)
     @boundscheck begin
@@ -531,6 +619,29 @@ end
     @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
 
+"""
+    duplicate(v::AbstractSmallVector{N,T}, i::Integer) where {N,T} -> SmallVector{N,T}
+
+Duplicate the `i`-th entry of `v` by inserting it at position `i+1` and return the new vector.
+
+See also [`insert`](@ref insert(::AbstractSmallVector, ::Integer, ::Any)).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}(1:3)
+3-element SmallVector{8, Int8}:
+ 1
+ 2
+ 3
+
+julia> duplicate(v, 2)
+4-element SmallVector{8, Int8}:
+ 1
+ 2
+ 2
+ 3
+```
+"""
 @inline function duplicate(v::AbstractSmallVector{N,T}, i::Integer) where {N,T}
     @boundscheck begin
         checkbounds(v, i)
@@ -542,8 +653,24 @@ end
     SmallVector(Values{N,T}(t), length(v)+1)
 end
 
+"""
+    deleteat(v::AbstractSmallVector{N,T}, i::Integer) where {N,T} -> SmallVector{N,T}
+
+Return the `SmallVector` obtained from `v` by deleting the element at position `i`.
+The latter must be between `1` and `length(v)`.
+
+See also `Base.deleteat!`, `BangBang.deleteat!!`.
+"""
 @propagate_inbounds deleteat(v::AbstractSmallVector, i::Integer) = first(popat(v, i))
 
+"""
+    popat(v::AbstractSmallVector{N,T}, i::Integer) where {N,T} -> Tuple{SmallVector{N,T}, T}
+
+Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
+at position `i`. The latter must be between `1` and `length(v)`.
+
+See also `Base.popat!`, `BangBang.popat!!`.
+"""
 @inline function popat(v::AbstractSmallVector, i::Integer)
     n = length(v)
     @boundscheck checkbounds(v, i)
@@ -551,6 +678,14 @@ end
     SmallVector(c, n-1), x
 end
 
+"""
+    append(v::AbstractSmallVector{N,T}, ws...) where {N,T} -> SmallVector{N,T}
+
+Append all elements of the collections `ws` to `v` and return the new vector.
+Note that the resulting `SmallVector` has the same capacity as `v`.
+
+See also `Base.append!`, `BangBang.append!!`.
+"""
 @propagate_inbounds append(v::AbstractSmallVector, ws...) = foldl(append, ws; init = SmallVector(v))
 
 @propagate_inbounds append(v::AbstractSmallVector, w) = foldl(push, w; init = SmallVector(v))
@@ -570,6 +705,14 @@ end
     SmallVector{N,T}(Values{N,T}(t), m)
 end
 
+"""
+    prepend(v::AbstractSmallVector{N,T}, ws...) where {N,T} -> SmallVector{N,T}
+
+Prepend all elements of the collections `ws` to `v` and return the new vector.
+Note that the resulting `SmallVector` has the same capacity as `v`.
+
+See also `Base.prepend!`.
+"""
 @propagate_inbounds function prepend(v::AbstractSmallVector, ws...)
     foldr((w, v) -> prepend(v, w), ws; init = SmallVector(v))
 end
@@ -609,6 +752,25 @@ function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
     end
 end
 
+"""
+    support(v::AbstractSmallVector) -> SmallBitSet
+
+Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
+If `v` has `Bool` elements, then this means the elements that are `true`.
+
+See also [`SmallBitSet`](@ref), [`support(::Any, ::AbstractSmallVector)`](@ref).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}([1, 0, 2, 0, 0, 3]);
+
+julia> support(v)
+SmallBitSet{UInt8} with 3 elements:
+  1
+  3
+  6
+```
+"""
 support(v::AbstractSmallVector) = support(v.b)
 # here we assume that the padding is via zeros
 
@@ -654,7 +816,7 @@ The `style` keyword argument determines how `map` treats the padding used for
 `AbstractSmallVector`. As discussed under `MapStyle`, the default value is based on
 a list of known functions.
 
-See also [`capacity`](@ref), `Base.map(f, v::AbstractVector...)`,
+See also [`capacity`](@ref capacity(::Type{<:AbstractSmallVector})), `Base.map(f, v::AbstractVector...)`,
 [`$(@__MODULE__).MapStyle`](@ref), [Section "Broadcasting"](@ref sec-broadcasting).
 
 # Examples

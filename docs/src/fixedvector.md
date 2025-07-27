@@ -8,8 +8,8 @@ DocTestSetup = :(using SmallCollections)
 AbstractFixedVector
 FixedVector
 MutableFixedVector
-fixedvector(::AbstractFixedVector)
 capacity(::Type{<:AbstractFixedVector})
+fixedvector(::AbstractFixedVector)
 bits(::AbstractFixedVector)
 convert(::Type{V}, ::Unsigned) where {N, T <: SmallCollections.HWType, V <: AbstractFixedVector{N,T}}
 fasthash(::AbstractFixedVector, ::UInt)

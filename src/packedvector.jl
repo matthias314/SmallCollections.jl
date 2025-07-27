@@ -3,12 +3,14 @@
 #
 
 import Base: ==, getindex, setindex, length, size, empty, iterate, rest, split_rest,
-    iszero, zero, +, -, *, convert, circshift, filter, reverse
+    iszero, zero, +, -, *, convert, circshift, filter, reverse, copy, zeros, ones
 
-export PackedVector, bits
+export PackedVector, bits, capacity, support,
+    setindex, addindex, push, pop, pushfirst, popfirst,
+    insert, duplicate, deleteat, popat, append, prepend
 
 """
-    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractCapacityVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractVector{T}
 
     PackedVector{U,M,T}()
     PackedVector{U,M,T}(iter)
@@ -73,7 +75,7 @@ julia> Int8(2)*v
  -12
 ```
 """
-struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractCapacityVector{T}
+struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractVector{T}
     m::U
     n::Int
     function PackedVector{U,M,T}(m::U, n::Int) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
@@ -145,7 +147,18 @@ length(v::PackedVector) = v.n
 
 size(v::PackedVector) = (length(v),)
 
+"""
+    capacity(::Type{<:PackedVector}) -> Int
+    capacity(v::PackedVector) -> Int
+
+Return the largest number of elements this vector type can hold.
+"""
+capacity(::Type{<:PackedVector}),
+capacity(::PackedVector)
+
 capacity(::Type{<:PackedVector{U,M}}) where {U,M} = bitsize(U) ÷ M
+
+copy(v::PackedVector) = v
 
 ==(v::PackedVector{U,M,T}, w::PackedVector{U,M,T}) where {U,M,T} =
     v.n == w.n && v.m == w.m
@@ -160,7 +173,7 @@ or with `fasthash` for a `PackedVector` having a different bit size.
 However, using `fasthash` for two `PackedVector`s with the same `M`, but
 both signed and unsigned element types `T` may lead to hash collisions.
 
-See also [`fasthash(::AbstractSmallVector, ::UInt)`](@ref), `Base.hash`.
+See also `Base.hash`.
 
 # Examples
 ```jldoctest
@@ -185,20 +198,30 @@ true
 fasthash(v::PackedVector, h0::UInt) = Base.hash_integer(bits(v), hash(length(v), h0))
 
 """
-    empty(v::PackedVector{U,M}, S::Type) where {U,M,S} -> PackedVector{U,M,S}
+    empty(v::V) where V <: PackedVector -> V
+    empty(v::PackedVector{U,M}, T::Type) where {U,M,T} -> PackedVector{U,M,T}
 
-Return an empty `PackedVector` with the same bit mask type and same bit size as `v`,
-but element type `S`.
-
-See also [`empty(v::AbstractCapacityVector)`](@ref).
+In the first form, return an empty `PackedVector` of the same type as `v`.
+In the second form, the bit mask type and the bit size are the same as for `v`,
+but the element type is `T`.
 """
-empty(v::PackedVector, ::Type)
+empty(::PackedVector),
+empty(::PackedVector, ::Type)
 
 empty(v::PackedVector{U,M,T}, ::Type{S} = T) where {U,M,T,S} = PackedVector{U,M,S}()
 
 iszero(v::PackedVector) = iszero(v.m)
 
 zero(v::V) where V <: PackedVector = zeros(V, length(v))
+
+"""
+    zeros(::Type{V}, n::Integer) where V <: PackedVector -> V
+
+Return a `PackedVector` of type `V` containing `n` zeros.
+
+See also [`ones`](@ref ones(::Type{<:PackedVector}, ::Integer)).
+"""
+zeros(::Type{<:PackedVector}, ::Integer)
 
 function zeros(::Type{V}, n::Integer) where {U, V <: PackedVector{U}}
     n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
@@ -207,6 +230,15 @@ end
 
 Base.@assume_effects :total all_ones(::Type{U}, M) where U =
     foldl((m, i) -> m | unsafe_shl(one(U), i), 0:M:bitsize(U)-1; init = zero(U))
+
+"""
+    ones(::Type{V}, n::Integer) where V <: PackedVector -> V
+
+Return a `PackedVector` of type `V` containing `n` ones.
+
+See also [`zeros`](@ref zeros(::Type{<:PackedVector}, ::Integer)).
+"""
+ones(::Type{<:PackedVector}, ::Integer)
 
 function ones(::Type{V}, n::Integer) where {U, M, V <: PackedVector{U,M}}
     n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
@@ -328,6 +360,13 @@ getindex(v::PackedVector, s::SmallBitSet)
     end
 end
 
+"""
+    setindex(v::V, x, i::Integer) where V <: PackedVector -> V
+
+Substitute `x` for the `i`-th component of `v` and return the new vector.
+
+See also `Base.setindex`, [`addindex`](@ref addindex(::PackedVector, ::Any, ::Integer)).
+"""
 @inline function setindex(v::PackedVector{U,M,T}, x, i::Integer) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
@@ -341,6 +380,26 @@ end
     PackedVector{U,M,T}(m, v.n)
 end
 
+"""
+    addindex(v::V, x, i::Integer) where V <: PackedVector -> V
+
+Add `x` to the `i`-th component of `v` and return the new vector.
+
+See also [`setindex`](@ref setindex(::PackedVector, ::Any, ::Integer)).
+"""
+@propagate_inbounds addindex(v::PackedVector, x, i::Integer) =
+    setindex(v, v[i]+x, i)
+
+"""
+    insert(v::V, i::Integer, x) where V <: PackedVector -> V
+
+Return the `PackedVector` obtained from `v` by inserting `x` at position `i`.
+The position `i` must be between `1` and `length(v)+1`.
+
+This is the non-mutating analog of `Base.insert!`.
+
+See also [`duplicate`](@ref duplicate(::PackedVector, ::Integer)).
+"""
 @inline function insert(v::PackedVector{U,M,T}, i::Integer, x) where {U,M,T}
     x = convert(T, x)
     @boundscheck begin
@@ -357,6 +416,14 @@ end
     PackedVector{U,M,T}(m, v.n+1)
 end
 
+"""
+    deleteat(v::V, i::Integer) where V <: PackedVector -> V
+
+Return the `PackedVector` obtained from `v` by deleting the element at position `i`.
+The latter must be between `1` and `length(v)`.
+
+See also `Base.deleteat!`, `BangBang.deleteat!!`.
+"""
 @inline function deleteat(v::PackedVector{U,M,T}, i::Integer) where {U,M,T}
     @boundscheck checkbounds(v, i)
     s = M*(i-1)
@@ -366,9 +433,24 @@ end
     PackedVector{U,M,T}(m1 | m2, v.n-1)
 end
 
+"""
+    popat(v::PackedVector{U,M,T}, i::Integer) where {U,M,T} -> Tuple{PackedVector{U,M,T}, T}
+
+Return the tuple `(w, x)` where `w` obtained from `v` by deleting the element `x`
+at position `i`. The latter must be between `1` and `length(v)`.
+
+See also `Base.popat!`, `BangBang.popat!!`.
+"""
 @propagate_inbounds popat(v::PackedVector, i::Integer) =
     deleteat(v, i), @inbounds v[i]
 
+"""
+    push(v::V, xs...) where V <: PackedVector -> V
+
+Return the `PackedVector` obtained from `v` by appending the arguments `xs`.
+
+See also `Base.push!`, `BangBang.push!!`.
+"""
 @propagate_inbounds push(v::PackedVector, xs...) = append(v, xs)
 
 # TODO: needed?
@@ -383,6 +465,17 @@ end
     m = v.m | unsafe_shl(y, s)
     PackedVector{U,M,T}(m, v.n+1)
 end
+
+"""
+    pop(v::PackedVector{U,M,T}) where {U,M,T} -> Tuple{PackedVector{U,M,T}, T}
+
+Return the tuple `(w, x)` where `x` is the last element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+See also `Base.pop!`, `BangBang.pop!!`.
+"""
+pop(::PackedVector)
 
 @inline function pop(v::PackedVector{U,M,T}) where {U,M,T}
     @boundscheck checkbounds(v, 1)
@@ -405,13 +498,37 @@ pushfirst(v::PackedVector) = v
     PackedVector{U,M,T}(m, v.n+1)
 end
 
+"""
+    pushfirst((v::V, xs...) where V <: PackedVector -> V
+
+Return the `PackedVector` obtained from `v` by prepending the arguments `xs`.
+
+See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
+"""
 @propagate_inbounds pushfirst(v::PackedVector, xs...) = prepend(v, xs)
 
+"""
+    popfirst(v::PackedVector{U,M,T}) where {U,M,T} -> Tuple{PackedVector{U,M,T}, T}
+
+Return the tuple `(w, x)` where `x` is the first element of `v`
+and `w` obtained from `v` by dropping this element.
+The vector `v` must not be empty.
+
+See also `Base.popfirst!`, `BangBang.popfirst!!`.
+"""
 @inline function popfirst(v::PackedVector{U,M,T}) where {U,M,T}
     @boundscheck checkbounds(v, 1)
     PackedVector{U,M,T}(v.m >> M, v.n-1), @inbounds v[1]
 end
 
+"""
+    append(v::V, ws...) where V <: PackedVector -> V
+
+Append all elements of the collections `ws` to `v` and return the new vector.
+Note that the resulting `PackedVector` has the same capacity as `v`.
+
+See also `Base.append!`, `BangBang.append!!`.
+"""
 append(v::PackedVector, ws...) = foldl(append, ws; init = v)
 
 @propagate_inbounds append(v::V, w) where V <: PackedVector = append(v, V(w))
@@ -423,10 +540,41 @@ append(v::PackedVector, ws...) = foldl(append, ws; init = v)
     PackedVector{U,M,T}(m, v.n+w.n)
 end
 
+"""
+    prepend(v::V, ws...) where V <: PackedVector -> V
+
+Prepend all elements of the collections `ws` to `v` and return the new vector.
+Note that the resulting `PackedVector` has the same capacity as `v`.
+
+See also `Base.prepend!`.
+"""
 prepend(v::PackedVector, ws...) = foldr((w, v) -> prepend(v, w), ws; init = v)
 
 @propagate_inbounds prepend(v::V, w) where V <: PackedVector = append(V(w), v)
 
+"""
+    duplicate(v::V, i::Integer) where V <: PackedVector -> V
+
+Duplicate the `i`-th entry of `v` by inserting it at position `i+1` and return the new vector.
+
+See also [`insert`](@ref).
+
+# Example
+```jldoctest
+julia> v = PackedVector{UInt,5,Int8}(1:3)
+3-element PackedVector{UInt64, 5, Int8}:
+ 1
+ 2
+ 3
+
+julia> duplicate(v, 2)
+4-element PackedVector{UInt64, 5, Int8}:
+ 1
+ 2
+ 2
+ 3
+```
+"""
 @inline function duplicate(v::PackedVector{U,M,T}, i::Integer) where {U,M,T}
     @boundscheck begin
         checkbounds(v, i)
@@ -715,6 +863,25 @@ function minimum(v::PackedVector{U,M,T}) where {U,M,T}
     end
 end
 
+"""
+    support(v::PackedVector) -> SmallBitSet
+
+Return the `SmallBitSet` with the indices of the non-zero elements of `v`.
+If `v` has `Bool` elements, then this means the elements that are `true`.
+
+See also [`SmallBitSet`](@ref).
+
+# Example
+```jldoctest
+julia> v = PackedVector{UInt,5,Int8}([1, 0, 2, 0, 0, 3]);
+
+julia> support(v)
+SmallBitSet{UInt64} with 3 elements:
+  1
+  3
+  6
+```
+"""
 function support(v::PackedVector{U,M}) where {U,M}
     S = SmallBitSet{UInt}
     capacity(v) <= capacity(S) || length(v) <= capacity(S) ||

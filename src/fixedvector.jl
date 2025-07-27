@@ -7,7 +7,7 @@ using Base: @propagate_inbounds, tail, haslength, BitInteger,
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,
     minimum, maximum, extrema, in, reverse,
-    vcat, copy, copyto!, convert,
+    vcat, copyto!, convert,
     strides, elsize, unsafe_convert, muladd, replace, replace!
 
 """
@@ -189,8 +189,6 @@ capacity(::AbstractFixedVector)
 
 convert(::Type{V}, v::V) where V <: AbstractFixedVector = v
 convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractFixedVector = V(v)
-
-copy(v::V) where V <: AbstractFixedVector = V(v)
 
 copyto!(v::MutableFixedVector{N}, t::Tuple{Vararg{Any,N}}) where N = (v.t = t; v)
 

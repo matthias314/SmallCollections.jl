@@ -13,7 +13,7 @@ arguments (if any) are `Tuple`s or scalars. Otherwise Julia's generic broadcasti
 method applies. The capacity of a resulting `SmallVector` is the minimum of the
 capacities of the `AbstractSmallVector` arguments.
 
-See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractCapacityVector})),
+See also [`map`](@ref), [`capacity`](@ref capacity(::Type{<:AbstractSmallVector})),
 [`SmallCollections.FixedVectorStyle`](@ref), [`SmallCollections.SmallVectorStyle`](@ref).
 
 ### Examples
