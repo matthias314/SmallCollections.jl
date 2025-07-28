@@ -39,18 +39,20 @@ Up to a few implementation details, they are analogous to `SVector` and `MVector
 (However, broadcasting with assignment is currently much faster for `MutableSmallVector` than for `MVector`.)
 
 <details>
-<summary>Benchmarks for <code>SmallVector</code> and <code>MutableSmallVector</code></summary>
+<summary>Benchmarks for <code>(Mutable)SmallVector</code> and <code>(Mutable)FixedVector</code></summary>
 
 The timings are for **1000** operations of the given type on vectors having between 1 and 31 elements
 (or exactly 32 elements for fixed-length vectors). If possible, mutating operations were used.
 
 | `N = 32`, `T = Int16` | `v + w` | `v .+= w` |`sum` | `push(!)` | `count(>(c), v)` |
 | --- | --- | --- | --- | --- | --- |
-| `Vector{T}` | 44.827 μs | 21.258 μs | 7.612 μs | 5.003 μs | 11.241 μs |
-| `MVector{N,T}` | 5.606 μs | 19.478 μs | 2.301 μs | 9.764 μs | 2.679 μs |
-| **`MutableSmallVector{N,T}`** | 3.880 μs | 5.258 μs | 3.233 μs | 3.084 μs | 2.131 μs |
-| `SVector{N,T}` | 2.012 μs | n/a | 1.395 μs | 2.053 μs | 1.185 μs |
-| **`SmallVector{N,T}`** | 2.392 μs | n/a | 2.660 μs | 6.437 μs | 1.796 μs |
+| `Vector{T}` | 45.893 μs | 20.441 μs | 8.403 μs | 5.104 μs | 9.860 μs |
+| `MVector{N,T}` | 5.770 μs | 19.196 μs | 2.370 μs | 9.866 μs | 2.801 μs |
+| **`MutableFixedVector{N,T}`** | 2.932 μs | 4.494 μs | 3.086 μs | n/a | 1.492 μs |
+| **`MutableSmallVector{N,T}`** | 3.276 μs | 4.975 μs | 2.977 μs | 3.154 μs | 1.871 μs |
+| `SVector{N,T}` | 1.979 μs | n/a | 1.396 μs | 1.988 μs | 1.218 μs |
+| **`FixedVector{N,T}`** | 2.054 μs | n/a | 2.661 μs | n/a | 1.217 μs |
+| **`SmallVector{N,T}`** | 2.517 μs | n/a | 2.661 μs | 6.408 μs | 1.617 μs |
 
 Notes: `sum` for `SVector` and `MVector` returns an `Int16` instead of `Int`. `SmallCollections`
 has a separate function `sum_fast` for this. Addition allocates for `Vector`. To avoid this for
@@ -103,11 +105,11 @@ wouldn't change if the elements were drawn from `Int16` without restrictions.
 
 | `N = 16`, `T = Int16` | `push(!)` | `intersect(!)` | `issubset` | `in` |
 | --- | --- | --- | --- | --- |
-| `Set{T}` | 14.817 μs | 87.199 μs | 77.615 μs | 4.586 μs |
-| **`MutableSmallSet{N,T}`** | 9.532 μs | 14.244 μs | 4.392 μs | 1.167 μs |
-| **`SmallSet{N,T}`** | 13.645 μs | 17.705 μs | 8.806 μs | 2.182 μs |
-| `BitSet` | 16.184 μs | 21.225 μs | 7.518 μs | 1.983 μs |
-| **`SmallBitSet{UInt16}`** | 1.377 μs | 36.318 **ns** | 56.222 **ns** | 1.094 μs |
+| `Set{T}` | 15.669 μs | 88.370 μs | 23.482 μs | 1.610 μs |
+| `MutableSmallSet{N,T}` | 8.269 μs | 14.422 μs | 4.357 μs | 1.658 μs |
+| `SmallSet{N,T}` | 12.688 μs | 15.011 μs | 10.234 μs | 2.122 μs |
+| `BitSet` | 17.481 μs | 23.403 μs | 7.407 μs | 1.836 μs |
+| `SmallBitSet{UInt16}` | 1.377 μs | 31.240 **ns** | 56.226 **ns** | 1.067 μs |
 
 For the benchmark code see the file `benchmark/benchmark_set.jl` in the repository.
 
@@ -125,7 +127,7 @@ Operations for `MutableSmallDict` are typically faster than for `Dict`.
 For `SmallDict` this holds often, but not always.
 Since keys and values are stored as small vectors, inverse lookup with
 [`invget`](https://matthias314.github.io/SmallCollections.jl/stable/smalldict/#SmallCollections.invget)
-is as fast as regular lookup.
+should be as fast as regular lookup.
 
 <details>
 <summary>Benchmarks for <code>SmallDict</code> and <code>MutableSmallDict</code></summary>
@@ -135,9 +137,14 @@ randomly chosen key-value pairs. If possible, mutating operations were used.
 
 | `N = 32`, `K = V = Int8` | `getindex` | `invget` | `setindex(!)` | `pop(!)` | `iterate` |
 | --- | --- | --- | --- | --- | --- |
-| `Dict{Int8,Int8}` | 10.739 μs | n/a | 27.604 μs | 19.932 μs | 406.180 μs |
-| **`MutableSmallDict{32,Int8,Int8}`** | 1.853 μs | 2.650 μs | 8.762 μs | 7.460 μs | 18.653 μs |
-| **`SmallDict{32,Int8,Int8}`** | 1.864 μs | 1.495 μs | 9.516 μs | 17.761 μs | 16.514 μs |
+| `Dict{K,V}` | 10.799 μs | n/a | 26.992 μs | 18.931 μs | 404.342 μs |
+| `MutableSmallDict{N,K,V}` | 4.273 μs | 5.325 μs | 8.900 μs | 7.213 μs | 17.104 μs |
+| `SmallDict{N,K,V}` | 1.856 μs | 8.775 μs | 9.823 | 20.368 μs | 15.840 μs |
+
+Note: For `SmallDict`, `invget` appears much slower than `getindex` in this benchmark.
+(This started with commit [#8f6b498](https://github.com/matthias314/SmallCollections.jl/commit/8f6b4987dfeca26297a4d98a0a5b068c6ae74886).)
+I don't know the reason for this. The code shown by `@code_native` for these two functions looks identical,
+and the timings for a single call to `getindex` and `invget` are identical, too.
 
 For the benchmark code see the file `benchmark/benchmark_dict.jl` in the repository.
 
