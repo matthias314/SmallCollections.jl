@@ -1,6 +1,6 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.5"
+julia_version = "1.11.6"
 manifest_format = "2.0"
 project_hash = "fe2849cf758e0d6b75ff9322b08a07dfe2439f6d"
 
@@ -209,7 +209,7 @@ version = "3.7.1"
 deps = ["BitIntegers", "CpuId", "Random"]
 path = ".."
 uuid = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
-version = "0.4.1"
+version = "0.5.0-DEV"
 weakdeps = ["BangBang", "StaticArrays"]
 
     [deps.SmallCollections.extensions]
@@ -218,9 +218,9 @@ weakdeps = ["BangBang", "StaticArrays"]
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "0feb6b9031bd5c51f9072393eb5ab3efd31bf9e4"
+git-tree-sha1 = "cbea8a6bd7bed51b1619658dec70035e07b8502f"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.13"
+version = "1.9.14"
 
     [deps.StaticArrays.extensions]
     StaticArraysChainRulesCoreExt = "ChainRulesCore"
