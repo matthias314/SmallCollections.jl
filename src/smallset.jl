@@ -279,6 +279,7 @@ end
 function filter!(f::F, s::MutableSmallSet; kw...) where F
     @inline
     filter!(f, s.d.keys; kw...)
+    resize!(s.d.vals, length(s.d.keys))
     s
 end
 
