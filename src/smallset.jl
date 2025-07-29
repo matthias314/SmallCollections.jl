@@ -277,6 +277,7 @@ function pop!(s::MutableSmallSet, x, default)
 end
 
 function filter!(f::F, s::MutableSmallSet; kw...) where F
+    @inline
     filter!(f, s.d.keys; kw...)
     s
 end
