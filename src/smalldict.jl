@@ -235,9 +235,6 @@ This reverse lookup is as fast as "forward" lookup by keys.
 The key returned is the first matching one in `keys(d)`.
 """
 function invget(d::AbstractSmallDict{N,K,V}, val, default) where {N,K,V}
-    if d isa SmallDict && isbitstype(Tuple{K,V})
-        d = MutableSmallDict(d)  # apparently faster for N < 64 (?)
-    end
     i = findfirst(isequal(val), d.vals)
     i === nothing ? default : @inbounds d.keys[i]
 end
