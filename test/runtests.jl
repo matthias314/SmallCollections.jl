@@ -56,7 +56,7 @@ end
 using Random: Random, AbstractRNG, SamplerType
 
 Random.rand(rng::AbstractRNG, ::SamplerType{String}) = string(rand(Char, 3)...)
-Random.rand(rng::AbstractRNG, ::SamplerType{Symbol}) = Symbol(rand(Char, 3)...)
+Random.rand(rng::AbstractRNG, ::SamplerType{Symbol}) = Symbol((rand_notin(Char, ('\0',)) for _ in 1:3)...)
 Random.rand(rng::AbstractRNG, ::SamplerType{T}) where T <: Enum = rand(instances(T))
 Random.rand(rng::AbstractRNG, ::SamplerType{TestStruct}) = TestStruct(map(rand, fieldtypes(TestStruct))...)
 
