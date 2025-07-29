@@ -216,6 +216,8 @@ function in(n, s::SmallBitSet{U}) where U <: Unsigned
     isinteger(n) && 1 <= n <= bitsize(U) && !iszero(s.mask & unsafe_shl(one(U), Int(n)-1))
 end
 
+MapStyle(::typeof(in), ::Type{T}, ::Type{SmallBitSet{U}}) where {T,U} = iffasttypes(StrictStyle(), T, U)
+
 issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
 
 ⊊(s::SmallBitSet, t::SmallBitSet) = issubset(s, t) && s != t

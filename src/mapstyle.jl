@@ -189,7 +189,6 @@ function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Ty
 end
 
 MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StrictStyle()
-MapStyle(::typeof(in), ::Type, ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = RigidStyle()
 
 MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(StrictStyle(), T, types...)
 MapStyle(::Union{typeof.(
