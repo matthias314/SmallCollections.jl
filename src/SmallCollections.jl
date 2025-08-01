@@ -44,6 +44,18 @@ const HWTypeExpr = :( Union{Base.HWReal, Bool, Char, Enum} )
 
 @generated inttype(::Type{T}) where T <: HWType = Symbol(:Int, 8*sizeof(T))
 
+@inline function smallint(N::Int)
+    if N <= typemax(Int8)
+        Int8(N)
+    elseif N <= typemax(Int16)
+        Int16(N)
+    elseif N <= typemax(Int32)
+        Int32(N)
+    else
+        Int64(N)
+    end
+end
+
 export capacity, fasthash
 
 capacity(::T) where T = capacity(T)
