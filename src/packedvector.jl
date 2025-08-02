@@ -242,8 +242,7 @@ ones(::Type{<:PackedVector}, ::Integer)
 
 function ones(::Type{V}, n::Integer) where {U, M, V <: PackedVector{U,M}}
     n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
-    mask = M*n == bitsize(U) ? ~zero(U) : unsafe_shl(one(U), M*n) - one(U)
-# TODO: same test elsewhere!!! should be OK
+    mask = one(U) << unsigned(M*n) - one(U)
     m = all_ones(U, M) & mask
     V(m, n)
 end
@@ -543,9 +542,8 @@ append(v::PackedVector, ws...) = foldl(append, ws; init = v)
 @propagate_inbounds append(v::V, w) where V <: PackedVector = append(v, V(w))
 
 @inline function append(v::PackedVector{U,M,T}, w::PackedVector{W,M,T}) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}, W}
-    isempty(w) && return v   # otherwise we cannot use unsafe_shl
     @boundscheck checklength(v, w.n)
-    m = v.m | unsafe_shl(w.m % U, M*v.n)
+    m = v.m | (w.m % U) << unsigned(M*v.n)
     PackedVector{U,M,T}(m, v.n+w.n)
 end
 
