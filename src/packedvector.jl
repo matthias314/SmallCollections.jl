@@ -293,6 +293,15 @@ end
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
+    if HAS_BEXTR && bitsize(U) <= bitsize(UInt)
+        x = bextr(v.m, M*(i+UInt(255))) % T
+        if T <: Union{Unsigned, Bool}
+            return x
+        else
+            signbit = one(T) << (M-1)
+            return x | -(x & signbit)
+        end
+    end
     x = unsafe_lshr(v.m, M*(i-1)) % T
     mask = one(T) << M - one(T)
     signbit = one(T) << (M-1)
