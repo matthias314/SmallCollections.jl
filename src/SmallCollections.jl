@@ -109,6 +109,7 @@ include("smallset.jl")
 if Sys.ARCH in (:x86_64, :i686)
     include("arch/x86.jl")
 else
+    const HAS_BEXTR = false
     const HAS_PEXT = false
 end
 

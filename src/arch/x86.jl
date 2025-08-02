@@ -1,5 +1,16 @@
 using CpuId: cpufeature
 
+if cpufeature(:BMI1)
+    const llvm_bextr = "llvm.x86.bmi.bextr.$(bitsize(UInt))"
+
+    bextr(x::U, y::Unsigned) where U <: Union{UInt8,UInt16,UInt32,UInt} =
+        ccall(llvm_bextr, llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
+
+    const HAS_BEXTR = true
+else
+    const HAS_BEXTR = false
+end
+
 if cpufeature(:BMI2)
     const llvm_pdep = "llvm.x86.bmi.pdep.$(bitsize(UInt))"
     const llvm_pext = "llvm.x86.bmi.pext.$(bitsize(UInt))"
