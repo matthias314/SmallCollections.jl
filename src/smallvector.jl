@@ -665,19 +665,7 @@ julia> duplicate(v, 2)
         checkbounds(v, i)
         length(v) < N || error("vector cannot have more than $N elements")
     end
-    t = if T <: HWType
-        NN = smallint(N)
-        ii = i % typeof(NN)
-        c = circshift(v.b, 1)
-        ntuple(Val(NN)) do j
-            j <= ii ? v.b[j] : c[j]
-        end
-    else
-        ntuple(Val(N)) do j
-            j <= i ? v.b[j] : v.b[j-1]
-        end
-    end
-    SmallVector(FixedVector{N,T}(t), length(v)+1)
+    @inbounds SmallVector(duplicate(v.b, i), length(v)+1)
 end
 
 """

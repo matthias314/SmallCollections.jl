@@ -118,6 +118,23 @@ popfirst(v::FixedVector) = popat(v, 1)
     FixedVector{N,T}(t)
 end
 
+@inline function duplicate(v::FixedVector{N,T}, i::Integer) where {N,T}
+    @boundscheck checkbounds(v, i)
+    t = if T <: HWType
+        NN = smallint(N)
+        ii = i % typeof(NN)
+        c = circshift(v, 1)
+        ntuple(Val(NN)) do j
+            j <= ii ? v[j] : c[j]
+        end
+    else
+        ntuple(Val(N)) do j
+            j <= i ? v[j] : v[j-1]
+        end
+    end
+    FixedVector{N,T}(t)
+end
+
 @propagate_inbounds deleteat(v::FixedVector, i::Integer) = first(popat(v, i))
 
 @inline function popat(v::FixedVector{N,T}, i::Integer) where {N,T}
