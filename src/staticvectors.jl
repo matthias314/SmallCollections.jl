@@ -101,7 +101,18 @@ function prepend(v::FixedVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T
     FixedVector{N,T}(t)
 end
 
-popfirst(v::FixedVector) = popat(v, 1)
+function popfirst(v::FixedVector{N,T}) where {N,T}
+    M = shufflewidth(v)
+    if M != 0
+        P = inttype(T)
+        p = ntuple(Val(N % P)) do i
+            i < N ? i : -one(P)
+        end
+        shuffle(Val(M), v, p), v[1]
+    else
+        @inbounds popat(v, 1)
+    end
+end
 
 @inline function insert(v::FixedVector{N,T}, i::Integer, x) where {N,T}
     @boundscheck checkbounds(v, i)
@@ -139,13 +150,23 @@ end
 
 @inline function popat(v::FixedVector{N,T}, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    t = ntuple(Val(N)) do j
-        if j < i
-            v[j]
-        elseif j < N
-            v[j+1]
-        else
-            default(T)
+    M = shufflewidth(v)
+    if M != 0
+        P = inttype(T)
+        ii = i % P
+        w = first(@inline popfirst(v))
+        t = ntuple(Val(N % P)) do j
+            j < ii ? v[j] : w[j]
+        end
+    else
+        t = ntuple(Val(N)) do j
+            if j < i
+                v[j]
+            elseif j < N
+                v[j+1]
+            else
+                default(T)
+            end
         end
     end
     FixedVector{N,T}(t),
