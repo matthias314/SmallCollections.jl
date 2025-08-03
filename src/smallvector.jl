@@ -78,7 +78,7 @@ julia> v+w
 ```
 """
 struct SmallVector{N,T} <: AbstractSmallVector{N,T}
-    b::Values{N,T}
+    b::FixedVector{N,T}
     n::SmallLength
 end
 
@@ -271,7 +271,7 @@ zeros(::Type{<:AbstractSmallVector}, ::Integer)
 
 function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
-    V(zero(Values{N,T}), n)
+    V(zero(FixedVector{N,T}), n)
 end
 
 """
@@ -288,16 +288,16 @@ function ones(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     t = ntuple(Val(N)) do i
         i <= n ? one(T) : zero(T)
     end
-    V(Values{N,T}(t), n)
+    V(FixedVector{N,T}(t), n)
 end
 
-(::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(Values{N,T}), 0)
+(::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(FixedVector{N,T}), 0)
 
 SmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = SmallVector{N,T}(v.b, v.n)
 
 function SmallVector{N,T}(iter) where {N,T}
     isbitstype(T) && return @inline SmallVector(MutableSmallVector{N,T}(iter))
-    b = default(Values{N,T})
+    b = default(FixedVector{N,T})
     n = 0
     for (i, x) in enumerate(iter)
         (n = i) <= N || error("vector cannot have more than $N elements")
@@ -669,7 +669,7 @@ julia> duplicate(v, 2)
     t = ntuple(Val(N)) do j
         j <= i ? v.b[j] : v.b[j-1]
     end
-    SmallVector(Values{N,T}(t), length(v)+1)
+    SmallVector(FixedVector{N,T}(t), length(v)+1)
 end
 
 """
@@ -721,7 +721,7 @@ See also `Base.append!`, `BangBang.append!!`.
     t = ntuple(Val(N)) do i
         @inbounds n < i <= m ? convert(T, w[i-n]) : v.b[i]
     end
-    SmallVector{N,T}(Values{N,T}(t), m)
+    SmallVector{N,T}(FixedVector{N,T}(t), m)
 end
 
 """
@@ -995,7 +995,7 @@ function smallvector_bc(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
         t = ntuple(Val(N)) do i
             i <= n ? f(tt[i]...) : default(U)
         end
-        SmallVector(Values{N,U}(t), n)
+        SmallVector(FixedVector{N,U}(t), n)
     else
         VT = map(vs) do v
             T = typeof(v)

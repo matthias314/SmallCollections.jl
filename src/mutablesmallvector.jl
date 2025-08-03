@@ -9,7 +9,7 @@ import Base:
 
 export duplicate!, unsafe_circshift!
 
-# functions also for Variables
+# functions also for MutableFixedVector
 
 @inline function unsafe_shl!(v::AbstractVector{T}, N, i, xs::Vararg{Any,M}) where {T,M}
     GC.@preserve v begin
@@ -27,12 +27,12 @@ end
     v
 end
 
-@inline function insert_pop!(v::Variables{N}, i::Integer, xs::Vararg{Any,M}) where {N,M}
+@inline function insert_pop!(v::MutableFixedVector{N}, i::Integer, xs::Vararg{Any,M}) where {N,M}
     @boundscheck checkbounds(v, i+M-1)
     unsafe_shl!(v, N, i, xs...)
 end
 
-@inline function deleteat_push!(v::Variables{N}, i::Integer, xs::Vararg{Any,M}) where {N,M}
+@inline function deleteat_push!(v::MutableFixedVector{N}, i::Integer, xs::Vararg{Any,M}) where {N,M}
     @boundscheck checkbounds(v, i+M-1)
     unsafe_shr!(v, N, i, xs...)
 end
@@ -63,9 +63,9 @@ The special form `MutableSmallVector{N,T}(undef, n)` returns a non-initialized v
 See also [`SmallVector`](@ref), `Base.isbitstype`.
 """
 mutable struct MutableSmallVector{N,T} <: AbstractSmallVector{N,T}
-    b::Values{N,T}
+    b::FixedVector{N,T}
     n::SmallLength
-    MutableSmallVector{N,T}(v::Values{N}, n::Integer) where {N,T} = new{N,T}(v, n % SmallLength)
+    MutableSmallVector{N,T}(v::FixedVector{N}, n::Integer) where {N,T} = new{N,T}(v, n % SmallLength)
     global _MutableSmallVector(::Val{N}, ::Type{T}) where {N,T} = new{N,T}()
 end
 
@@ -167,7 +167,7 @@ similar(v::AbstractSmallVector{N}, ::Type{T}, (n,)::Tuple{Int}) where {N,T} =
     isbitstype(T) ? MutableSmallVector{N,T}(undef, n) : Vector{T}(undef, n)
 
 strides(::MutableSmallVector) = (1,)
-elsize(::Type{MutableSmallVector{N,T}}) where {N,T} = elsize(Variables{N,T})
+elsize(::Type{MutableSmallVector{N,T}}) where {N,T} = elsize(MutableFixedVector{N,T})
 
 unsafe_convert(::Type{Ptr{T}}, v::MutableSmallVector{N,T}) where {N,T} =
     Ptr{T}(pointer_from_objref(v))
@@ -239,9 +239,9 @@ end
 end
 
 if VERSION < v"1.11-"
-    const MemoryVector{T} = Union{Variables{<:Any,T}, MutableSmallVector{<:Any,T}, Vector{T}}
+    const MemoryVector{T} = Union{MutableFixedVector{<:Any,T}, MutableSmallVector{<:Any,T}, Vector{T}}
 else
-    const MemoryVector{T} = Union{Variables{<:Any,T}, MutableSmallVector{<:Any,T}, Vector{T}, Memory{T}}
+    const MemoryVector{T} = Union{MutableFixedVector{<:Any,T}, MutableSmallVector{<:Any,T}, Vector{T}, Memory{T}}
 end
 
 @inline function append!(v::MutableSmallVector{N,T}, w::MemoryVector{T}) where {N,T}

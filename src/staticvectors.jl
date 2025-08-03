@@ -68,7 +68,7 @@ function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where 
         j = j % SmallLength
         ifelse(j <= i, v[j], convert(T, x))
     end
-    Values{N,T}(t)
+    FixedVector{N,T}(t)
 end
 
 @generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: HWType}
@@ -93,19 +93,19 @@ end
     end
 end
 
-pushfirst(v::Values, xs...) = prepend(v, xs)
+pushfirst(v::FixedVector, xs...) = prepend(v, xs)
 
-function prepend(v::Values{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
+function prepend(v::FixedVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
     n = length(w)
     t = ntuple(Val(N)) do i
         @inbounds i <= n ? convert(T, w[i]) : v[i-n]
     end
-    Values{N,T}(t)
+    FixedVector{N,T}(t)
 end
 
-popfirst(v::Values) = popat(v, 1)
+popfirst(v::FixedVector) = popat(v, 1)
 
-@inline function insert(v::Values{N,T}, i::Integer, x) where {N,T}
+@inline function insert(v::FixedVector{N,T}, i::Integer, x) where {N,T}
     @boundscheck checkbounds(v, i)
     v = Tuple(v)
     t = ntuple(Val(N)) do j
@@ -117,12 +117,12 @@ popfirst(v::Values) = popat(v, 1)
             v[j-1]
         end
     end
-    Values{N,T}(t)
+    FixedVector{N,T}(t)
 end
 
-@propagate_inbounds deleteat(v::Values, i::Integer) = first(popat(v, i))
+@propagate_inbounds deleteat(v::FixedVector, i::Integer) = first(popat(v, i))
 
-@inline function popat(v::Values{N,T}, i::Integer) where {N,T}
+@inline function popat(v::FixedVector{N,T}, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
     t = ntuple(Val(N)) do j
         if j < i
@@ -133,7 +133,7 @@ end
             default(T)
         end
     end
-    Values{N,T}(t), v[i]
+    FixedVector{N,T}(t), v[i]
 end
 
 """
@@ -400,7 +400,7 @@ default(::Type{T}) where T <: Tuple = map_tuple(default, fieldtypes(T))
 default(::Type{NamedTuple{K,T}}) where {K,T} = NamedTuple{K}(default(T))
 default(::Type{Pair{K,V}}) where {K,V} = default(K) => default(V)
 
-default(::Type{V}) where {N,T,V<:TupleVector{N,T}} = V(default(NTuple{N,T}))
+default(::Type{V}) where {N,T,V<:AbstractFixedVector{N,T}} = V(default(NTuple{N,T}))
 
 #
 # bit conversions
@@ -411,7 +411,7 @@ vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
 unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 
 """
-    bits(v::$TupleVector{N,T}) where {N, T <: $HWTypeExpr} -> Unsigned
+    bits(v::AbstractFixedVector{N,T}) where {N, T <: $HWTypeExpr} -> Unsigned
 
 Convert the given vector to an unsigned integer.
 
@@ -431,25 +431,25 @@ See also
 
 # Examples
 ```jldoctest
-julia> $Values{4,Int8}(1:4) |> bits
+julia> FixedVector{4,Int8}(1:4) |> bits
 0x04030201
 
-julia> $Values{3}('a':'c') |> bits
+julia> FixedVector{3}('a':'c') |> bits
 0x00000000630000006200000061000000
 
-julia> m = $Values{6,UInt32}(1:6) |> bits
+julia> m = FixedVector{6,UInt32}(1:6) |> bits
 0x0000000000000000000000060000000500000004000000030000000200000001
 
 julia> typeof(m)
 BitIntegers.UInt256
 
-julia> $Values{22}(map(isodd, 1:22)) |> bits
+julia> FixedVector{22}(map(isodd, 1:22)) |> bits
 0x00155555
 ```
 """
-bits(v::TupleVector)
+bits(v::AbstractFixedVector)
 
-@generated function bits(v::TupleVector{N,T}) where {N, T <: HWType}
+@generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: HWType}
     M = llvm_type(T)
     b = N*bitsize(T)
     c = nextpow(2, b)
@@ -472,7 +472,7 @@ bits(v::TupleVector)
     end
 end
 
-@generated function bits(v::TupleVector{N,T}) where {N, T <: Union{Int128,UInt128}}
+@generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: Union{Int128,UInt128}}
     n = nextpow(2, N)
     U = Symbol(:UInt, n*128)
     z = ntuple(Returns(zero(T)), Val(n-N))
@@ -482,7 +482,7 @@ end
     end
 end
 
-@generated function bits(v::TupleVector{N,Bool}) where N
+@generated function bits(v::AbstractFixedVector{N,Bool}) where N
     c = max(nextpow(2, N), 8)
     U = Symbol(:UInt, c)
     if N == c

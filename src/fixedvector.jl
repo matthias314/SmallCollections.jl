@@ -551,7 +551,3 @@ bc_tuple(bc::Broadcasted{FixedVectorStyle}) = broadcasted(bc.f, map(bc_tuple, bc
 @inline copy(bc::Broadcasted{FixedVectorStyle}) = FixedVector(materialize(bc_tuple(bc)))
 
 copyto!(v::MutableFixedVector, bc::Broadcasted{FixedVectorStyle}) = copyto!(v, copy(bc))
-
-const TupleVector{N,T} = AbstractFixedVector{N,T}
-const Values{N,T} = FixedVector{N,T}
-const Variables{N,T} = MutableFixedVector{N,T}

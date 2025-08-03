@@ -923,7 +923,7 @@ end
         @boundscheck if N < capacity(PackedVector{U,M,S})
             length(v) <= N || error("vector cannot have more than $N elements")
         end
-        b = convert(Values{N,T}, v.m)
+        b = convert(FixedVector{N,T}, v.m)
         SmallVector{N,T}(b, length(v))
     else
         invoke(SmallVector{N,T}, Tuple{AbstractVector{S}}, v)
