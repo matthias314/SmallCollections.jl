@@ -148,7 +148,13 @@ end
             default(T)
         end
     end
-    FixedVector{N,T}(t), v[i]
+    FixedVector{N,T}(t),
+    @static if v"1.11" <= VERSION < v"1.13-" && Sys.CPU_NAME == "skylake"
+        # @inbounds for floats leads to bug, see julia#59203
+        T in (Float32, Float64) ? v[i] : @inbounds v[i]
+    else
+        @inbounds v[i]
+    end
 end
 
 """
