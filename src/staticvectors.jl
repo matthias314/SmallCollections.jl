@@ -133,7 +133,7 @@ end
             default(T)
         end
     end
-    FixedVector{N,T}(t), v[i]
+    FixedVector{N,T}(t), @inbounds v[i]  # without @inbounds the bug disappears
 end
 
 """
