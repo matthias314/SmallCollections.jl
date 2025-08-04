@@ -302,8 +302,13 @@ end
         checkbounds(v, i)
         @boundscheck length(v) < N || error("vector cannot have more than $N elements")
     end
-    GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
-    v.n += 1 % SmallLength
+    if shufflewidth(v) != 0
+        w = @inbounds duplicate(v, i)
+        v.b, v.n = w.b, w.n
+    else
+        GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
+        v.n += 1 % SmallLength
+    end
     v
 end
 
