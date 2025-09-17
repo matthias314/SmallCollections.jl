@@ -36,7 +36,7 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     elseif M == 32
         "@llvm.x86.avx2.pshuf.b"
     elseif M == 64
-        "@llvm.x86.avx512.pshuf.b.512"
+        "@llvm.x86.avx512.vpermi2var.qi.512"
     else
         error("unsupported bit length")
     end
@@ -64,6 +64,16 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     pp2 = VB*sum(256^k for k in 0:VB-1)
     pp3 = sum(k*256^k for k in 0:VB-1)
 
+    ir1 = if M == 64
+        """
+            declare <$M x i8> $shuf(<$M x i8>, <$M x i8>, <$M x i8>)
+        """
+    else
+        """
+            declare <$M x i8> $shuf(<$M x i8>, <$M x i8>)
+        """
+    end
+
     ir2 = if M == 32
         s1 = join((string("i32 ", i & 15) for i in 0:31), ',')
         s2 = join((string("i32 ", i | 16) for i in 0:31), ',')
@@ -83,6 +93,10 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
 
             %w = xor <32 x i8> %w1, %w2
         """
+    elseif M == 64
+        """
+            %w = call <$M x i8> $shuf(<$M x i8> %v, <$M x i8> %p, <$M x i8> zeroinitializer)
+        """
     else
         """
             %w = call <$M x i8> $shuf(<$M x i8> %v, <$M x i8> %p)
@@ -90,7 +104,7 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     end
 
     ir = """
-        declare <$M x i8> $shuf(<$M x i8>, <$M x i8>)
+        $ir1
         define <$NP x $LVT> @shuffle(<$NV x $LVT>, <$NP x $LPT>) #0 {
             %u = shufflevector <$NV x $LVT> %0, <$NV x $LVT> zeroinitializer, <$N x i32> <$ssv>
             %v = bitcast <$N x $LVT> %u to <$M x i8>
@@ -129,7 +143,7 @@ function shufflewidth(::Val{N}, ::Type{T}) where {N, T <: HWType}
     @static if cpufeature(:AVX)
         M <= 16 && return 16
     end
-    @static if cpufeature(:AVX512BW)
+    @static if cpufeature(:AVX512VBMI)
         M <= 64 && return 64
     end
     @static if cpufeature(:AVX2)
