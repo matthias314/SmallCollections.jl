@@ -123,6 +123,7 @@ if Sys.ARCH in (:x86_64, :i686)
 else
     const HAS_BEXTR = false
     const HAS_PEXT = false
+    const HAS_COMPRESS = false
 end
 
 if VERSION > v"1.11-alpha"

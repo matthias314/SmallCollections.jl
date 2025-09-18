@@ -26,6 +26,10 @@ else
     const HAS_PEXT = false
 end
 
+using CpuId: CpuFeature, __ECX
+const AVX512VBMI2 = CpuFeature(0x0000_0007, 0x00, __ECX, 6)
+const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
+
 @generated function shuffle(::Val{M}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NV, VT <: HWType, NP, PT <: BitInteger}
     shuf = if M == 16
         "@llvm.x86.ssse3.pshuf.b.128"
