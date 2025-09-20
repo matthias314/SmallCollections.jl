@@ -234,6 +234,39 @@ function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]
 end
 
+"""
+    $(@__MODULE__).shufflewidth(::Val{N}, ::Type{T}) where {N,T}
+    $(@__MODULE__).shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T}
+    $(@__MODULE__).shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI}
+
+Returns a value `M` indicating which hardware-accelerated method to use
+for vector indexing of a vector with element type `T` and capacity (at most) `N`.
+The index vector is assumed to have capacity at most `N`, too.
+The 2-argument version is equivalent to `shufflewidth(Val(max(N, NI)), T)`.
+
+The value `0` indicates no hardware acceleration. The currently supported methods have values
+`16` ([AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)),
+`32` ([AVX2](https://en.wikipedia.org/wiki/AVX2))
+and `64` ([AVX-512](https://en.wikipedia.org/wiki/AVX-512), more precisely AVX-512_VBMI).
+
+See also [`$(@__MODULE__).shuffle`](@ref).
+"""
+shufflewidth
+
 shufflewidth(::Val, ::Type) = 0
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(N), T)
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
+
+"""
+    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP}) where {M,NV,VT,NP} -> FixedVector{NP,VT}
+
+Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`.
+The permutation `p` must be 0-based. In other words, `w[i] == v[p[i]+1]` for any index `i` of `p`.
+If `p[i]` is negative, then `w[i]` is set to zero.
+Bounds are not checked. Moreover, negative index values must be in the range `-NV:-1`.
+
+The parameter `M` indicates which hardware-accelerated method to use, as determined by `shufflewidth`.
+
+See also [`$(@__MODULE__).shufflewidth`](@ref).
+"""
+shuffle
