@@ -121,21 +121,13 @@ end
 
 copy(v::MutableSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
 
-function copyto!_merge(w::MutableSmallVector{N}, v::AbstractVector) where N
-    length(w) >= length(v) || error("destination vector too short")
+@inline function copyto!(w::MutableSmallVector{N,T}, v::AbstractFixedOrSmallVector) where {N,T}
+    @boundscheck length(w) >= length(v) || error("destination vector too short")
+    @inbounds u = SmallVector{N,T}(v)
     w.b = ntuple(Val(N % SmallLength)) do i
-        @inbounds ifelse(i <= v.n, v[i], w[i])
+        @inbounds ifelse(i <= length(u) % SmallLength, u.b[i], w.b[i])
     end
     w
-end
-
-function copyto!(w::MutableSmallVector{N}, v::AbstractSmallVector{M}) where {N,M}
-    if N <= M && length(w) == length(v)
-        w.b = Tuple(v.b)[1:N]
-        w
-    else
-        copyto!_merge(w, v)
-    end
 end
 
 """
