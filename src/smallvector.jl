@@ -84,6 +84,8 @@ end
 
 SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(v, n % SmallLength)
 
+const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
+
 """
     fixedvector(v::AbstractSmallVector{N,T}) where {N,T} -> FixedVector{N,T}
 
@@ -293,7 +295,14 @@ end
 
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(FixedVector{N,T}), 0)
 
-SmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = SmallVector{N,T}(v.b, v.n)
+@inbounds function SmallVector{N,T}(v::AbstractFixedOrSmallVector{M}) where {N,T,M}
+    @boundscheck M <= N || length(v) <= N || error("vector cannot have more than $N elements")
+    w = fixedvector(v)
+    t = ntuple(Val(N)) do i
+        i <= M ? convert(T, w[i]) : default(T)
+    end
+    SmallVector{N,T}(t, length(v))
+end
 
 function SmallVector{N,T}(iter) where {N,T}
     isbitstype(T) && return @inline SmallVector(MutableSmallVector{N,T}(iter))
@@ -312,10 +321,12 @@ function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
     V{T}(iter)
 end
 
-SmallVector(v::AbstractSmallVector{N,T}) where {N,T} = SmallVector{N,T}(v)
+function (::Type{V})(v::AbstractFixedOrSmallVector{M,T}) where {N, V <: AbstractSmallVector{N}, M, T}
+    V{T}(v)
+end
 
-function (::Type{V})(v::AbstractFixedVector{N,T}) where {V <: AbstractSmallVector, N, T}
-    V{N,T}(FixedVector(v), N)
+function (::Type{V})(v::AbstractFixedOrSmallVector{N}) where {V <: AbstractSmallVector, N}
+    V{N}(v)
 end
 
 +(v::AbstractSmallVector) = map(+, v)  # +true = 1::Int
