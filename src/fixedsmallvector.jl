@@ -7,8 +7,6 @@ export support
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
     any, all, allequal, allunique, count, getindex, filter, checkindex, copy
 
-const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
-
 capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
 
 copy(v::V) where V <: AbstractFixedOrSmallVector = V(v)

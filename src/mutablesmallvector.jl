@@ -81,6 +81,10 @@ end
 
 MutableSmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = MutableSmallVector{N,T}(v.b, v.n)
 
+@propagate_inbounds function MutableSmallVector{N,T}(v::AbstractFixedOrSmallVector{M}) where {N,T,M}
+    MutableSmallVector{N,T}(SmallVector{N,T}(v))
+end
+
 function MutableSmallVector{N,T}(itr) where {N,T}
     isbitstype(T) || return MutableSmallVector(SmallVector{N,T}(itr))
     !haslength(itr) || length(itr) <= N || error("vector cannot have more than $N elements")
@@ -94,8 +98,6 @@ function MutableSmallVector{N,T}(itr) where {N,T}
     v.n = i % SmallLength
     v
 end
-
-MutableSmallVector(v::AbstractSmallVector{N,T}) where {N,T} = MutableSmallVector{N,T}(v)
 
 @inline function unsafe_getindex(v::MutableSmallVector, i::Int)
     GC.@preserve v unsafe_load(pointer(v, i))
