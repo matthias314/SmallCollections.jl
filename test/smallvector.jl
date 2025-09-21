@@ -166,6 +166,30 @@ end
     end
 end
 
+@testset "SmallVector keepat!" begin
+    for N in (1, 2, 25, 50), T in filter(isbitstype, test_types), m in (0, 1, round(Int, 0.7*N), N-1, N)
+        u = rand(T, m)
+        v = MutableSmallVector{N,T}(u)
+        for ii in unique!([Int[], [1,], [max(m, 1)], 1:m, 2:3:m-1, [m+1]]),
+                jj in [ii, SmallVector{N,Int8}(ii), map(in(ii), 1:m), SmallVector{N}(map(in(ii), 1:m)), SmallBitSet(ii)],
+                f in (keepat!, deleteat!)
+            if checkbounds(Bool, v, jj)
+                vv = copy(v)
+                uu = copy(u)
+                ww = @inferred f(vv, jj)
+                @test ww === vv && isvalid(ww) && ww == f(uu, jj)
+                if length(jj) > 1 && jj isa AbstractVector && eltype(jj) != Bool
+                    vv = copy(v)
+                    @test_throws ArgumentError f(vv, reverse(jj))
+                end
+            else
+                vv = copy(v)
+                @test_throws BoundsError f(vv, jj)
+            end
+        end
+    end
+end
+
 @testset "SmallVector zeros" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue

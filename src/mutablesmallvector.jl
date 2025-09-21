@@ -3,7 +3,7 @@ using Base: haslength
 import Base:
     copy, copyto!, unsafe_copyto!, resize!, similar,
     strides, elsize, unsafe_convert,
-    getindex, setindex!, insert!, deleteat!, pop!, popfirst!, popat!,
+    getindex, setindex!, insert!, deleteat!, keepat!, pop!, popfirst!, popat!,
     append!, prepend!, push!, pushfirst!, empty, empty!, map!, filter!, replace!,
     circshift!, reverse!
 
@@ -167,7 +167,7 @@ See also [`unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) whe
 end
 
 function unsafe_copyto!(w::MutableSmallVector, wo, v::MutableSmallVector, vo, n::Integer)
-    GC.@preserve w unsafe_copyto!(pointer(w, wo), pointer(v, vo), n)
+    GC.@preserve w unsafe_copyto!(pointer(w, wo), pointer(v, vo), n % UInt)
 end
 
 function assignto!(w::MutableSmallVector{N,T}, v::AbstractFixedVector{N,T}, n::Integer) where {N,T}
@@ -208,19 +208,135 @@ function replace!(v::MutableSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {
     end
 end
 
-@propagate_inbounds deleteat!(v::MutableSmallVector, i::Integer) = deleteat!(v, i, 1)
+@propagate_inbounds deleteat!(v::MutableSmallVector, i::Integer) = deleteat!(v, i:i)
 
-@inline function deleteat!(v::MutableSmallVector{N,T}, i::Integer, n::Integer) where {N,T}
-    @boundscheck (1 <= i <= length(v)-n+1 && n >= 0) || throw(BoundsError(v, i))
-    b = sizeof(T)
-    GC.@preserve v begin
-        unsafe_copyto!(pointer(v, i), pointer(v, i+n), (length(v)-(i+n-1)) % UInt)
-        for j in length(v)-n+1:length(v)
-            unsafe_store!(pointer(v, j), default(T))
+@inline function deleteat!(v::MutableSmallVector{N,T}, ii) where {N,T}
+    n = i0 = 0
+    for i1 in ii
+        @boundscheck begin
+            checkbounds(v, i1)
+            i1 > i0 || throw(ArgumentError("indices must be strictly increasing"))
         end
+        unsafe_copyto!(v, n+1, v, i0+1, i1-(i0+1))
+        n += i1-(i0+1)
+        i0 = i1
     end
-    v.n -= n % SmallLength
+    unsafe_copyto!(v, n+1, v, i0+1, length(v)-i0)
+    n += length(v)-i0
+    @inbounds fill!(view(v, n+1:length(v)), default(T))
+    v.n = n % SmallLength
     v
+end
+
+@inline function deleteat!(v::MutableSmallVector{N,T}, ii::AbstractUnitRange) where {N,T}
+    @boundscheck checkbounds(v, ii)
+    if HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
+        @inbounds deleteat!(v, SmallBitSet(ii))
+    else
+        unsafe_copyto!(v, first(ii), v, last(ii)+1, (length(v)-last(ii)) % UInt)
+        @inbounds fill!(view(v, length(v)-length(ii)+1:length(v)), default(T))
+        v.n -= length(ii) % SmallLength
+        v
+    end
+end
+
+@propagate_inbounds function deleteat!(v::MutableSmallVector{N,T}, w::W) where {N, T, W <: AbstractVector{Bool}}
+    if HAS_COMPRESS && T <: HWType && W <: AbstractFixedOrSmallVector
+        deleteat!(v, support(w))
+    else
+        @boundscheck checkbounds(v, w)
+        keepdeleteat!(!, v, w)
+    end
+end
+
+struct BoolIterator{S<:SmallBitSet}
+    s::S
+    n::Int
+end
+
+Base.length(bv::BoolIterator) = bv.n
+
+@inline function Base.iterate(bv::BoolIterator, (mask, n) = (bv.s.mask, bv.n))
+    if n == 0
+        nothing
+    else
+        isodd(mask), (mask >> 1, n-1)
+    end
+end
+
+@inline function deleteat!(v::MutableSmallVector{N,T}, s::SmallBitSet) where {N,T}
+    @boundscheck checkbounds(v, s)
+    if HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
+        @inbounds t = setdiff(SmallBitSet(Base.OneTo(length(v))), s)
+        @inbounds keepat!(v, t)
+    else
+        keepdeleteat!(!, v, BoolIterator(s, length(v)))
+    end
+end
+
+@inline function keepat!(v::MutableSmallVector{N,T}, ii) where {N,T}
+    M = shufflewidth(v, ii)
+    if M != 0
+        @boundscheck isempty(ii) || @inbounds begin
+            checkbounds(v, first(ii))
+            checkbounds(v, last(ii))
+            issorted(ii; strict = true) || throw(ArgumentError("indices must be strictly increasing"))
+        end
+        b = keepat_shuffle(Val(M), v, fixedvector(ii))
+        assignto!(v, b, length(ii))
+    else
+        n = i0 = 0
+        for i1 in ii
+            @boundscheck begin
+                checkbounds(v, i1)
+                i1 > i0 || throw(ArgumentError("indices must be strictly increasing"))
+                i0 = i1
+            end
+            n += 1
+            @inbounds v[n] = v[i1]
+        end
+        @inbounds fill!(view(v, n+1:length(v)), default(T))
+        v.n = n % SmallLength
+        v
+    end
+end
+
+@inline function keepat!(v::MutableSmallVector{N,T}, ii::AbstractUnitRange) where {N,T}
+    @boundscheck checkbounds(v, ii)
+    if HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
+        @inbounds keepat!(v, SmallBitSet(ii))
+    else
+        @inbounds invoke(keepat!, Tuple{MutableSmallVector{N,T}, Any}, v, ii)
+    end
+end
+
+@inline function keepdeleteat!(pred, v::MutableSmallVector, bitr)
+    j = 1
+    for (i, b) in enumerate(bitr)
+        @inbounds v[j] = v[i]
+        j += Int(pred(b))
+    end
+    @inbounds fill!(view(v, j:length(v)), default(eltype(v)))
+    v.n = (j-1) % SmallLength
+    v
+end
+
+@propagate_inbounds function keepat!(v::MutableSmallVector{N,T}, w::W) where {N, T, W <: AbstractVector{Bool}}
+    if HAS_COMPRESS && T <: HWType && W <: AbstractFixedOrSmallVector
+        keepat!(v, support(w))
+    else
+        @boundscheck checkbounds(v, w)
+        keepdeleteat!(identity, v, w)
+    end
+end
+
+@propagate_inbounds function keepat!(v::MutableSmallVector{N,T}, s::SmallBitSet) where {N,T}
+    if HAS_COMPRESS && T <: HWType
+        assignto!(v, v[s])
+    else
+        @boundscheck checkbounds(v, s)
+        keepdeleteat!(identity, v, BoolIterator(s, length(v)))
+    end
 end
 
 @inline function pop!(v::MutableSmallVector{N,T}) where {N,T}
@@ -394,9 +510,7 @@ function filter!(f::F, v::MutableSmallVector{N,T}; style::MapStyle = MapStyle(f,
         end
         @inbounds resize!(v, j-1)
     else
-        w = filter(f, v; style)
-        v.b, v.n = w.b, w.n
-        v
+        @inbounds keepat!(v, support(f, v; style))
     end
 end
 
