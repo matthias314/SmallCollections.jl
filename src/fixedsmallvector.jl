@@ -340,7 +340,8 @@ shufflewidth
 
 shufflewidth(::Val, ::Type) = 0
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(N), T)
-shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
+shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI,<:BitInteger}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
+shufflewidth(::AbstractFixedOrSmallVector, ::Any) = 0
 
 """
     $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP}) where {M,NV,VT,NP} -> FixedVector{NP,VT}
