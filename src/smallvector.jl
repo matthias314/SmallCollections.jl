@@ -983,7 +983,7 @@ function bc_mapstyle(bc::Broadcasted)
     end
 end
 
-function copy(bc::Broadcasted{SmallVectorStyle})
+@inline function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
     @inline smallvector_bc(bc_mapstyle(bc), size(bc)[1], bcflat.f, bcflat.args...)
 end
