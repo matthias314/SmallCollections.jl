@@ -156,6 +156,10 @@ See also [`unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) whe
     w
 end
 
+function unsafe_copyto!(w::MutableSmallVector, wo, v::MutableSmallVector, vo, n::Integer)
+    GC.@preserve w unsafe_copyto!(pointer(w, wo), pointer(v, vo), n)
+end
+
 similar(v::AbstractSmallVector{N}, ::Type{T}, (n,)::Tuple{Int}) where {N,T} =
     isbitstype(T) ? MutableSmallVector{N,T}(undef, n) : Vector{T}(undef, n)
 
