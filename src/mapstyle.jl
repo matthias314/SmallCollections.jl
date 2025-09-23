@@ -188,6 +188,8 @@ function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Ty
     end
 end
 
+MapStyle(::typeof(isless), ::Type{T1}, ::Type{T2}) where {T1 <: HWType, T2 <: HWType} = hasfloats(Tuple{T1,T2}) ? LazyStyle() : RigidStyle()
+
 MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StrictStyle()
 
 MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(StrictStyle(), T, types...)
