@@ -326,6 +326,21 @@ end
     end
 end
 
+@testset "FixedVector issorted" begin
+    for T in [Int8, Float32, BigInt, Char], u in [[1], [1,2,3], [1,2,2], [1,2,1], [3,2,1], [3,2,2], [1,1,1,1]]
+        v = FixedVector{length(u),T}(u)
+        w = collect(T, u)
+        bys = T == Char ? (identity, uppercase) : (identity, -, x -> 2.0*x)
+        for lt in (isless, >), by in bys, rev in (false, true), strict in (false, true)
+            if strict
+                @test_inferred issorted(v; lt, by, rev, strict) issorted(w; lt, by, rev) & allunique(w)
+            else
+                @test_inferred issorted(v; lt, by, rev, strict) issorted(w; lt, by, rev)
+            end
+        end
+    end
+end
+
 @testset "FixedVector support" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue

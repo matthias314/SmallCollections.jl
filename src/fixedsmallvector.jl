@@ -5,7 +5,8 @@
 export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
-    any, all, allequal, allunique, count, getindex, filter, checkindex, copy
+    any, all, allequal, allunique, count, getindex, filter, checkindex, copy,
+    issorted
 
 capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
 
@@ -131,6 +132,59 @@ count(v::AbstractFixedOrSmallVector; kw...) = count(identity, v; kw...)
         init + (S <: Integer ? k % S : k)
     end
 end
+
+"""
+    issorted(v::AbstractFixedVector; [strict::Bool = false, style::MapStyle, ...]) -> Bool
+    issorted(v::AbstractSmallVector; [strict::Bool = false, style::MapStyle, ...]) -> Bool
+
+Returns `true` is `v` is sorted. In addition to the standard options `lt`, `by`, `rev` and `order`,
+this dedicated method supports the keyword arguments `strict` and `style`.
+If `style` is not `LazyStyle()`, then more comparisons than strictly necessary may be performed.
+Setting `strict` to `true` checks if the vector is strictly sorted.
+
+As discussed under `MapStyle`, the default value for `style` is based on a list
+of known functions. Currently the `order` keyword, if present, enforces `LazyStyle`.
+
+See also [`$(@__MODULE__).MapStyle`](@ref), `Base.issorted(::AbstractVector)`.
+
+# Examples
+```jldoctest
+julia> v = SmallVector{8,Int8}([3, 2, 2]); issorted(v)
+false
+
+julia> v = SmallVector{8,Int8}([3, 2, 2]); issorted(v; rev = true)
+true
+
+julia> v = SmallVector{8,Int8}([3, 2, 2]); issorted(v; rev = true, strict = true)
+false
+```
+"""
+function issorted(v::AbstractFixedOrSmallVector{N,T};
+        lt = isless, by = identity, rev::Union{Bool,Nothing} = nothing,
+        order::Base.Order.Ordering = Base.Order.Forward,
+        strict::Bool = false,
+        style::MapStyle = begin
+            U = Core.Compiler.return_type(by, Tuple{T})
+            isconcretetype(U) ? MapStyle(lt, U, U) : LazyStyle()
+        end) where {N,T}
+    @inline
+    if order === Base.Order.Forward && style != LazyStyle()
+        w = map(by, fixedvector(v))
+        u = popfirst(w)[1]
+        if rev == true
+            w, u = u, w
+        end
+        b = strict ? map(!lt, w, u) : map(lt, u, w)
+        i = findfirst(b)
+        i === nothing || i >= length(v)
+    elseif strict
+        issorted_strict(v, Base.Order.ord(lt, by, rev, order))  # function barrier
+    else
+        invoke(issorted, Tuple{AbstractVector}, v; lt, by, rev, order)
+    end
+end
+
+issorted_strict(v, o) = all(i -> @inbounds(Base.Order.lt(o, v[i], v[i+1])), Base.OneTo(length(v)-1))
 
 function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSmallVector{N,T}) where {N, T <: Base.HWReal}
     if isempty(v)

@@ -35,6 +35,7 @@ ones(::Type{<:AbstractSmallVector}, ::Integer)
 sum_fast(::AbstractSmallVector)
 extrema_fast(::AbstractSmallVector)
 any(::Function, ::AbstractSmallVector)
+issorted(::AbstractSmallVector)
 map
 support(::AbstractSmallVector)
 support(::Any, ::AbstractSmallVector)
