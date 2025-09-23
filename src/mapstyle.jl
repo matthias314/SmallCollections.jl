@@ -130,8 +130,8 @@ MapStyle(::Union{typeof.(
     )...}, types::Type...) = iffasttypes(StrictStyle(), types...)
 
 MapStyle(::Union{typeof.(
-        (!==, !=, ne_fast, <, lt_fast, >, gt_fast, cmp, cmp_fast, -, abs2, abs2_fast)
-    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(RigidStyle(), T1, T2)
+        (!==, !=, ne_fast, -, abs2, abs2_fast)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2} = iffasttypes(RigidStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (|, xor, +, add_fast, min, min_fast, max, max_fast, minmax, minmax_fast)
     )...}, types::Type...) = iffasttypes(RigidStyle(), types...)
@@ -141,8 +141,8 @@ MapStyle(::Union{typeof.(
     )...}, ::Type{T}) where T = iffasttypes(EagerStyle(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
-        (===, isequal, ==, eq_fast, <=, le_fast, >=, ge_fast, /)
-    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2}= iffasttypes(EagerStyle(), T1, T2)
+        (===, isequal, ==, eq_fast, /)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2} = iffasttypes(EagerStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (nand, nor)
     )...}, types::Type...) = iffasttypes(EagerStyle(), types...)
@@ -187,6 +187,14 @@ function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Ty
         LazyStyle()
     end
 end
+
+MapStyle(::Union{typeof.(
+        (<, lt_fast, >, gt_fast, cmp, cmp_fast)
+    )...}, ::Type{<:HWType}, ::Type{<:HWType}) = RigidStyle()
+
+MapStyle(::Union{typeof.(
+        (<=, le_fast, >=, ge_fast)
+    )...}, ::Type{<:HWType}, ::Type{<:HWType}) = EagerStyle()
 
 MapStyle(::typeof(isless), ::Type{T1}, ::Type{T2}) where {T1 <: HWType, T2 <: HWType} = hasfloats(Tuple{T1,T2}) ? LazyStyle() : RigidStyle()
 
