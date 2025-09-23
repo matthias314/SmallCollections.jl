@@ -22,6 +22,7 @@ sum_fast(::AbstractFixedVector)
 extrema_fast(::AbstractFixedVector)
 extrema_fast(::Any, ::AbstractFixedVector)
 any(::Function, ::AbstractFixedVector)
+issorted(::AbstractFixedVector)
 support(::AbstractFixedVector)
 support(::Any, ::AbstractFixedVector)
 StaticArrays.SVector
