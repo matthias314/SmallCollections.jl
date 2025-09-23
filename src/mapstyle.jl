@@ -160,6 +160,7 @@ MapStyle(::typeof(min), types::Type{<:Unsigned}...) = iffasttypes(StrictStyle(),
 hasfloats(::Type) = false
 hasfloats(::Type{<:AbstractFloat}) = true
 hasfloats(::Type{<:Complex{T}}) where T = hasfloats(T)
+@generated hasfloats(::Type{T}) where T <: Tuple = any(hasfloats, fieldtypes(T))
 hasfloats(::Type{<:AbstractArray{T}}) where T = hasfloats(T)
 hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 
