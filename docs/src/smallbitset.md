@@ -18,4 +18,5 @@ pop(::SmallBitSet, ::Any, ::Any)
 delete(::SmallBitSet, ::Any)
 exchange
 any(::Function, ::SmallBitSet)
+checkbounds
 ```
