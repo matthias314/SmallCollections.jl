@@ -129,3 +129,12 @@ end
     s = @inferred rand(SmallBitSet)
     @test s isa SmallBitSet{UInt}
 end
+
+@testset "SmallBitSet checkbounds" begin
+    for V in [FixedVector{16,Int16}, MutableSmallVector{22,Int8}, PackedVector{UInt32,5,Int8}]
+        v = rand(V)
+        for s in [SmallBitSet(), SmallBitSet{UInt32}(1:3:length(v)), SmallBitSet{UInt128}((1, length(v)+1))]
+            @test_inferred checkbounds(Bool, v, s) checkbounds(Bool, v, collect(s))
+        end
+    end
+end

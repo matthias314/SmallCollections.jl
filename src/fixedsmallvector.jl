@@ -6,7 +6,7 @@ export support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
     any, all, allequal, allunique, count, getindex, filter, checkindex, copy,
-    issorted
+    issorted, checkbounds
 
 capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
 
@@ -206,6 +206,8 @@ end
 Returns the vector with elements `v[i]` where `i` runs through the elements of `s` in increasing order.
 This operation is analogous to `v[collect(s)]`, but faster.
 
+See also [`checkbounds`](@ref).
+
 # Example
 ```jldoctest
 julia> v = SmallVector{8}('a':'f'); s = SmallBitSet{UInt16}(1:2:5)
@@ -224,7 +226,7 @@ julia> v[s]
 getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
 
 @inline function getindex(v::AbstractFixedOrSmallVector{N,T}, s::SmallBitSet{U}) where {N,T,U}
-    @boundscheck isempty(s) || checkbounds(v, last(s))
+    @boundscheck checkbounds(v, s)
     if HAS_PEXT && T == Bool && bitsize(U) <= bitsize(UInt)
         m = pext(bits(fixedvector(v)), bits(s))
         b = convert(FixedVector{N,Bool}, m)
@@ -237,6 +239,37 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
 end
 
 const AbstractFixedOrSmallOrPackedVector{T} = Union{AbstractFixedOrSmallVector{<:Any,T},PackedVector{<:Any,<:Any,T}}
+
+"""
+    checkbounds(::Type{Bool}, v::Union{AbstractFixedVector, AbstractSmallVector, PackedVector}, s::SmallBitSet) -> Bool
+
+Returns `true` if all elements of `s` are inbounds for `v`.
+
+See alse `Base.checkbounds`.
+
+# Examples
+```jldoctest
+julia> v = SmallVector{8,Int8}(1:3)
+3-element SmallVector{8, Int8}:
+ 1
+ 2
+ 3
+
+julia> s = SmallBitSet{UInt8}((1, 4))
+SmallBitSet{UInt8} with 2 elements:
+  1
+  4
+
+julia> checkbounds(Bool, v, s)
+false
+
+julia> checkbounds(v, s)
+ERROR: BoundsError: attempt to access 3-element SmallVector{8, Int8} at index [SmallBitSet{UInt8}([1, 4])]
+```
+"""
+function checkbounds(::Type{Bool}, v::AbstractFixedOrSmallOrPackedVector, s::SmallBitSet)
+    isempty(s) || checkbounds(Bool, v, last(s))
+end
 
 @inline function getindex(v::AbstractFixedOrSmallOrPackedVector, ii::AbstractFixedOrSmallOrPackedVector{Bool})
     @boundscheck checkbounds(v, ii)
