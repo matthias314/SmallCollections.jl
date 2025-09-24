@@ -333,6 +333,8 @@ end
 Returns the vector with elements `v[i]` where `i` runs through the elements of `s` in increasing order.
 This operation is analogous to `v[collect(s)]`, but faster.
 
+See also [`checkbounds`](@ref).
+
 # Example
 ```jldoctest
 julia> v = PackedVector{UInt64,6,Int8}(-2:2)
@@ -359,7 +361,7 @@ julia> v[s]
 getindex(v::PackedVector, s::SmallBitSet)
 
 @inline function getindex(v::V, s::SmallBitSet{U}) where {W, M, V <: PackedVector{W, M}, U}
-    @boundscheck isempty(s) || checkbounds(v, last(s))
+    @boundscheck checkbounds(v, s)
     if HAS_PEXT && M == 1 && bitsize(U) < bitsize(UInt)
         m = pext(v.m, bits(s))
         V(m % W, length(s))
