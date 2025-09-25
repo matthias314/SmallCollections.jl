@@ -24,8 +24,9 @@ assertbool(f) = x -> f(x)::Bool
 
 findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
 
-function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F<:Function,N}
-    SmallVector{N,SmallLength}(support(assertbool(f), v; kw...))
+@inline function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F <: Function, N}
+    @inline
+    @inbounds SmallVector{N,SmallLength}(support(assertbool(f), v; kw...))
 end
 
 findfirst(v::AbstractFixedOrSmallVector{N,Bool}) where N = findfirst(identity, v; style = StrictStyle())

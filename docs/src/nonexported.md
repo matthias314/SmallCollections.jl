@@ -38,6 +38,7 @@ These names are not public and may change in future versions.
 SmallCollections.element_type
 SmallCollections.AbstractBitInteger
 SmallCollections.top_set_bit
+SmallCollections.fixedvector_range
 SmallCollections.shuffle
 SmallCollections.shufflewidth
 ```

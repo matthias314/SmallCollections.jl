@@ -304,6 +304,22 @@ end
     SmallVector{N,T}(t, length(v))
 end
 
+@inline function SmallVector{N,T}(v::AbstractUnitRange) where {N, T <: Integer}
+    T <: HWType || invoke(SmallVector{N,T}, Tuple{AbstractVector}, v)
+    i0, i1 = first(v), last(v)
+    @boundscheck isempty(v) || begin
+        T(i0), T(i1)  # check if we can convert
+        length(v) <= N || error("vector cannot have more than $N elements")
+    end
+    SmallVector(fixedvector_range(Val(N), length(v), i0 % T), length(v))
+end
+
+@propagate_inbounds function SmallVector{N,T}(s::SmallBitSet) where {N, T <: Integer}
+    (T <: HWType && N <= typemax(T)) || invoke(SmallVector{N,T}, Tuple{Any}, s)
+    v = fixedvector_range(Val(N), N, T(1))
+    v[s]
+end
+
 function SmallVector{N,T}(iter) where {N,T}
     isbitstype(T) && return @inline SmallVector(MutableSmallVector{N,T}(iter))
     b = default(FixedVector{N,T})
