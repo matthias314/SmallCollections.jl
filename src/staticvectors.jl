@@ -115,6 +115,75 @@ end
     end
 end
 
+"""
+    fixedvector_range(::Val{N}, n::Integer, b::T) where {N,T}
+    fixedvector_range(::Val{N}, n::Integer, b::T, m::Integer, a::T) where {N,T}
+
+In the first form, returns a `FixedVector{N,T}` whose first `n` elements are `b:b+n-1` and the others `0`.
+
+In the second form, the first `m` elements are replaced by `a:a+m-1`.
+If `m` is larger than `n` (modulo `unsigned(T)`), then this is the same as `fixedvector_range(Val(N), m, a)`.
+
+# Examples
+```jldoctest
+julia> using $(@__MODULE__): fixedvector_range
+
+julia> fixedvector_range(Val(4), 3, Int8(5))
+4-element FixedVector{4, Int8}:
+ 5
+ 6
+ 7
+ 0
+
+julia> fixedvector_range(Val(4), 3, Int8(5), 2, Int8(-4))
+4-element FixedVector{4, Int8}:
+ -4
+ -3
+  7
+  0
+
+julia> fixedvector_range(Val(4), 3, Int8(5), 4, Int8(-4))
+4-element FixedVector{4, Int8}:
+ -4
+ -3
+ -2
+ -1
+```
+"""
+@generated function fixedvector_range(::Val{N}, n::Integer, b::T, m::Integer = 0, a::T = zero(T)) where {N,T}
+    L = string('i', bitsize(T))
+    w = join((string(L, ' ', i) for i in 0:N-1), ", ")
+    ir = """
+        %n0 = insertelement <$N x $L> poison, $L %0, i8 0
+        %nv = shufflevector <$N x $L> %n0, <$N x $L> poison, <$N x i32> zeroinitializer
+        %fn = icmp ult <$N x $L> <$w>, %nv
+
+        %m0 = insertelement <$N x $L> poison, $L %2, i8 0
+        %mv = shufflevector <$N x $L> %m0, <$N x $L> poison, <$N x i32> zeroinitializer
+        %fm = icmp ult <$N x $L> <$w>, %mv
+
+        %b0 = insertelement <$N x $L> poison, $L %1, i8 0
+        %b1 = shufflevector <$N x $L> %b0, <$N x $L> poison, <$N x i32> zeroinitializer
+        %b2 = add <$N x $L> <$w>, %b1
+        %b3 = select <$N x i1> %fn, <$N x $L> %b2, <$N x $L> zeroinitializer
+        %b  = select <$N x i1> %fm, <$N x $L> zeroinitializer, <$N x $L> %b3
+
+        %a0 = insertelement <$N x $L> poison, $L %3, i8 0
+        %a1 = shufflevector <$N x $L> %a0, <$N x $L> poison, <$N x i32> zeroinitializer
+        %a2 = add <$N x $L> <$w>, %a1
+        %a  = select <$N x i1> %fm, <$N x $L> %a2, <$N x $L> zeroinitializer
+
+        %c  = xor <$N x $L> %b, %a
+        ret <$N x $L> %c
+    """
+    quote
+        U = unsigned(T)
+        @assert N <= typemax(U)
+        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{U,T,U,T}, n % U, b, m % U, a)
+        FixedVector(unvec(b))
+    end
+end
+
 pushfirst(v::FixedVector, xs...) = prepend(v, xs)
 
 function prepend(v::FixedVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
