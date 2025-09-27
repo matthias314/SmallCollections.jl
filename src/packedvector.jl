@@ -833,9 +833,6 @@ function sum_count(v::PackedVector{U,M,T}) where {U,M,T}
     end
 end
 
-@generated inttype(::Val{M}) where M = Symbol(:Int, M)
-@generated uinttype(::Val{M}) where M = Symbol(:UInt, M)
-
 function sum(v::PackedVector{U,M,T}) where {U,M,T}
     if M >= 8 && M <= 64 && ispow2(M)
         S = T <: Signed ? inttype(Val(M)) : uinttype(Val(M))
