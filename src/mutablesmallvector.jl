@@ -230,7 +230,14 @@ end
 
 @inline function deleteat!(v::MutableSmallVector{N,T}, ii::AbstractUnitRange) where {N,T}
     @boundscheck checkbounds(v, ii)
-    if HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
+    if shufflewidth(v) != 0
+        # we must have N <= 64
+        U = inttype(T)
+        n = length(v)-length(ii)
+        w = fixedvector_range(Val(N), n, (length(ii)+1) % U, first(ii)-1, U(1))
+        # the above is also OK for any empty range ii, even if first(ii) is out of bounds
+        @inbounds keepat!(v, SmallVector(w, n % SmallLength))
+    elseif HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
         @inbounds deleteat!(v, SmallBitSet(ii))
     else
         unsafe_copyto!(v, first(ii), v, last(ii)+1, (length(v)-last(ii)) % UInt)
@@ -303,7 +310,11 @@ end
 
 @inline function keepat!(v::MutableSmallVector{N,T}, ii::AbstractUnitRange) where {N,T}
     @boundscheck checkbounds(v, ii)
-    if HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
+    if shufflewidth(v) != 0
+        # we must have N <= 64
+        U = inttype(T)
+        @inbounds keepat!(v, SmallVector{N,U}(ii))
+    elseif HAS_COMPRESS && T <: HWType && N <= bitsize(UInt)
         @inbounds keepat!(v, SmallBitSet(ii))
     else
         @inbounds invoke(keepat!, Tuple{MutableSmallVector{N,T}, Any}, v, ii)

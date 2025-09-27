@@ -204,7 +204,13 @@ end
 
 @inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange) where {N,T}
     @boundscheck checkbounds(v, ii)
-    @inbounds SmallVector{N,T}(v[i] for i in ii)
+    if ii isa AbstractUnitRange && shufflewidth(v) != 0
+        # we must have N <= 64
+        U = inttype(T)
+        @inbounds v[SmallVector{N,U}(ii)]
+    else
+        @inbounds SmallVector{N,T}(v[i] for i in ii)
+    end
 end
 
 """
