@@ -228,6 +228,21 @@ end
     v
 end
 
+@propagate_inbounds function deleteat!(v::MutableSmallVector{N,T}, ii::AbstractFixedOrSmallVector) where {N,T}
+    eltype(ii) <: Bool && return invoke(deleteat!, Tuple{MutableSmallVector{N,T}, AbstractVector{Bool}}, v, ii)
+    @boundscheck isempty(ii) || @inbounds begin
+        checkbounds(v, first(ii))
+        checkbounds(v, last(ii))
+        issorted(ii; strict = true) || throw(ArgumentError("indices must be strictly increasing"))
+    end
+    N <= 64 || return @inbounds invoke(deleteat!, Tuple{MutableSmallVector{N,T}, Any}, v, ii)
+    U = uinttype(Val(N))
+    w = padtail(unsafe_shl.(U(1), (fixedvector(ii) .% U) .- U(1)), length(ii))
+    # in map for SmallVector, U creates problems with type inference
+    s = _SmallBitSet(foldl(|, w))
+    @inbounds deleteat!(v, s)
+end
+
 @inline function deleteat!(v::MutableSmallVector{N,T}, ii::AbstractUnitRange) where {N,T}
     @boundscheck checkbounds(v, ii)
     if shufflewidth(v) != 0
