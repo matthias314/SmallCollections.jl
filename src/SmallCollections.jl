@@ -43,6 +43,7 @@ const HWTypeExpr = :( Union{Base.HWReal, Bool, Char, Enum} )
 @eval const HWType = $HWTypeExpr
 
 @generated inttype(::Type{T}) where T <: HWType = Symbol(:Int, 8*sizeof(T))
+@generated uinttype(::Type{T}) where T <: HWType = Symbol(:UInt, 8*sizeof(T))
 
 @inline function smallint(N::Int)
     if N <= typemax(Int8)

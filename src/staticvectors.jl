@@ -18,11 +18,35 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
 
 @inline function setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    i = i % SmallLength
-    t = ntuple(Val(N % SmallLength)) do j
-        j == i ? convert(T, x) : v[j]
+    if T <: HWType && N-1 <= typemax(uinttype(T))
+        setindex_llvm(v, convert(T, x), i)
+    else
+        i1 = i % SmallLength
+        t = ntuple(Val(N % SmallLength)) do j
+            j == i1 ? convert(T, x) : v[j]
+        end
+        FixedVector{N,T}(t)
     end
-    FixedVector{N,T}(t)
+end
+
+@generated function setindex_llvm(v::AbstractFixedVector{N,T}, x::T, i::Integer) where {N,T}
+    L = llvm_type(T)
+    U = uinttype(T)
+    LU = llvm_type(U)
+    w = join((string(LU, ' ', k) for k in 1:N), ", ")
+    ir = """
+        %x0 = insertelement <$N x $L> poison, $L %1, i8 0
+        %xv = shufflevector <$N x $L> %x0, <$N x $L> poison, <$N x i32> zeroinitializer
+        %i0 = insertelement <$N x $LU> poison, $LU %2, i8 0
+        %iv = shufflevector <$N x $LU> %i0, <$N x $LU> poison, <$N x i32> zeroinitializer
+        %f  = icmp eq <$N x $LU> <$w>, %iv
+        %c  = select <$N x i1> %f, <$N x $L> %xv, <$N x $L> %0
+        ret <$N x $L> %c
+    """
+    quote
+        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, T, $U}, vec(v.t), x, i % $U)
+        FixedVector(unvec(b))
+    end
 end
 
 """

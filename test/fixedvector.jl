@@ -75,6 +75,13 @@ end
             end
         end
     end
+    for T in test_types, V in (FixedVector, MutableFixedVector)
+        N = 256
+        u = rand(T, N)
+        v = @inferred V{N,T}(u)
+        x = rand(T)
+        w = @test_inferred setindex(v, x, N) setindex!(u, x, N) FixedVector(v)
+    end
 end
 
 @testset "FixedVector bool inds" begin
