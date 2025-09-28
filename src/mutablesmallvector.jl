@@ -294,9 +294,8 @@ end
             checkbounds(v, last(ii))
             issorted(ii; strict = true) || throw(ArgumentError("indices must be strictly increasing"))
         end
-        v.b = getindex_shuffle(Val(M), v, fixedvector(ii))
-        v.n = length(ii) % SmallLength
-        v
+        b = getindex_shuffle(Val(M), v, fixedvector(ii))
+        assignto!(v, b, length(ii))
     else
         n = i0 = 0
         for i1 in ii
@@ -349,10 +348,7 @@ end
 
 @propagate_inbounds function keepat!(v::MutableSmallVector{N,T}, s::SmallBitSet) where {N,T}
     if HAS_COMPRESS && T <: HWType
-        w = v[s]
-        unsafe_copyto!(v, w)
-        v.n = w.n
-        v
+        assignto!(v, v[s])
     else
         @boundscheck checkbounds(v, s)
         keepdeleteat!(identity, v, BoolIterator(s, length(v)))
