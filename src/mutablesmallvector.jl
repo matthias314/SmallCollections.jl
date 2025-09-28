@@ -160,6 +160,13 @@ function unsafe_copyto!(w::MutableSmallVector, wo, v::MutableSmallVector, vo, n:
     GC.@preserve w unsafe_copyto!(pointer(w, wo), pointer(v, vo), n)
 end
 
+function assignto!(w::MutableSmallVector{N,T}, v::AbstractFixedVector{N,T}, n::Integer) where {N,T}
+    w.b, w.n = v, n % SmallLength
+    w
+end
+
+assignto!(w::MutableSmallVector{N,T}, v::AbstractSmallVector{N,T}) where {N,T} = assignto!(w, v.b, v.n)
+
 similar(v::AbstractSmallVector{N}, ::Type{T}, (n,)::Tuple{Int}) where {N,T} =
     isbitstype(T) ? MutableSmallVector{N,T}(undef, n) : Vector{T}(undef, n)
 
@@ -301,13 +308,12 @@ end
         @boundscheck length(v) < N || error("vector cannot have more than $N elements")
     end
     if shufflewidth(v) != 0
-        w = @inbounds duplicate(v, i)
-        v.b, v.n = w.b, w.n
+        @inbounds assignto!(v, duplicate(v, i))
     else
         GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
         v.n += 1 % SmallLength
+        v
     end
-    v
 end
 
 reverse!(v::MutableSmallVector) = @inbounds reverse!(v, 1)
