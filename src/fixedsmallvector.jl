@@ -290,10 +290,10 @@ end
     map(i -> @inbounds(v[i]), ii)
 end
 
-function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector) where M
+function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{N}) where {M,N}
     p1 = one(inttype(eltype(v)))
     p = map(i -> (i % typeof(p1)) - p1, ii)
-    shuffle(Val(M), fixedvector(v), Tuple(p))
+    shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
 end
 
 @inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{<:Any,<:BitInteger})
@@ -344,7 +344,8 @@ shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
 
 """
-    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP}) where {M,NV,VT,NP} -> FixedVector{NP,VT}
+    $(@__MODULE__).shuffle(::Val{M}, ::Val{N}, v::AbstractFixedVector{<:Any,T}, p::NTuple) where {M,N,T} -> FixedVector{N,T}
+    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{N,T}, p::NTuple{N}) where {M,N,T} -> FixedVector{N,T}
 
 Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`.
 The permutation `p` must be 0-based. In other words, `w[i] == v[p[i]+1]` for any index `i` of `p`.
@@ -356,3 +357,5 @@ The parameter `M` indicates which hardware-accelerated method to use, as determi
 See also [`$(@__MODULE__).shufflewidth`](@ref).
 """
 shuffle
+
+shuffle(::Val{M}, v::AbstractFixedVector{N}, p::NTuple{N}) where {M,N} = shuffle(Val(M), Val(N), v, p)
