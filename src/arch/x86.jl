@@ -151,14 +151,3 @@ function shufflewidth(::Val{N}, ::Type{T}) where {N, T <: HWType}
     end
     return 0
 end
-
-#=
-@inline function newpopfirst(v::AbstractSmallVector{N,T}) where {N, T <: HWType}
-    @boundscheck isempty(v) && error("vector must not be empty")
-    M = N*sizeof(T)
-    P = inttype(T)
-    p = ntuple(i -> i < N ? P(i) : P(-1), Val(N))
-    w = shuffle(M <= 16 ? Val(16) : Val(32), fixedvector(v), p)
-    SmallVector(w, length(v)-1), @inbounds v[1]
-end
-=#
