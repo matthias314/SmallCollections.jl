@@ -296,21 +296,12 @@ function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractF
     shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
 end
 
-@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{<:Any,<:BitInteger})
+@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{<:Any,<:BitInteger})
     @boundscheck checkbounds(v, ii)
     M = shufflewidth(v, ii)
     if M != 0
-        getindex_shuffle(Val(M), v, ii)
-    else
-        map(i -> @inbounds(v[i]), ii)
-    end
-end
-
-@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractSmallVector{<:Any,<:BitInteger})
-    @boundscheck checkbounds(v, ii)
-    M = shufflewidth(v, ii)
-    if M != 0
-        SmallVector(getindex_shuffle(Val(M), v, fixedvector(ii)), length(ii))
+        w = getindex_shuffle(Val(M), v, fixedvector(ii))
+        ii isa AbstractSmallVector ? SmallVector(w, length(ii)) : w
     else
         map(i -> @inbounds(v[i]), ii)
     end
