@@ -30,7 +30,7 @@ using CpuId: CpuFeature, __ECX
 const AVX512VBMI2 = CpuFeature(0x0000_0007, 0x00, __ECX, 6)
 const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
 
-@generated function shuffle(::Val{M}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NV, VT <: HWType, NP, PT <: BitInteger}
+@generated function shuffle(::Val{M}, ::Val{NR}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NR, NV, VT <: HWType, NP, PT <: BitInteger}
     shuf = if M == 16
         "@llvm.x86.ssse3.pshuf.b.128"
     elseif M == 32
@@ -42,7 +42,7 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     end
     VB = sizeof(VT)
     PB = sizeof(PT)
-    @assert max(NV, NP)*VB <= M
+    @assert max(NV, NP, NR)*VB <= M
 
     N = M ÷ VB
     LVT = llvm_type(VT)
@@ -123,18 +123,18 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
             $ir2
 
             %r1 = bitcast <$M x i8> %w to <$N x $LVT>
-            %r = shufflevector <$N x $LVT> %r1, <$N x $LVT> zeroinitializer, <$NP x i32> <$ssr>
+            %r = shufflevector <$N x $LVT> %r1, <$N x $LVT> zeroinitializer, <$NR x i32> <$ssr>
 
-            ret <$NP x $LVT> %r
+            ret <$NR x $LVT> %r
         }
         attributes #0 = { alwaysinline }
     """
     quote
         @inline
-        w = Base.llvmcall(($ir, "shuffle"), NTuple{NP,VecElement{VT}},
+        w = Base.llvmcall(($ir, "shuffle"), NTuple{NR,VecElement{VT}},
             Tuple{NTuple{NV,VecElement{VT}}, NTuple{NP,VecElement{PT}}},
             vec(Tuple(v)), vec(p))
-        FixedVector{NP,VT}(unvec(w))
+        FixedVector{NR,VT}(unvec(w))
     end
 end
 
