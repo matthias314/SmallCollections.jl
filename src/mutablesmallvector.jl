@@ -294,7 +294,7 @@ end
             checkbounds(v, last(ii))
             issorted(ii; strict = true) || throw(ArgumentError("indices must be strictly increasing"))
         end
-        b = getindex_shuffle(Val(M), v, fixedvector(ii))
+        b = keepat_shuffle(Val(M), v, fixedvector(ii))
         assignto!(v, b, length(ii))
     else
         n = i0 = 0

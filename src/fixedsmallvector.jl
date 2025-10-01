@@ -301,6 +301,12 @@ function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractF
     shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
 end
 
+function keepat_shuffle(::Val{M}, v::AbstractFixedOrSmallVector{N}, ii::AbstractFixedVector) where {M,N}
+    p1 = one(inttype(eltype(v)))
+    p = map(i -> (i % typeof(p1)) - p1, ii)
+    shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
+end
+
 @inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{<:Any,<:BitInteger})
     @boundscheck checkbounds(v, ii)
     M = shufflewidth(v, ii)
