@@ -831,7 +831,15 @@ SmallBitSet{UInt8} with 3 elements:
 """
 support(::Any, ::AbstractSmallVector)
 
-support(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T} = support(map(f, v; style))
+@inline function support(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+    @inline
+    if style isa LazyStyle
+        support(map(f, v; style))
+    else
+        s = support(f, v.b)
+        style isa EagerStyle ? filter(<=(unsigned(v.n)), s) : s
+    end
+end
 
 #
 # map
