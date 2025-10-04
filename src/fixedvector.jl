@@ -275,11 +275,11 @@ end
 
 map_tuple(::typeof(identity), x::Tuple) = x
 
-function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
+@inline function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
     FixedVector(map_tuple(f, map(Tuple, vs)...))
 end
 
-function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) where {F,N}
+@inline function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) where {F,N}
     copyto!(w, map(f, map(Tuple, vs)...))
 end
 
@@ -511,7 +511,7 @@ SmallBitSet{UInt8} with 2 elements:
 """
 support(::Any, ::AbstractFixedVector)
 
-support(f::F, v::AbstractFixedVector) where F = support(@inline map(f, v))
+@inline support(f::F, v::AbstractFixedVector) where F = support(@inline map(f, v))
 
 if VERSION >= v"1.11"
 

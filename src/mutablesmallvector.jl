@@ -407,8 +407,9 @@ a list of known functions.
 See also `Base.map!(f, w::AbstractVector, v::AbstractVector...)`,
 [`$(@__MODULE__).MapStyle`](@ref), [Section "Broadcasting"](@ref sec-broadcasting).
 """
-function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,M};
+@inline function map!(f::F, w::MutableSmallVector, vs::Vararg{AbstractSmallVector,M};
         style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+    @inline
     copyto!(w, map(f, vs...; style))
 end
 

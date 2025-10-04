@@ -866,7 +866,8 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
  "cz"
 ```
 """
-function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+@inline function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+    @inline
     n, eq = minlength(vs)
     if style isa LazyStyle
         @inline smallvector_bc(LazyStyle(), n, f, vs...)
