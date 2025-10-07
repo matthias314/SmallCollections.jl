@@ -32,7 +32,8 @@ findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
 
 @inline function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F <: Function, N}
     @inline
-    @inbounds SmallVector{N,SmallLength}(support(AssertBool(f), v; kw...))
+    T = N <= typemax(Int8) ? Int8 : SmallLength
+    @inbounds SmallVector{N,T}(support(AssertBool(f), v; kw...))
 end
 
 findfirst(v::AbstractFixedOrSmallVector{N,Bool}) where N = findfirst(identity, v; style = StrictStyle())
