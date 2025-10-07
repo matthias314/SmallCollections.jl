@@ -20,13 +20,19 @@ support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 _map(f, v::AbstractFixedVector; style) = map(f, v)
 _map(f, v::AbstractSmallVector; style) = map(f, v; style)
 
-assertbool(f) = x -> f(x)::Bool
+struct AssertBool{F}
+    f::F
+end
+
+(ab::AssertBool)(x) = ab.f(x)::Bool
+
+MapStyle(ab::AssertBool, types::Type...) = MapStyle(ab.f, types...)
 
 findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
 
 @inline function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F <: Function, N}
     @inline
-    @inbounds SmallVector{N,SmallLength}(support(assertbool(f), v; kw...))
+    @inbounds SmallVector{N,SmallLength}(support(AssertBool(f), v; kw...))
 end
 
 findfirst(v::AbstractFixedOrSmallVector{N,Bool}) where N = findfirst(identity, v; style = StrictStyle())
@@ -44,7 +50,7 @@ function findnext(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findnext, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        m = bits(filter(>=(k), @inline support(assertbool(f), fixedvector(v))))
+        m = bits(filter(>=(k), @inline support(AssertBool(f), fixedvector(v))))
         i = trailing_zeros(m)+1
         i <= length(v) ? i : nothing
     end
@@ -59,7 +65,7 @@ function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     if style isa LazyStyle
         invoke(findprev, Tuple{F,AbstractVector{T},Integer}, f, v, k)
     else
-        m = bits(filter(<=(k), @inline support(assertbool(f), fixedvector(v))))
+        m = bits(filter(<=(k), @inline support(AssertBool(f), fixedvector(v))))
         i = bitsize(m)-leading_zeros(m)
         0 != i <= length(v) ? i : nothing
     end
@@ -85,7 +91,7 @@ function any(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, style::MapStyle
     if style isa LazyStyle || !(dims isa Colon)
         invoke(any, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
-        u = map(assertbool(f), fixedvector(v))
+        u = map(AssertBool(f), fixedvector(v))
         trailing_zeros(bits(u)) < length(v)
     end
 end
@@ -95,7 +101,7 @@ function all(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, style::MapStyle
     if style isa LazyStyle || !(dims isa Colon)
         invoke(all, Tuple{F,AbstractVector{T}}, f, v; dims)
     else
-        u = map(assertbool(f), fixedvector(v))
+        u = map(AssertBool(f), fixedvector(v))
         trailing_ones(bits(u)) >= length(v)
     end
 end
@@ -129,7 +135,7 @@ count(v::AbstractFixedOrSmallVector; kw...) = count(identity, v; kw...)
     if style isa LazyStyle || !(dims isa Colon)
         invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
     else
-        k = length(_support(assertbool(f), v; style))
+        k = length(_support(AssertBool(f), v; style))
         init + (S <: Integer ? k % S : k)
     end
 end

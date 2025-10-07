@@ -585,7 +585,7 @@ See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).MapStyle`](@ref).
 """
 function findall(f::F, d::AbstractSmallDict{N,K}; kw...) where {F<:Function,N,K}
     @inline
-    SmallVector{N,K}(@inbounds(d.keys[i]) for i in support(assertbool(f), d.vals; kw...))
+    SmallVector{N,K}(@inbounds(d.keys[i]) for i in support(AssertBool(f), d.vals; kw...))
 end
 
 if VERSION >= v"1.11"
