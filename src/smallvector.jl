@@ -295,7 +295,7 @@ end
 
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(FixedVector{N,T}), 0)
 
-@inbounds function SmallVector{N,T}(v::AbstractFixedOrSmallVector{M}) where {N,T,M}
+@inline function SmallVector{N,T}(v::AbstractFixedOrSmallVector{M}) where {N,T,M}
     @boundscheck M <= N || length(v) <= N || error("vector cannot have more than $N elements")
     w = fixedvector(v)
     t = ntuple(Val(N)) do i
