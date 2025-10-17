@@ -223,7 +223,12 @@ end
 end
 
 @inline function duplicate(v::FixedVector{N,T}, i::Integer) where {N,T}
-    @boundscheck checkbounds(v, i)
+    @static if v"1.12" <= VERSION < v"1.13-" && Sys.ARCH == :x86_64
+        # @inbounds leads to bug, similar to julia#59203
+        checkbounds(v, i)
+    else
+        @boundscheck checkbounds(v, i)
+    end
     t = if T <: HWType
         NN = smallint(N)
         ii = i % typeof(NN)
@@ -263,9 +268,9 @@ end
         end
     end
     FixedVector{N,T}(t),
-    @static if v"1.11" <= VERSION < v"1.13-" && Sys.CPU_NAME == "skylake"
-        # @inbounds for floats leads to bug, see julia#59203
-        T in (Float32, Float64) ? v[i] : @inbounds v[i]
+    @static if v"1.11" <= VERSION < v"1.13-" && Sys.ARCH == :x86_64
+        # @inbounds leads to bug (with 1.12 not just for floats), see julia#59203
+        v[i]
     else
         @inbounds v[i]
     end
