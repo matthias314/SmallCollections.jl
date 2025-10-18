@@ -205,6 +205,15 @@ MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet 
 MapStyle(::Union{typeof.(
         (union, setdiff, symdiff)
     )...}, ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(RigidStyle(), T, types...)
+MapStyle(::Union{typeof.(
+        (<, >, ⊊, ⊋)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1 <: AbstractSet, T2 <: AbstractSet} = iffasttypes(RigidStyle(), T1, T2)
+MapStyle(::Union{
+        Fix2{typeof(setdiff), U}, Fix1{typeof(<), U}, Fix2{typeof(>), U}
+    }, ::Type{T}) where {T <: AbstractSet, U <: AbstractSet} = iffasttypes(StrictStyle(), T, U)
+MapStyle(::Union{typeof.(
+        (issubset, ⊇, <=, >=)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1 <: AbstractSet, T2 <: AbstractSet} = iffasttypes(EagerStyle(), T1, T2)
 
 # definitions for constructors of new functions
 
