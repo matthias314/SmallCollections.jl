@@ -345,15 +345,11 @@ function (::Type{V})(v::AbstractFixedOrSmallVector{N}) where {V <: AbstractSmall
     V{N}(v)
 end
 
-+(v::AbstractSmallVector) = map(+, v)  # +true = 1::Int
--(v::AbstractSmallVector) = map(-, v)
+using Base: broadcasted
+using Base.Broadcast: materialize
 
-for op in (:+, :-)
-    @eval @inline function $op(v::AbstractSmallVector, w::AbstractSmallVector)
-        @boundscheck length(v) == length(w) || error("vectors must have the same length")
-        SmallVector(map($op, v.b, w.b), length(v))
-    end
-end
+@propagate_inbounds +(vs::Vararg{AbstractSmallVector,N}) where N = materialize(broadcasted(+, vs...))
+@propagate_inbounds -(vs::Vararg{AbstractSmallVector,N}) where N = materialize(broadcasted(-, vs...))
 
 @inline mul_fast(c::Number, v::AbstractSmallVector) = mul_fast.(c, v)
 @inline mul_fast(v::AbstractSmallVector, c::Number) = mul_fast.(v, c)
@@ -941,8 +937,8 @@ end
 
 using Base: Fix2
 
-using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, flatten, materialize
-import Base.Broadcast: BroadcastStyle
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, flatten
+import Base.Broadcast: BroadcastStyle, materialize
 
 """
     $(@__MODULE__).SmallVectorStyle <: Broadcast.AbstractArrayStyle{1}
@@ -956,6 +952,9 @@ struct SmallVectorStyle <: AbstractArrayStyle{1} end
 BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
+
+@propagate_inbounds materialize(bc::Broadcasted{SmallVectorStyle}) = copy(bc)
+# the size of the resulting vector is determined below in `copy`
 
 bc_return_type(x) = _eltype(x)
 
@@ -985,7 +984,11 @@ end
 
 @inline function copy(bc::Broadcasted{SmallVectorStyle})
     bcflat = flatten(bc)
-    @inline smallvector_bc(bc_mapstyle(bc), size(bc)[1], bcflat.f, bcflat.args...)
+    i = findfirst(v -> v isa AbstractSmallVector, bcflat.args)
+    n = length(bcflat.args[i])
+    @boundscheck any(v -> v isa AbstractSmallVector && length(v) != n, bcflat.args) &&
+        throw(DimensionMismatch("vectors must have the same length"))
+    @inline smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
 end
 
 _capacity(x) = typemax(Int)

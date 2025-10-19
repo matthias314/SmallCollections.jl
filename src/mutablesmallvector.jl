@@ -429,6 +429,16 @@ end
 
 # broadcast
 
-@inline function copyto!(v::MutableSmallVector{N,T}, bc::Broadcasted{SmallVectorStyle}) where {N,T}
-    copyto!(v, copy(bc))
+using Base.Broadcast: Broadcasted
+import Base.Broadcast: materialize!
+
+@propagate_inbounds function materialize!(v::MutableSmallVector, bc::Broadcasted{SmallVectorStyle})
+    # the size of the resulting vector is determined later in `copyto!` with `copy(bc)`
+    copyto!(v, bc)
+end
+
+@propagate_inbounds function copyto!(v::MutableSmallVector{N,T}, bc::Broadcasted{SmallVectorStyle}) where {N,T}
+    w = copy(bc)
+    @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+    unsafe_copyto!(v, SmallVector{N,T}(w))
 end
