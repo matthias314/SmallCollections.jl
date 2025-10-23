@@ -994,11 +994,12 @@ end
 _capacity(x) = typemax(Int)
 _capacity(v::AbstractSmallVector) = capacity(v)
 
+_tuple(v::AbstractSmallVector, ::Val{N}) where N = ntuple(i -> v.b[i], Val(N))
+_tuple(v, _) = v
+
 function smallvector_bc(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
     N = minimum(_capacity, vs)
-    ts = map(vs) do v
-        v isa AbstractSmallVector ? Tuple(v.b)[1:N] : v
-    end
+    ts = map(Fix2(_tuple, Val(N)), vs)
     t = materialize(broadcasted(f, ts...))
     SmallVector(FixedVector(t), n)
 end
