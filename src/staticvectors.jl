@@ -534,7 +534,7 @@ default(::Type{T}) where T <: AbstractChar = T(0)
 default(::Type{<:AbstractString}) = ""
 default(::Type{Symbol}) = Symbol()
 
-default(::Type{T}) where T <: Tuple = map_tuple(default, fieldtypes(T))
+default(::Type{T}) where T <: Tuple = ntuple(i -> default(fieldtype(T, i)), Val(fieldcount(T)))
 default(::Type{NamedTuple{K,T}}) where {K,T} = NamedTuple{K}(default(T))
 default(::Type{Pair{K,V}}) where {K,V} = default(K) => default(V)
 

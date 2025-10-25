@@ -945,7 +945,7 @@ end
 
 using Base: Fix2
 
-using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, flatten
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Style, Broadcasted, broadcasted, flatten
 import Base.Broadcast: BroadcastStyle, materialize
 
 """
@@ -960,6 +960,7 @@ struct SmallVectorStyle <: AbstractArrayStyle{1} end
 BroadcastStyle(::Type{<:AbstractSmallVector}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{0}) = SmallVectorStyle()
 BroadcastStyle(::SmallVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
+BroadcastStyle(::SmallVectorStyle, ::Style{Tuple}) = DefaultArrayStyle{1}()
 
 @propagate_inbounds materialize(bc::Broadcasted{SmallVectorStyle}) = copy(bc)
 # the size of the resulting vector is determined below in `copy`
@@ -996,35 +997,25 @@ end
     n = length(bcflat.args[i])
     @boundscheck any(v -> v isa AbstractSmallVector && length(v) != n, bcflat.args) &&
         throw(DimensionMismatch("vectors must have the same length"))
-    @inline smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
+    smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
 end
 
-_capacity(x) = typemax(Int)
-_capacity(v::AbstractSmallVector) = capacity(v)
-
-_tuple(v::AbstractSmallVector, ::Val{N}) where N = ntuple(i -> v.b[i], Val(N))
-_tuple(v, _) = v
-
-function smallvector_bc(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
-    N = minimum(_capacity, vs)
-    ts = map(Fix2(_tuple, Val(N)), vs)
-    t = materialize(broadcasted(f, ts...))
-    SmallVector(FixedVector(t), n)
-end
-
-function smallvector_bc(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
-    w = smallvector_bc(StrictStyle(), n, f, vs...)
-    SmallVector(padtail(w.b, n), n)
-end
-
-_eltype(v::Union{AbstractVector,Tuple}) = eltype(v)
-_eltype(x::Base.RefValue{T}) where T = T
-_eltype(x::T) where T = T
+_capacity(::Type{T}) where T <: AbstractSmallVector = capacity(T)
+_capacity(::T) where T = _capacity(T)
 
 _getindex(v::AbstractSmallVector, i) = @inbounds v.b[i]
-_getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])
-_getindex(x::Base.RefValue, i) = x[]
-_getindex(x, i) = x
+
+@inline function smallvector_bc(::StrictStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    SmallVector(map_fixedvector(f, vs...), n)
+end
+
+@inline function smallvector_bc(::EagerStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
+    SmallVector(padtail(map_fixedvector(f, vs...), n), n)
+end
+
+_eltype(v::Union{AbstractVector}) = eltype(v)
+_eltype(x::Base.RefValue{T}) where T = T
+_eltype(x::T) where T = T
 
 function smallvector_bc(::LazyStyle, n, f::F, vs::Vararg{Any,M}) where {F,M}
     N = minimum(_capacity, vs)

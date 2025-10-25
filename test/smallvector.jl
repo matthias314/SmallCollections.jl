@@ -656,7 +656,6 @@ end
     for V in VS, T in (Int, Float64), m in (0, 1, 3, 8)
         u = collect(T, 1:m)
         v = V{N}(u)
-        t = Tuple(u)
         c = T(2)
         uu = m < N ? push!(copy(u), c) : copy(u)
         vv = SmallVector{N}(uu)
@@ -679,10 +678,6 @@ end
         @test w == f.(u, u) && w isa SmallVector{N,T}
         w = f.(v, c)
         @test w == f.(u, c) && w isa SmallVector{N,T}
-        if m > 0
-            w = f.(v, t)
-            @test w == f.(u, t) && w isa SmallVector{N,T}
-        end
 
         w = @test_inferred (v .^ 2) (u .^ 2) SmallVector{N,T}
         @test isvalid(w)
