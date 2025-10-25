@@ -267,20 +267,27 @@ zero(::V) where V <: AbstractFixedVector = zero(V)
 
 muladd(v::AbstractFixedVector{N}, c::Number, w::AbstractFixedVector{N}) where N = muladd(c, v, w)
 
-@inline @generated function map_tuple(f, xs::Tuple...)
-    M = length(xs)
-    N = minimum(fieldcount, xs)
-    Expr(:tuple, (Expr(:call, :f, (:(xs[$j][$i]) for j in 1:M)...) for i in 1:N)...)
+_capacity(::Type) = typemax(Int)
+_capacity(::Type{T}) where T <: AbstractFixedVector = capacity(T)
+
+_getindex(v::AbstractFixedVector, i) = v[i]
+_getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])  # needed for SmallVectorStyle
+_getindex(x::Base.RefValue, i) = x[]
+_getindex(x, i) = x
+
+@inline @generated function map_tuple(f, xs::Vararg{Any,M}) where M
+    N = length(xs) == 1 && xs[1] <: Tuple ? fieldcount(xs[1]) : minimum(_capacity, xs)
+    Expr(:tuple, (Expr(:call, :f, (:(_getindex(xs[$j], $i)) for j in 1:M)...) for i in 1:N)...)
 end
 
-map_tuple(::typeof(identity), x::Tuple) = x
+@inline map_fixedvector(f::F, xs::Vararg{Any,M}) where {F,M} = FixedVector(map_tuple(f, xs...))
 
 @inline function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
-    FixedVector(map_tuple(f, map(Tuple, vs)...))
+    map_fixedvector(f, vs...)
 end
 
 @inline function map!(f::F, w::MutableFixedVector, vs::Vararg{AbstractFixedVector,N}) where {F,N}
-    copyto!(w, map(f, map(Tuple, vs)...))
+    copyto!(w, map(f, vs...))
 end
 
 @generated function Base.mapfoldl_impl(f, op, init, v::AbstractFixedVector{N}) where N
@@ -525,8 +532,7 @@ end
 # broadcast
 #
 
-using Base.Broadcast:
-    AbstractArrayStyle, DefaultArrayStyle, Broadcasted, broadcasted, materialize
+using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Broadcasted, flatten
 import Base.Broadcast: BroadcastStyle
 import Base: copy, copyto!
 
@@ -543,10 +549,9 @@ BroadcastStyle(::Type{<:AbstractFixedVector}) = FixedVectorStyle()
 BroadcastStyle(::FixedVectorStyle, ::DefaultArrayStyle{0}) = FixedVectorStyle()
 BroadcastStyle(::FixedVectorStyle, ::DefaultArrayStyle{N}) where N = DefaultArrayStyle{N}()
 
-bc_tuple(x) = x
-bc_tuple(v::AbstractFixedVector) = Tuple(v)
-bc_tuple(bc::Broadcasted{FixedVectorStyle}) = broadcasted(bc.f, map(bc_tuple, bc.args)...)
-
-@inline copy(bc::Broadcasted{FixedVectorStyle}) = FixedVector(materialize(bc_tuple(bc)))
+@inline function copy(bc::Broadcasted{FixedVectorStyle})
+    bcflat = flatten(bc)
+    map_fixedvector(bcflat.f, bcflat.args...)
+end
 
 @inline copyto!(v::MutableFixedVector, bc::Broadcasted{FixedVectorStyle}) = copyto!(v, copy(bc))
