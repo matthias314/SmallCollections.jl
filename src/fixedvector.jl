@@ -275,12 +275,11 @@ _getindex(v::Tuple, i) = i <= length(v) ? @inbounds(v[i]) : default(v[1])  # nee
 _getindex(x::Base.RefValue, i) = x[]
 _getindex(x, i) = x
 
-@inline @generated function map_tuple(f, xs::Vararg{Any,M}) where M
-    N = length(xs) == 1 && xs[1] <: Tuple ? fieldcount(xs[1]) : minimum(_capacity, xs)
-    Expr(:tuple, (Expr(:call, :f, (:(_getindex(xs[$j], $i)) for j in 1:M)...) for i in 1:N)...)
+@inline @generated function map_fixedvector(f, xs::Vararg{Any,M}) where M
+    N = minimum(_capacity, xs)
+    fcalls = (Expr(:call, :f, (:(_getindex(xs[$j], $i)) for j in 1:M)...) for i in 1:N)
+    Expr(:call, :FixedVector, Expr(:tuple, fcalls...))
 end
-
-@inline map_fixedvector(f::F, xs::Vararg{Any,M}) where {F,M} = FixedVector(map_tuple(f, xs...))
 
 @inline function map(f::F, vs::Vararg{AbstractFixedVector,N}) where {F,N}
     map_fixedvector(f, vs...)
