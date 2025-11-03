@@ -90,7 +90,7 @@ struct SmallVector{N,T} <: AbstractSmallVector{N,T}
     n::SmallLength
 end
 
-SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(v, n % SmallLength)
+SmallVector(v::AbstractFixedVector, n::Integer) = SmallVector(fixedvector(v), n % SmallLength)
 
 const AbstractFixedOrSmallVector{N,T} = Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}
 
