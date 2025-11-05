@@ -7,20 +7,19 @@
 
 Return `true` if elements of type `T` permit fast (for instance, vectorized) operations.
 
-By default, `Base.HWReal`, `Bool`, `Char`, and `Enum` types are considered
-fast, as well as `Complex`, `Pair`, `Tuple`, `NamedTuple` and `Ref` with
-fast components.
-
-See `Base.HWReal`.
+By default, this holds for all primitive types except `String` and `Symbol`
+and for all `struct` and `mutable struct` types whose fields have bits type
+and recursively satisfy `isfasttype`.
 """
-isfasttype(::Type) = false
-isfasttype(::Type{<:HWType}) = true
+Base.@assume_effects :total function isfasttype(::Type{T}) where T
+# all non-struct types should be covered by the methods below
+    isstructtype(T) && all(isfastfield, fieldtypes(T))
+end
 
-isfasttype(::Type{Complex{T}}) where T = isfasttype(T)
-isfasttype(::Type{Pair{K,V}}) where {K,V} = isfasttype(K) && isfasttype(V)
-isfasttype(::Type{T}) where T <: Tuple = all(isfasttype, fieldtypes(T))
-isfasttype(::Type{NamedTuple{K,T}}) where {K,T} = isfasttype(T)
-isfasttype(::Type{<:Ref{T}}) where T = isfasttype(T)
+isfastfield(::Type{T}) where T = isbitstype(T) && isfasttype(T)
+
+isfasttype(::Type{<:HWType}) = true
+isfasttype(::Type{<:Union{Symbol,String}}) = false
 
 #
 # MapStyle definitions
@@ -123,25 +122,27 @@ MapStyle(::Any, ::Type...) = LazyStyle()
 MapStyle(::Union{typeof.(
         (-, identity, signbit, isodd, isone, isinf, isinf_fast, isnan, isnan_fast,
             issubnormal, issubnormal_fast, zero, round, floor, ceil, trunc,
-            abs, abs_fast, sign, sign_fast, sqrt, sqrt_fast, conj, conj_fast)
+            abs, abs_fast, sign, sign_fast, sqrt, sqrt_fast, conj, conj_fast,
+            length, first, last, capacity)
     )...}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
 MapStyle(::Union{typeof.(
         (&,)
     )...}, types::Type...) = iffasttypes(StrictStyle(), types...)
 
 MapStyle(::Union{typeof.(
-        (!==, !=, ne_fast, -, abs2, abs2_fast)
+        (!==, !=, <, >, ne_fast, lt_fast, gt_fast, cmp_fast, -, abs2, abs2_fast)
     )...}, ::Type{T1}, ::Type{T2}) where {T1,T2} = iffasttypes(RigidStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (|, xor, +, add_fast, min, min_fast, max, max_fast, minmax, minmax_fast)
     )...}, types::Type...) = iffasttypes(RigidStyle(), types...)
+MapStyle(::typeof(ifelse), ::Type{Bool}, ::Type{T1}, ::Type{T2}) where {T1,T2} = iffasttypes(RigidStyle(), T1, T2)
 
 MapStyle(::Union{typeof.(
         (!, ~, iseven, iszero, isfinite, isfinite_fast, one, inv, inv_fast)
     )...}, ::Type{T}) where T = iffasttypes(EagerStyle(), T)
 MapStyle(::Union{typeof.(
         # note: 1/0 = Inf
-        (===, isequal, ==, eq_fast, /)
+        (===, ==, <=, >=, isequal, eq_fast, le_fast, ge_fast, /)
     )...}, ::Type{T1}, ::Type{T2}) where {T1,T2} = iffasttypes(EagerStyle(), T1, T2)
 MapStyle(::Union{typeof.(
         (nand, nor)
@@ -167,16 +168,26 @@ hasfloats(::Type{<:Ref{T}}) where T = hasfloats(T)
 # -(0.0) === -0.0, not 0.0
 MapStyle(::typeof(-), ::Type{T}) where T = iffasttypes(hasfloats(T) ? EagerStyle() : StrictStyle(), T)
 
+MapStyle(::Union{typeof.(
+        (cmp, isless)
+    )...}, ::Type{T1}, ::Type{T2}) where {T1,T2} = hasfloats(Tuple{T1,T2}) ? LazyStyle() : iffasttypes(RigidStyle(), T1, T2)
+
+hasfixedlength(::Type) = false
+hasfixedlength(::Type{<:Number}) = true
+
 # (-1) * 0.0 === -0.0, not 0.0
-function MapStyle(::Union{typeof.(
+# also, 0 * [1] is not a vector of length 0
+Base.@assume_effects :total function MapStyle(::Union{typeof.(
         (*, mul_fast)
-    )...}, ::Type{T}, types::Type...) where T
-    style = if hasfloats(T) || MapStyle(*, types...) isa RigidStyle
+    )...}, types::Type...)
+    style = if !all(hasfixedlength, types)
+        EagerStyle()
+    elseif hasfloats(Tuple{types...})
         RigidStyle()
     else
         StrictStyle()
     end
-    iffasttypes(style, T, types...)
+    iffasttypes(style, types...)
 end
 
 function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Type{Val{N}}) where {T,N}
@@ -189,31 +200,32 @@ function MapStyle(::typeof(Base.literal_pow), ::Type{typeof(^)}, ::Type{T}, ::Ty
     end
 end
 
-MapStyle(::Union{typeof.(
-        (<, lt_fast, >, gt_fast, cmp, cmp_fast)
-    )...}, ::Type{<:HWType}, ::Type{<:HWType}) = RigidStyle()
-
-MapStyle(::Union{typeof.(
-        (<=, le_fast, >=, ge_fast)
-    )...}, ::Type{<:HWType}, ::Type{<:HWType}) = EagerStyle()
-
-MapStyle(::typeof(isless), ::Type{T1}, ::Type{T2}) where {T1 <: HWType, T2 <: HWType} = hasfloats(Tuple{T1,T2}) ? LazyStyle() : RigidStyle()
-
-MapStyle(::typeof(length), ::Type{<:Union{AbstractVector, AbstractSet, AbstractDict}}) = StrictStyle()
+MapStyle(::typeof(in), ::Type{S}, ::Type{T}) where {S, T <: AbstractSet} = iffasttypes(StrictStyle(), T, S)
 
 MapStyle(::typeof(intersect), ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(StrictStyle(), T, types...)
+
 MapStyle(::Union{typeof.(
         (union, setdiff, symdiff)
     )...}, ::Type{T}, types::Type...) where T <: AbstractSet = iffasttypes(RigidStyle(), T, types...)
+
 MapStyle(::Union{typeof.(
         (<, >, ⊊, ⊋)
     )...}, ::Type{T1}, ::Type{T2}) where {T1 <: AbstractSet, T2 <: AbstractSet} = iffasttypes(RigidStyle(), T1, T2)
+
 MapStyle(::Union{
         Fix2{typeof(setdiff), U}, Fix1{typeof(<), U}, Fix2{typeof(>), U}
     }, ::Type{T}) where {T <: AbstractSet, U <: AbstractSet} = iffasttypes(StrictStyle(), T, U)
+
 MapStyle(::Union{typeof.(
-        (issubset, ⊇, <=, >=)
+        (issubset, ⊇)
     )...}, ::Type{T1}, ::Type{T2}) where {T1 <: AbstractSet, T2 <: AbstractSet} = iffasttypes(EagerStyle(), T1, T2)
+
+# definitions for constructors
+
+MapStyle(::Type{Ref}, ::Type{T}) where T = iffasttypes(StrictStyle(), S, T)
+MapStyle(::Type{Ref{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
+MapStyle(::Type{Base.OneTo}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
+MapStyle(::Type{Base.OneTo{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
 
 # definitions for constructors of new functions
 

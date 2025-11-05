@@ -19,6 +19,8 @@ See also [`FixedVector`](@ref), [`MutableFixedVector`](@ref).
 """
 abstract type AbstractFixedVector{N,T} <: AbstractVector{T} end
 
+hasfixedlength(::Type{<:AbstractFixedVector}) = true
+
 """
     FixedVector{N,T} <: AbstractFixedVector{N,T}
 

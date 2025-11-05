@@ -36,4 +36,6 @@ SVector, MVector
 StaticArrays.SVector(v::AbstractFixedVector{N}) where N = SVector{N}(v)
 StaticArrays.MVector(v::AbstractFixedVector{N}) where N = MVector{N}(v)
 
+SmallCollections.hasfixedlength(::Type{<:StaticArray}) = true
+
 end

@@ -42,7 +42,8 @@ function show(io::IO, s::SmallBitSet{U}) where U
     print(io, "])")
 end
 
-isfasttype(::Type{SmallBitSet{U}}) where U = isfasttype(U)
+MapStyle(::Type{SmallBitSet}, ::Type{Base.OneTo{T}}) where T = iffasttypes(StrictStyle(), T)
+MapStyle(::Type{SmallBitSet{U}}, ::Type{Base.OneTo{T}}) where {U,T} = iffasttypes(StrictStyle(), U, T)
 
 ==(s::SmallBitSet, t::SmallBitSet) = s.mask == t.mask
 
@@ -216,8 +217,6 @@ function in(n, s::SmallBitSet{U}) where U <: Unsigned
     isinteger(n) && 1 <= n <= bitsize(U) && !iszero(s.mask & unsafe_shl(one(U), Int(n)-1))
 end
 
-MapStyle(::typeof(in), ::Type{T}, ::Type{SmallBitSet{U}}) where {T,U} = iffasttypes(StrictStyle(), T, U)
-
 issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
 
 ⊊(s::SmallBitSet, t::SmallBitSet) = issubset(s, t) && s != t
@@ -286,6 +285,8 @@ function delete(s::SmallBitSet{U}, n) where U
         s
     end
 end
+
+MapStyle(::typeof(delete), ::Type{SmallBitSet{U}}, ::Type{T}) where {U <: Unsigned, T <: Integer} = iffasttypes(StrictStyle(), U, T)
 
 @inline function replace(s::SmallBitSet{U}, ps::Vararg{Pair,N}) where {U,N}
     @boundscheck all(ps) do p
