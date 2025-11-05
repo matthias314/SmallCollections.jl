@@ -17,6 +17,13 @@ SmallCollections.SmallVectorStyle
 SmallCollections.padtail
 ```
 
+### Functionality for `SmallBitSet`
+
+```@docs
+SmallCollections.unsafe_delete
+SmallCollections.unsafe_push
+```
+
 ### Function wrappers
 
 ```@docs

@@ -230,9 +230,40 @@ issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
 
 Return the `SmallBitSet` obtained from `s` by adding the other arguments `xs`.
 
-See also `Base.push!`, `BangBang.push!!`.
+See also `Base.push!`, `BangBang.push!!`, [`$(@__MODULE__).unsafe_push`](@ref).
 """
 @propagate_inbounds push(s::SmallBitSet, ns...) = _push(s.mask, ns)
+
+"""
+    $(@__MODULE__).unsafe_push(s::S, x::Integer) where S <: SmallBitSet -> S
+
+A faster, but unsafe version of `push` where `x` is assumed to lie in the range `1:capacity(S)`.
+The value `0` is also allowed for `x` to indicate that no element is added.
+
+See also [`push`](@ref push(::SmallBitSet, ::Any)), [`capacity`](@ref capacity(::SmallBitSet)).
+
+Examples
+```jldoctest
+julia> using $(@__MODULE__): unsafe_push
+
+julia> unsafe_push(SmallBitSet(1:2), 5)
+SmallBitSet{UInt64} with 3 elements:
+  1
+  2
+  5
+
+julia> unsafe_push(SmallBitSet(1:2), 0)
+SmallBitSet{UInt64} with 2 elements:
+  1
+  2
+```
+"""
+function unsafe_push(s::SmallBitSet{U}, n::Integer) where U
+    m = ifelse(iszero(n), zero(U), unsafe_shl(one(U), n-1))
+    _SmallBitSet(s.mask | m)
+end
+
+MapStyle(::typeof(unsafe_push), ::Type{SmallBitSet{U}}, ::Type{T}) where {U <: Unsigned, T <: Integer} = iffasttypes(StrictStyle(), U, T)
 
 """
     pop(s::S) where S <: SmallBitSet -> Tuple{S, Int}
@@ -245,20 +276,20 @@ See also `Base.pop!`, `BangBang.pop!!`.
 @inline function pop(s::SmallBitSet)
     @boundscheck isempty(s) && error("collection must be non-empty")
     n = last(s)
-    delete(s, n), n
+    unsafe_delete(s, n), n
 end
 
 """
     pop(s::S, x) where S <: SmallBitSet -> Tuple{S, Int}
 
 Return the pair `(t, Int(x))` where `t` is the set `s` with `x` deleted.
-The set `s` must be non-empty.
+The set `s` must contain `x`.
 
 See also `Base.pop!`, `BangBang.pop!!`.
 """
 @inline function pop(s::SmallBitSet, n)
     @boundscheck n in s || keyerror(n)
-    delete(s, unsafe_int(n)), unsafe_int(n)
+    unsafe_delete(s, unsafe_int(n)), unsafe_int(n)
 end
 
 """
@@ -270,7 +301,7 @@ Otherwise return `(s, default)`
 See also `Base.pop!`, `BangBang.pop!!`.
 """
 function pop(s::SmallBitSet, n, default)
-    n in s ? (delete(s, unsafe_int(n)), unsafe_int(n)) : (s, default)
+    n in s ? (unsafe_delete(s, unsafe_int(n)), unsafe_int(n)) : (s, default)
 end
 
 """
@@ -279,7 +310,7 @@ end
 If `s` contains `x`, return the set obtained by deleting that element.
 Otherwise return `s`.
 
-See also `Base.delete!`, `BangBang.delete!!`.
+See also `Base.delete!`, `BangBang.delete!!`, [`$(@__MODULE__).unsafe_delete`](@ref).
 """
 function delete(s::SmallBitSet{U}, n) where U
     if isinteger(n)
@@ -292,6 +323,20 @@ function delete(s::SmallBitSet{U}, n) where U
 end
 
 MapStyle(::typeof(delete), ::Type{SmallBitSet{U}}, ::Type{T}) where {U <: Unsigned, T <: Integer} = iffasttypes(StrictStyle(), U, T)
+
+"""
+    $(@__MODULE__).unsafe_delete(s::S, x::Integer) where S <: SmallBitSet -> S
+
+A faster, but unsafe version of `delete` where `x` is assumed to lie in the range `1:capacity(S)`.
+
+See also [`delete`](@ref delete(::SmallBitSet, ::Any)), [`capacity`](@ref capacity(::SmallBitSet)).
+"""
+function unsafe_delete(s::SmallBitSet{U}, n::Integer) where U
+    m = unsafe_shl(one(U), n-1)
+    _SmallBitSet(s.mask & ~m)
+end
+
+MapStyle(::typeof(unsafe_delete), ::Type{SmallBitSet{U}}, ::Type{T}) where {U <: Unsigned, T <: Integer} = iffasttypes(StrictStyle(), U, T)
 
 @inline function replace(s::SmallBitSet{U}, ps::Vararg{Pair,N}) where {U,N}
     @boundscheck all(ps) do p

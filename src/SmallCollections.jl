@@ -139,6 +139,7 @@ if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,
         :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle, :Inbounds, :padtail,
         :AbstractFixedOrSmallVector, :AbstractFixedOrSmallOrPackedVector,
+        :unsafe_delete, :unsafe_push,
         :bitsize, :unsafe_shl, :unsafe_lshr, :blsi, :blsr, :blsmsk, :pdep, :pext))
 end
 
