@@ -256,3 +256,50 @@ else
         style isa RigidStyle ? EagerStyle() : style
     end
 end
+
+# Inbounds
+
+"""
+    $(@__MODULE__).Inbounds(f)
+
+Returns a callable object for calling `f` in an `@inbounds` context.
+This is useful for `map` and broadcasting, for instance.
+
+See also `Base.@inbounds`.
+
+# Example
+```jldoctest
+julia> using $(@__MODULE__): Inbounds
+
+julia> @inline f(x) = (@boundscheck @assert x < 3; -x);
+
+julia> v = FixedVector{4}(1:4);
+
+julia> f.(v)
+ERROR: AssertionError: x < 3
+[...]
+
+julia> Inbounds(f).(v)
+4-element FixedVector{4, Int64}:
+ -1
+ -2
+ -3
+ -4
+
+julia> Inbounds(UInt8).(v)
+4-element FixedVector{4, UInt8}:
+ 0x01
+ 0x02
+ 0x03
+ 0x04
+```
+"""
+struct Inbounds{F}
+    f::F
+end
+
+Inbounds(::Type{T}) where T = Inbounds{Type{T}}(T)
+
+(inb::Inbounds)(xs...; kw...) = @inbounds inb.f(xs...; kw...)
+
+MapStyle(inb::Inbounds, types::Type...) = MapStyle(inb.f, types...)

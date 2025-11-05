@@ -17,6 +17,12 @@ SmallCollections.SmallVectorStyle
 SmallCollections.padtail
 ```
 
+### Function wrappers
+
+```@docs
+SmallCollections.Inbounds
+```
+
 ### Bit operations
 
 ```@docs
