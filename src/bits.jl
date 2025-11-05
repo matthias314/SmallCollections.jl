@@ -184,3 +184,6 @@ function unsafe_mod1(x::Integer, y::T) where T <: Unsigned
     r = unsafe_rem(x, y)
     ifelse(r <= 0, r % T + y, r % T)
 end
+
+unsafe_int(x::Integer) = x % Int
+unsafe_int(x) = Int(x)

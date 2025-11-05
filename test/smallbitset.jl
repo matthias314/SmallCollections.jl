@@ -92,7 +92,7 @@ end
             @test_inferred pop(s) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Int}
             i = rand(t)
             @test_inferred pop(s, i) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Int}
-            @test_inferred pop(s, Float64(i)) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Float64}
+            @test_inferred pop(s, Float64(i)) (delete!(copy(t), i), i) Tuple{SmallBitSet{U}, Int}
             @test_inferred pop(s, 0, -1) (s, -1)
             @test_throws KeyError pop(s, 0)
             @test_throws KeyError pop(s, 'x')

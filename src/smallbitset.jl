@@ -251,26 +251,26 @@ end
 """
     pop(s::S, x) where S <: SmallBitSet -> Tuple{S, Int}
 
-Return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
+Return the pair `(t, Int(x))` where `t` is the set `s` with `x` deleted.
 The set `s` must be non-empty.
 
 See also `Base.pop!`, `BangBang.pop!!`.
 """
 @inline function pop(s::SmallBitSet, n)
     @boundscheck n in s || keyerror(n)
-    delete(s, n), n
+    delete(s, unsafe_int(n)), unsafe_int(n)
 end
 
 """
     pop(s::S, x, default::T) where S <: SmallBitSet -> Tuple{S, Union{Int,T}}
 
-If `s` contains `x`, return the pair `(t, x)` where `t` is the set `s` with `x` deleted.
+If `s` contains `x`, return the pair `(t, Int(x))` where `t` is the set `s` with `x` deleted.
 Otherwise return `(s, default)`
 
 See also `Base.pop!`, `BangBang.pop!!`.
 """
 function pop(s::SmallBitSet, n, default)
-    n in s ? (delete(s, n), Int(n)) : (s, default)
+    n in s ? (delete(s, unsafe_int(n)), unsafe_int(n)) : (s, default)
 end
 
 """
