@@ -238,7 +238,7 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
         m = pext(bits(fixedvector(v)), bits(s))
         b = convert(FixedVector{N,Bool}, m)
         SmallVector(b, length(s))
-    elseif VERSION >= v"1.11" && T <: HWType && (HAS_COMPRESS || N <= 32)  # slows down for larger N
+    elseif VERSION >= v"1.11" && ishwtype(T) && (HAS_COMPRESS || N <= 32)  # slows down for larger N
         SmallVector(compress(fixedvector(v), s), length(s))
     else
         SmallVector{N,T}(@inbounds v[i] for i in s)
@@ -297,7 +297,7 @@ end
     map(i -> @inbounds(v[i]), ii)
 end
 
-function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{N}) where {M,N}
+@inline function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{N}) where {M,N}
     p1 = one(inttype(eltype(v)))
     p = map(i -> (i % typeof(p1)) - p1, ii)
     shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
@@ -337,7 +337,6 @@ See also [`$(@__MODULE__).shuffle`](@ref).
 """
 shufflewidth
 
-shufflewidth(::Val, ::Type) = 0
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(N), T)
 shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
 

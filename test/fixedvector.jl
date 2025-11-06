@@ -155,10 +155,13 @@ end
 @testset "FixedVector bits" begin
     for N in [1, 2, 7, 8, 21, 64, 150], V in (FixedVector, MutableFixedVector)
         for T in test_types
-            T <: Union{Base.BitInteger, Char, Enum} || continue
+            v = V{N,T}(rand(T, N))
+            if !SmallCollections.ishwtype(T)
+                @test_throws Exception bits(v)
+                continue
+            end
             b = nextpow(2, N*bitsize(T))
             b <= 1024 || continue
-            v = V{N,T}(rand(T, N))
             m = @inferred bits(v)
             U = eval(Symbol(:UInt, b))
             @test m isa U

@@ -507,18 +507,16 @@ See also `Base.extrema`, `Base.@fastmath`.
 extrema_fast(v::AbstractSmallVector; init::Tuple{Any,Any} = (missing, missing)) =
     @fastmath (minimum(v; init = init[1]), maximum(v; init = init[2]))
 
-@inline function reverse(v::AbstractSmallVector, start::Integer = 1, stop::Integer = length(v))
+@inline function reverse(v::AbstractSmallVector, start::Integer, stop::Integer)
     @boundscheck 0 < start <= stop+1 <= length(v)+1 || Base.throw_boundserror(v, start:stop)
     @inbounds b = reverse(v.b, start, stop)
     SmallVector(b, length(v))
 end
 
-reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType} = @inbounds reverse(v, 1)
-
-@inline function reverse(v::AbstractSmallVector{N,T}, start::Integer) where {N, T <: HWType}
+@inline function reverse(v::AbstractSmallVector{N,T}, start::Integer = 1) where {N,T}
+    @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
     M = shufflewidth(v)
     if M != 0
-        @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
         PT = inttype(T)
         k = start % PT
         l = (length(v) % PT) + k
@@ -527,7 +525,7 @@ reverse(v::AbstractSmallVector{N,T}) where {N, T <: HWType} = @inbounds reverse(
         end
         SmallVector(shuffle(Val(M), fixedvector(v), p), length(v))
     else
-        invoke(reverse, Tuple{AbstractSmallVector,Integer}, v, start)
+        reverse(v, start, length(v))
     end
 end
 
@@ -576,7 +574,7 @@ Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldt
 in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
 
 function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
-    if isfasttype(T) && isempty(kw)
+    if ishwtype(T) && isempty(kw)
         b = replace(v.b, ps...)
         if default(T) in map(first, ps)
             b = padtail(b, v.n)

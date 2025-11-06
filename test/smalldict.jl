@@ -1,7 +1,7 @@
 DS = (SmallDict, MutableSmallDict)
 
 key_types = [Int8, UInt32, Float64, String, TestEnum]
-val_types = [Bool, Int64, Char, TestStruct]
+val_types = [Bool, Int64, Char, TestStruct2]
 
 @testset "SmallDict" begin
     for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)

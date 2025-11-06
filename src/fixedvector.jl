@@ -221,7 +221,7 @@ See also `Base.hash`.
 fasthash(::AbstractFixedVector, ::UInt)
 
 function fasthash(v::AbstractFixedVector{N,T}, h0::UInt) where {N,T}
-    if (T <: BitInteger && bitsize(T) <= 32) || T == Bool || T == Char
+    if ishwtype(T)
         Base.hash_integer(bits(v), h0)
     else
         hash(v, h0)
@@ -409,7 +409,7 @@ function extrema_fast(f::F, v::AbstractFixedVector; init::Tuple{Any,Any} = (miss
     end
 end
 
-@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1, stop::Integer = N) where {N,T}
+@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer, stop::Integer) where {N,T}
     @boundscheck 0 < start <= stop+1 <= N+1 || Base.throw_boundserror(v, start:stop)
     t = ntuple(Val(N)) do i
         @inbounds start <= i <= stop ? v[start+stop-i] : v[i]
@@ -417,7 +417,7 @@ end
     FixedVector{N,T}(t)
 end
 
-@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer) where {N, T <: HWType}
+@inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1) where {N,T}
     M = shufflewidth(v)
     if M != 0
         @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
@@ -431,7 +431,7 @@ end
         end
         shuffle(Val(M), v, p)
     else
-        invoke(reverse, Tuple{AbstractFixedVector,Integer}, v, start)
+        reverse(v, start, N)
     end
 end
 

@@ -30,7 +30,7 @@ using CpuId: CpuFeature, __ECX
 const AVX512VBMI2 = CpuFeature(0x0000_0007, 0x00, __ECX, 6)
 const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
 
-@generated function shuffle(::Val{M}, ::Val{NR}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NR, NV, VT <: HWType, NP, PT <: BitInteger}
+@generated function shuffle(::Val{M}, ::Val{NR}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NR, NV, VT, NP, PT <: BitInteger}
     shuf = if M == 16
         "@llvm.x86.ssse3.pshuf.b.128"
     elseif M == 32
@@ -40,12 +40,13 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     else
         error("unsupported bit length")
     end
-    VB = sizeof(VT)
+    HT = hwtype(VT)
+    VB = sizeof(HT)
     PB = sizeof(PT)
     @assert max(NV, NP, NR)*VB <= M
 
     N = M ÷ VB
-    LVT = llvm_type(VT)
+    LVT = llvm_type(HT)
     LVI = string('i', 8*VB)
     LPT = llvm_type(PT)
 
@@ -131,14 +132,15 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     """
     quote
         @inline
-        w = Base.llvmcall(($ir, "shuffle"), NTuple{NR,VecElement{VT}},
-            Tuple{NTuple{NV,VecElement{VT}}, NTuple{NP,VecElement{PT}}},
+        w = Base.llvmcall(($ir, "shuffle"), NTuple{NR,VecElement{$HT}},
+            Tuple{NTuple{NV,VecElement{$HT}}, NTuple{NP,VecElement{PT}}},
             vec(Tuple(v)), vec(p))
-        FixedVector{NR,VT}(unvec(w))
+        FixedVector{NR,VT}(unvec(VT, w))
     end
 end
 
-function shufflewidth(::Val{N}, ::Type{T}) where {N, T <: HWType}
+function shufflewidth(::Val{N}, ::Type{T}) where {N,T}
+    ishwtype(T) || return 0
     M = N*sizeof(T)
     @static if cpufeature(:AVX)
         M <= 16 && return 16

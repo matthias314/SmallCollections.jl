@@ -44,12 +44,19 @@ end
 
 using StructEqualHash: @struct_equal_hash
 
-struct TestStruct
-    x::Char
-    y::Int
+abstract type AbstractTestStruct end
+
+struct TestStruct1 <: AbstractTestStruct
+    x::SmallBitSet{UInt32}
 end
 
-@struct_equal_hash TestStruct
+struct TestStruct2 <: AbstractTestStruct
+    x::TestStruct1
+    y::UInt16
+end
+
+@struct_equal_hash TestStruct1
+@struct_equal_hash TestStruct2
 
 # custom rand settings
 
@@ -58,7 +65,7 @@ using Random: Random, AbstractRNG, SamplerType
 Random.rand(rng::AbstractRNG, ::SamplerType{String}) = string(rand(Char, 3)...)
 Random.rand(rng::AbstractRNG, ::SamplerType{Symbol}) = Symbol((rand_notin(Char, ('\0',)) for _ in 1:3)...)
 Random.rand(rng::AbstractRNG, ::SamplerType{T}) where T <: Enum = rand(instances(T))
-Random.rand(rng::AbstractRNG, ::SamplerType{TestStruct}) = TestStruct(map(rand, fieldtypes(TestStruct))...)
+Random.rand(rng::AbstractRNG, ::SamplerType{T}) where T <: AbstractTestStruct = T(map(rand, fieldtypes(T))...)
 
 function rand_notin(::Type{T}, c) where T
     local x
@@ -71,7 +78,7 @@ end
 
 rand_unique(::Type{T}, m::Integer) where T = foldl((v, _) -> push!(v, rand_notin(T, v)), 1:m; init = T[])
 
-test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct)
+test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct1, TestStruct2)
 
 # isvalid
 

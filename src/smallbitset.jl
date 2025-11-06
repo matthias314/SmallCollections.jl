@@ -469,3 +469,7 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet{U}}) where U <: Unsigned = _SmallBitSet(rand(rng, U))
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet}) = rand(rng, SmallBitSet{UInt})
+
+# HWType conversion
+
+from_hwvalue(::Type{SmallBitSet{U}}, x::U) where U <: Unsigned = _SmallBitSet(x)

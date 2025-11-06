@@ -39,11 +39,17 @@ and `BitIntegers.AbstractBitUnsigned`.
 """
 const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigned}
 
-const HWTypeExpr = :( Union{Base.HWReal, Bool, Char, Enum} )
-@eval const HWType = $HWTypeExpr
+const HWType = Union{Base.HWReal, Bool, Char, Enum}
 
-@generated inttype(::Type{T}) where T <: HWType = Symbol(:Int, 8*sizeof(T))
-@generated uinttype(::Type{T}) where T <: HWType = Symbol(:UInt, 8*sizeof(T))
+@generated function inttype(::Type{T}) where T
+    @assert ishwtype(T)
+    Symbol(:Int, 8*sizeof(T))
+end
+
+@generated function uinttype(::Type{T}) where T
+    @assert ishwtype(T)
+    Symbol(:UInt, 8*sizeof(T))
+end
 
 @inline function smallint(N::Int)
     if N <= typemax(Int8)
@@ -125,6 +131,8 @@ else
     const HAS_BEXTR = false
     const HAS_PEXT = false
     const HAS_COMPRESS = false
+
+    shufflewidth(::Val, ::Type) = 0
 end
 
 if VERSION > v"1.11-alpha"

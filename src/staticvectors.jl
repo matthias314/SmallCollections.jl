@@ -18,8 +18,8 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
 
 @inline function setindex(v::AbstractFixedVector{N,T}, x, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    if T <: HWType && N-1 <= typemax(uinttype(T))
-        setindex_llvm(v, convert(T, x), i)
+    if ishwtype(T) && N-1 <= typemax(uinttype(T))
+        setindex_hw(v, convert(T, x), i)
     else
         i1 = i % SmallLength
         t = ntuple(Val(N % SmallLength)) do j
@@ -29,8 +29,9 @@ setindex(::AbstractFixedVector, ::Any, ::Integer)
     end
 end
 
-@generated function setindex_llvm(v::AbstractFixedVector{N,T}, x::T, i::Integer) where {N,T}
-    L = llvm_type(T)
+@generated function setindex_hw(v::AbstractFixedVector{N,T}, x::T, i::Integer) where {N,T}
+    H = hwtype(T)
+    L = llvm_type(H)
     U = uinttype(T)
     LU = llvm_type(U)
     w = join((string(LU, ' ', k) for k in 1:N), ", ")
@@ -44,8 +45,8 @@ end
         ret <$N x $L> %c
     """
     quote
-        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, T, $U}, vec(v.t), x, i % $U)
-        FixedVector(unvec(b))
+        b = Base.llvmcall($ir, NTuple{N, VecElement{$H}}, Tuple{NTuple{N, VecElement{$H}}, $H, $U}, vec(v.t), hwvalue(x), i % $U)
+        FixedVector(unvec(T, b))
     end
 end
 
@@ -85,7 +86,7 @@ julia> $(@__MODULE__).padtail(v, 2, -1)
  -1
 ```
 """
-function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where {N,T}
+function padtail(v::AbstractFixedVector{N,T}, i::Integer, x) where {N,T}
     i = i % SmallLength
     t = ntuple(Val(N % SmallLength)) do j
         ifelse(j <= i, v[j], convert(T, x))
@@ -93,8 +94,13 @@ function padtail(v::AbstractFixedVector{N,T}, i::Integer, x = default(T)) where 
     FixedVector{N,T}(t)
 end
 
-@generated function padtail(v::FixedVector{N,T}, n::Integer) where {N, T <: HWType}
-    M = llvm_type(T)
+@inline function padtail(v::AbstractFixedVector{N,T}, i::Integer) where {N,T}
+    ishwtype(T) ? padtail_hw(v, i) : padtail(v, i, default(T))
+end
+
+@inline @generated function padtail_hw(v::FixedVector{N,T}, n::Integer) where {N,T}
+    H = hwtype(T)
+    M = llvm_type(H)
     L = 8*sizeof(T)
     if log2(N) >= L
         L = bitsize(SmallLength)
@@ -110,8 +116,8 @@ end
         """
     quote
         @inline
-        b = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{NTuple{N, VecElement{T}}, $U}, vec(Tuple(v)), n % $U)
-        FixedVector{N,T}(unvec(b))
+        b = Base.llvmcall($ir, NTuple{N, VecElement{$H}}, Tuple{NTuple{N, VecElement{$H}}, $U}, vec(Tuple(v)), n % $U)
+        FixedVector{N,T}(unvec(T, b))
     end
 end
 
@@ -229,7 +235,7 @@ end
     else
         @boundscheck checkbounds(v, i)
     end
-    t = if T <: HWType
+    t = if ishwtype(T)
         NN = smallint(N)
         ii = i % typeof(NN)
         c = circshift(v, 1)
@@ -323,7 +329,7 @@ unsafe_circshift!(::MutableFixedVector, ::Integer)
     M = shufflewidth(v)
     if N == 1
         FixedVector{N,T}(v)
-    elseif T <: HWType && ispow2(N) && 8 <= bitsize(T)*N <= 64
+    elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 64
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
     elseif M != 0
         P = inttype(T)
@@ -348,17 +354,24 @@ end
 @inline function circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
     if N == 1
         FixedVector{N,T}(v)
-    elseif T <: HWType && ispow2(N) && 8 <= bitsize(T)*N <= 128  # for Bool one could go up to 512 bits
+    elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 128  # for Bool one could go up to 512 bits
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
     else
         unsafe_circshift(v, unsafe_rem(k, UInt16(N)))
     end
 end
 
-circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
+function circshift(v::AbstractFixedVector{N,T}, ::Val{K}) where {N,T,K}
+    if v isa MutableFixedVector && ishwtype(T)
+        circshift_hw(v, Val(K))
+    else
+        circshift(v, K)
+    end
+end
 
-@generated function circshift(v::MutableFixedVector{N,T}, ::Val{K}) where {N , T <: HWType, K}
-    M = llvm_type(T)
+@inline @generated function circshift_hw(v::MutableFixedVector{N,T}, ::Val{K}) where {N,T,K}
+    H = hwtype(T)
+    M = llvm_type(H)
     b = sizeof(T)
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
     ir = VERSION > v"1.12-" ? """
@@ -372,8 +385,8 @@ circshift(v::AbstractFixedVector, ::Val{k}) where k = circshift(v, k)
         ret <$N x $M> %b
     """
     quote
-        b = Base.llvmcall($ir, NTuple{N,VecElement{T}}, Tuple{Ptr{T}}, pointer(v))
-        FixedVector{N,T}(unvec(b))
+        b = Base.llvmcall($ir, NTuple{N,VecElement{$H}}, Tuple{Ptr{T}}, pointer(v))
+        FixedVector{N,T}(unvec(T, b))
     end
 end
 
@@ -415,15 +428,14 @@ end
     v .= circshift(v, k)
 end
 
-circshift!(v::MutableFixedVector, ::Val{k}) where k = circshift!(v, k)
-
-function circshift!(v::MutableFixedVector{N,T}, ::Val{K}) where {N, T <: HWType, K}
+function circshift!(v::MutableFixedVector{N,T}, ::Val{K}) where {N,T,K}
+    ishwtype(T) || return circshift!(v, K)
     vec_circshift!(pointer(v), Val(N), Val(K))
     v
 end
 
-@inline @generated function vec_circshift!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N, T <: HWType, K}
-    M = llvm_type(T)
+@inline @generated function vec_circshift!(ptr::Ptr{T}, ::Val{N}, ::Val{K}) where {N,T,K}
+    M = llvm_type(hwtype(T))
     b = sizeof(T)
     s = join(("i32 " * string(mod(i-K, N)) for i in 0:N-1), ", ")
     ir = VERSION > v"1.12-" ? """
@@ -443,8 +455,9 @@ end
     end
 end
 
-@inline @generated function reverse!(v::MutableFixedVector{N,T}) where {N, T <: HWType}
-    M = llvm_type(T)
+@inline @generated function reverse!(v::MutableFixedVector{N,T}) where {N,T}
+    ishwtype(T) || return invoke(reverse!, Tuple{AbstractVector{T}})
+    M = llvm_type(hwtype(T))
     b = sizeof(T)
     s = join(("i32 " * string(i) for i in N-1:-1:0), ", ")
     ir = VERSION > v"1.12-" ? """
@@ -544,14 +557,32 @@ default(::Type{V}) where {N,T,V<:AbstractFixedVector{N,T}} = V(default(NTuple{N,
 # bit conversions
 #
 
-vec(t::NTuple{N}) where N = ntuple(i -> VecElement(t[i]), Val(N))
+function hwtype(::Type{T}) where T
+# the resulting type must have the same size as T
+    isstructtype(T) && fieldcount(T) == 1 ? hwtype(fieldtype(T, 1)) : T
+end
 
-unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
+ishwtype(::Type{T}) where T = hwtype(T) <: HWType
+
+hwvalue(x::HWType) = x
+hwvalue(x) = hwvalue(getfield(x, 1))
+
+from_hwvalue(::Type{T}, x::T) where T <: HWType = x
+from_hwvalue(::Type{T}, x) where T = reinterpret(T, x)  # custom implementations are faster
+from_hwvalue(::Type{T}, x) where T <: Base.RefValue = T(x)
+from_hwvalue(::Type{Base.OneTo{T}}, x::T) where T <: BitInteger = Base.unchecked_oneto(x)
+
+@inline vec(t::NTuple{N}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))
+
+@inline unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
+@inline unvec(::Type{T}, t::NTuple{N,VecElement}) where {T,N} = ntuple(i -> from_hwvalue(T, t[i].value), Val(N))
 
 """
-    bits(v::AbstractFixedVector{N,T}) where {N, T <: $HWTypeExpr} -> Unsigned
+    bits(v::AbstractFixedVector{N,T}) where {N,T} -> Unsigned
 
-Convert the given vector to an unsigned integer.
+Convert the given vector to an unsigned integer. The element type `T` must ultimately be a subtype of `$HWType`.
+Here "ultimately" means that it can also be a `struct` with a single field of such a type or a nested sequence
+of such structs. For example, `SmallBitSet{UInt8}` or `FixedVector{16,SmallBitSet{UInt8}}` are allowed.
 
 For bit integers, hardware floats, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))` provided that
 `U` is an unsigned integer type with `N*bitsize(T)` bits, possibly defined by the package
@@ -564,7 +595,7 @@ If `N` is less than `8` or not a power of `2`, then the result will again be zer
 The inverse operation can be done with `convert`.
 
 See also
-[`Base.convert`](@ref convert(::Type{V}, ::Unsigned) where {N, T <: HWType, V <: AbstractFixedVector{N,T}}),
+[`Base.convert`](@ref convert(::Type{<:AbstractFixedVector}, ::Unsigned)),
 [`$(@__MODULE__).bitsize`](@ref), `Base.HWReal`, `Base.reinterpret`, `BitIntegers`.
 
 # Examples
@@ -575,8 +606,8 @@ julia> FixedVector{4,Int8}(1:4) |> bits
 julia> FixedVector{3}('a':'c') |> bits
 0x00000000630000006200000061000000
 
-julia> m = FixedVector{6,UInt32}(1:6) |> bits
-0x0000000000000000000000060000000500000004000000030000000200000001
+julia> m = FixedVector{6,SmallBitSet{UInt32}}(SmallBitSet(1:k) for k in 1:6) |> bits
+0x00000000000000000000003f0000001f0000000f000000070000000300000001
 
 julia> typeof(m)
 BitIntegers.UInt256
@@ -585,7 +616,13 @@ julia> FixedVector{22}(map(isodd, 1:22)) |> bits
 0x00155555
 ```
 """
-bits(v::AbstractFixedVector)
+function bits(v::AbstractFixedVector{N,T}) where {N,T}
+    if ishwtype(T)
+        bits(map(hwvalue, v))
+    else
+        error("element type $T not supported")
+    end
+end
 
 @generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: HWType}
     M = llvm_type(T)
@@ -610,6 +647,7 @@ bits(v::AbstractFixedVector)
     end
 end
 
+#=
 @generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: Union{Int128,UInt128}}
     n = nextpow(2, N)
     U = Symbol(:UInt, n*128)
@@ -619,6 +657,7 @@ end
         reinterpret($U, t)
     end
 end
+=#
 
 @generated function bits(v::AbstractFixedVector{N,Bool}) where N
     c = max(nextpow(2, N), 8)
@@ -644,14 +683,14 @@ end
 end
 
 """
-    convert(::Type{V}, x::Unsigned) where {N, T <: $HWTypeExpr, V <: AbstractFixedVector{N,T}}
+    convert(::Type{V}, x::Unsigned) where {N, T, V <: AbstractFixedVector{N,T}} -> V
 
 Convert the unsigned integer `x` to a `FixedVector{N,T}` or `MutableFixedVector{N,T}`.
 The bits of `x` are split into groups of size `bitsize(T)` and reinterpreted as elements of type `T`.
-Unused bits are ignored and missing bits are taken as `0`. This is the inverse operation to `bits`.
+Unused bits are ignored and missing bits are taken as `0`. This is the inverse operation to `bits`,
+and the restriction on the element type `T` stated there apply here as well.
 
-See also [`bits`](@ref bits(::AbstractFixedVector)), [`$(@__MODULE__).bitsize`](@ref),
-`Base.HWReal`, `BitIntegers`.
+See also [`bits`](@ref bits(::AbstractFixedVector)), [`$(@__MODULE__).bitsize`](@ref).
 
 # Examples
 ```jldoctest
@@ -684,15 +723,21 @@ julia> convert(FixedVector{2,Char}, x)
 
 julia> using BitIntegers
 
-julia> convert(FixedVector{4,Int64}, uint256"0x300000000000000020000000000000001")
-4-element FixedVector{4, Int64}:
- 1
- 2
- 3
- 0
+julia> convert(FixedVector{4,SmallBitSet{UInt64}}, uint256"0x300000000000000020000000000000001")
+4-element FixedVector{4, SmallBitSet{UInt64}}:
+ SmallBitSet([1])
+ SmallBitSet([2])
+ SmallBitSet([1, 2])
+ SmallBitSet([])
 ```
 """
-convert(::Type{V}, ::Unsigned) where {N, T <: HWType, V <: AbstractFixedVector{N,T}}
+convert(::Type{<:AbstractFixedVector}, ::Unsigned)
+
+function convert(::Type{V}, x::Unsigned) where {N, T, V <: AbstractFixedVector{N,T}}
+    H = hwtype(T)
+    H <: HWType || error("element type $T not supported")
+    V(map(Fix1(from_hwvalue, T), convert(FixedVector{N,H}, x)))
+end
 
 @generated function convert(::Type{V}, x::U) where {N, T <: HWType, V <: AbstractFixedVector{N,T}, U <: Unsigned}
     M = llvm_type(T)
@@ -755,9 +800,11 @@ end
     end
 end
 
-@generated function compress(v::AbstractFixedVector{N,T}, s::SmallBitSet{U}) where {N, T <: HWType, U}
-    L = llvm_type(T)
-    NL = llvm_type(N, T)
+@generated function compress(v::AbstractFixedVector{N,T}, s::SmallBitSet{U}) where {N,T,U}
+    @assert ishwtype(T)
+    H = hwtype(T)
+    L = llvm_type(H)
+    NL = llvm_type(N, H)
     M = bitsize(U)
     resize2 = if M == N
         "select i1 1, i$N %2, i$N 0"
@@ -793,7 +840,7 @@ end
     quote
         @inline
         w = default(MutableFixedVector{N,T})
-        Base.llvmcall(($ir, "compress"), Cvoid, Tuple{Ptr{T},NTuple{N,VecElement{T}},U}, pointer(w), vec(Tuple(v)), bits(s))
+        Base.llvmcall(($ir, "compress"), Cvoid, Tuple{Ptr{T}, NTuple{N,VecElement{$H}}, U}, pointer(w), vec(Tuple(v)), bits(s))
         FixedVector(w)
     end
 end

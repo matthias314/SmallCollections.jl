@@ -11,7 +11,7 @@ MutableFixedVector
 capacity(::Type{<:AbstractFixedVector})
 fixedvector(::AbstractFixedVector)
 bits(::AbstractFixedVector)
-convert(::Type{V}, ::Unsigned) where {N, T <: SmallCollections.HWType, V <: AbstractFixedVector{N,T}}
+convert(::Type{<:AbstractFixedVector}, ::Unsigned)
 fasthash(::AbstractFixedVector, ::UInt)
 setindex(::AbstractFixedVector, ::Any, ::Integer)
 addindex(::AbstractFixedVector, ::Any, ::Integer)
