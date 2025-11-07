@@ -86,9 +86,9 @@ end
 end
 
 function FixedVector{N,T}(itr::Generator) where {N,T}
-    if IteratorEltype(itr.iter) isa HasEltype
+    if isfasttype(eltype(itr.iter))
         v = @inline FixedVector{N}(itr.iter)
-        map(itr.f, v)
+        map(Fix1(convert, T) ∘ itr.f, v)
     else
         invoke(FixedVector{N,T}, Tuple{Any}, itr)
     end
