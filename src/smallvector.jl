@@ -46,8 +46,8 @@ If the `SmallVector` is created from an `AbstractSmallVector`, `AbstractFixedVec
 and the parameter `N` is omitted, then it is set to capacity of `v`.
 
 The unused elements of a `SmallVector{N,T}` are filled with the value `default(T)`, which is
-predefined for several types including `Number`. Default values for other types must be defined
-explicitly.
+predefined for many types including `Number` and all bits types. Default values for other types
+must be defined explicitly.
 
 Addition and subtraction of two `SmallVector`s is possible even if the vectors have different
 capacity. (Of course, their lengths must agree.) The capacity of the result is the smaller
@@ -75,6 +75,14 @@ julia> v+w
   3.0
   6.5
  10.0
+
+julia> struct A x::Int; y::Char end
+
+julia> SmallVector{4,A}(A(k, '@'+k) for k in 1:3)
+3-element SmallVector{4, A}:
+ A(1, 'A')
+ A(2, 'B')
+ A(3, 'C')
 ```
 """
 struct SmallVector{N,T} <: AbstractSmallVector{N,T}
