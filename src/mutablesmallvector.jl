@@ -363,9 +363,8 @@ See also `Base.circshift`, `Base.circshift!`.
 unsafe_circshift(::AbstractSmallVector, ::Integer),
 unsafe_circshift!(::MutableSmallVector, ::Integer)
 
-function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
-    M = shufflewidth(v)
-    if M != 0
+@inline function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
+    if shufflewidth(v) != 0
         w = unsafe_circshift(v, k)
     elseif N <= 16 || !isbits(T)
         n1 = length(v)
