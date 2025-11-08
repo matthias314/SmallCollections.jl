@@ -153,18 +153,34 @@ See also [`unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N
 end
 
 """
-    unsafe_copyto!(w::MutableSmallVector{N}, v::Union{AbstractFixedVector{N},NTuple{N}}) where N -> w
+    unsafe_copyto!(w::MutableSmallVector, v::NTuple) -> w
+    unsafe_copyto!(w::MutableSmallVector, v::AbstractFixedVector) -> w
 
 Copy the vector or tuple `v` to `w`. The length of `w` is not changed.
 The elements in `v` past the length of `w` are assumed to be default values.
+Moreover, the capacity of `w` must not be smaller than the length of `v`
+(`NTuple` case) or the capacity `v` (`AbstractFixedVector` case).
 
 See also [`unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N`](@ref), [`$(@__MODULE__).default`](@ref).
 
 """
-@inline function unsafe_copyto!(w::MutableSmallVector{N}, v::Union{AbstractFixedVector{N},NTuple{N}}) where N
-    w.b = v
+unsafe_copyto!(::MutableSmallVector, ::Union{NTuple, AbstractFixedVector})
+
+@inline function unsafe_copyto!(w::MutableSmallVector{N,T}, v::NTuple{M}) where {N,T,M}
+    @assert M <= N
+    if M == N
+        w.b = v
+    elseif isbitstype(T)
+        GC.@preserve w unsafe_store!(Ptr{NTuple{M,T}}(pointer(w)), Tuple(v))
+    else
+        for i in eachindex(w)
+            @inbounds w[i] = v[i]
+        end
+    end
     w
 end
+
+@inline unsafe_copyto!(w::MutableSmallVector, v::AbstractFixedVector) = unsafe_copyto!(w, Tuple(v))
 
 function unsafe_copyto!(w::MutableSmallVector, wo, v::MutableSmallVector, vo, n::Integer)
     GC.@preserve w unsafe_copyto!(pointer(w, wo), pointer(v, vo), n)
@@ -272,17 +288,7 @@ end
     v
 end
 
-@propagate_inbounds function pushfirst!(v::MutableSmallVector{N,T}, xs::Vararg{Any,M}) where {N,T,M}
-    if M == 1 && isfasttype(T)
-        @boundscheck v.n < N || error("vector cannot have more than $N elements")
-        v.n += 1 % SmallLength
-        vec_circshift!(pointer(v), Val(N), Val(1))
-        @inbounds v[1] = xs[1]
-        v
-    else
-        prepend!(v, xs)
-    end
-end
+@propagate_inbounds pushfirst!(v::MutableSmallVector, xs::Vararg{Any,M}) where M = prepend!(v, xs)
 
 @inline function prepend!(v::MutableSmallVector{N,T}, w::MemoryVector{T}) where {N,T}
     n = length(v)+length(w)
@@ -295,8 +301,16 @@ end
     v
 end
 
-@inline function prepend!(v::MutableSmallVector{N}, w) where N
-    if haslength(w)
+@inline function prepend!(v::MutableSmallVector{N,T}, w) where {N,T}
+    if w isa Tuple && ishwtype(T)
+        M = length(w)
+        n = length(v) + M
+        @boundscheck n <= N || error("vector cannot have more than $N elements")
+        v.n = n % SmallLength
+        vec_circshift!(pointer(v), Val(N), Val(M))
+        unsafe_copyto!(v, NTuple{M,T}(w))
+        v
+    elseif haslength(w)
         n = length(v)+length(w)
         @boundscheck n <= N || error("vector cannot have more than $N elements")
         GC.@preserve v unsafe_copyto!(pointer(v, length(w)+1), pointer(v), length(v))

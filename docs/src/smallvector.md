@@ -13,7 +13,7 @@ fixedvector(::AbstractSmallVector)
 bits(::AbstractSmallVector)
 fasthash(::AbstractSmallVector, ::UInt)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
-unsafe_copyto!(::MutableSmallVector{N}, ::Union{AbstractFixedVector{N},NTuple{N}}) where N
+unsafe_copyto!(::MutableSmallVector, ::Union{NTuple, AbstractFixedVector})
 resize
 empty(::AbstractSmallVector)
 getindex(::AbstractSmallVector, ::SmallBitSet)
