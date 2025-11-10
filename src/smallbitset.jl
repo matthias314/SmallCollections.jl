@@ -130,7 +130,8 @@ convert(::Type{SmallBitSet}, mask::Integer) = convert(SmallBitSet{UInt}, mask)
         @boundscheck if !isinteger(n) || n <= 0 || n > bitsize(U)
                 error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
             end
-        mask |= unsafe_shl(one(U), Integer(n-one(n)))
+        k = Integer(n)
+        mask |= unsafe_shl(one(U), k-one(k))
     end
     _SmallBitSet(mask)
 end
@@ -214,7 +215,10 @@ extrema(v::SmallBitSet; init::Tuple{Any,Any} = (missing, missing)) =
 # this is the default for AbstractSet
 
 function in(n, s::SmallBitSet{U}) where U <: Unsigned
-    isinteger(n) && 1 <= n <= bitsize(U) && !iszero(s.mask & unsafe_shl(one(U), Int(n)-1))
+    isinteger(n) && 1 <= n <= bitsize(U) && begin
+        k = Integer(n)
+        !iszero(s.mask & unsafe_shl(one(U), k-one(k)))
+    end
 end
 
 issubset(s::SmallBitSet, t::SmallBitSet) = isempty(setdiff(s, t))
@@ -279,7 +283,8 @@ See also `Base.delete!`, `BangBang.delete!!`.
 """
 function delete(s::SmallBitSet{U}, n) where U
     if isinteger(n)
-        m = one(U) << (Int(n)-1)
+        k = Integer(n)
+        m = one(U) << (k-one(k))
         _SmallBitSet(s.mask & ~m)
     else
         s
