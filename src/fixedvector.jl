@@ -1,8 +1,7 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector, fixedvector,
     sum_fast, extrema_fast, bits, fasthash
 
-using Base: @propagate_inbounds, tail, haslength, BitInteger,
-    IteratorEltype, HasEltype, Generator
+using Base: tail, haslength, IteratorEltype, HasEltype, Generator
 
 import Base: Tuple, ==, isequal, size,
     IndexStyle, getindex, setindex!, iterate, iszero, zero, +, -, *, map, map!,

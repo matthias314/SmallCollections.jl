@@ -262,8 +262,7 @@ See also `Base.resize!`, [`$(@__MODULE__).default`](@ref).
 """
 @inline function resize(v::AbstractSmallVector{N}, n::Integer) where N
     @boundscheck 0 <= n <= N || error("length must be between 0 and $N")
-    b = n < v.n ? padtail(v.b, n) : v.b
-    SmallVector(b, n % SmallLength)
+    SmallVector(padtail(v.b, n), n)
 end
 
 default(::Type{V}) where V <: AbstractSmallVector = V()
@@ -940,8 +939,6 @@ end
 #
 # broadcast
 #
-
-using Base: Fix2
 
 using Base.Broadcast: AbstractArrayStyle, DefaultArrayStyle, Style, Broadcasted, broadcasted, flatten
 import Base.Broadcast: BroadcastStyle, materialize

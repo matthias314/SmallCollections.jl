@@ -11,7 +11,7 @@ By default, this holds for all primitive types except `String` and `Symbol`
 and for all `struct` and `mutable struct` types whose fields have bits type
 and recursively satisfy `isfasttype`.
 """
-Base.@assume_effects :total function isfasttype(::Type{T}) where T
+@assume_effects :total function isfasttype(::Type{T}) where T
 # all non-struct types should be covered by the methods below
     isstructtype(T) && all(isfastfield, fieldtypes(T))
 end
@@ -24,8 +24,6 @@ isfasttype(::Type{<:Union{Symbol,String}}) = false
 #
 # MapStyle definitions
 #
-
-using Base: Fix1, Fix2
 
 using Base.FastMath: abs2_fast, abs_fast, add_fast, cmp_fast, conj_fast,
     eq_fast, ge_fast, gt_fast, inv_fast, isfinite_fast, isinf_fast,
@@ -177,7 +175,7 @@ hasfixedlength(::Type{<:Number}) = true
 
 # (-1) * 0.0 === -0.0, not 0.0
 # also, 0 * [1] is not a vector of length 0
-Base.@assume_effects :total function MapStyle(::Union{typeof.(
+@assume_effects :total function MapStyle(::Union{typeof.(
         (*, mul_fast)
     )...}, types::Type...)
     style = if !all(hasfixedlength, types)
@@ -224,8 +222,8 @@ MapStyle(::Union{typeof.(
 
 MapStyle(::Type{Ref}, ::Type{T}) where T = iffasttypes(StrictStyle(), S, T)
 MapStyle(::Type{Ref{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
-MapStyle(::Type{Base.OneTo}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
-MapStyle(::Type{Base.OneTo{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
+MapStyle(::Type{OneTo}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
+MapStyle(::Type{OneTo{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
 
 # definitions for constructors of new functions
 

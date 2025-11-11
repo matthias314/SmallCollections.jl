@@ -228,7 +228,7 @@ function zeros(::Type{V}, n::Integer) where {U, V <: PackedVector{U}}
     V(zero(U), n)
 end
 
-Base.@assume_effects :total all_ones(::Type{U}, M) where U =
+@assume_effects :total all_ones(::Type{U}, M) where U =
     foldl((m, i) -> m | unsafe_shl(one(U), i), 0:M:bitsize(U)-1; init = zero(U))
 
 """

@@ -2,7 +2,6 @@
 # extensions of FixedVector
 #
 
-using Base: @assume_effects
 import Base: setindex, circshift, circshift!, reverse!, convert
 
 export setindex, unsafe_circshift, unsafe_circshift!
@@ -535,7 +534,7 @@ function default(::Type{T}) where T
     end
 end
 
-Base.@assume_effects :total function default_bitstype(::Type{T}) where T
+@assume_effects :total function default_bitstype(::Type{T}) where T
     m8, m1 = divrem(Base.packedsize(T), 8)
     t8 = ntuple(Returns(UInt64(0)), Val(m8))
     t1 = ntuple(Returns(UInt8(0)), Val(m1))
@@ -570,7 +569,7 @@ hwvalue(x) = hwvalue(getfield(x, 1))
 from_hwvalue(::Type{T}, x::T) where T <: HWType = x
 from_hwvalue(::Type{T}, x) where T = reinterpret(T, x)  # custom implementations are faster
 from_hwvalue(::Type{T}, x) where T <: Base.RefValue = T(x)
-from_hwvalue(::Type{Base.OneTo{T}}, x::T) where T <: BitInteger = Base.unchecked_oneto(x)
+from_hwvalue(::Type{OneTo{T}}, x::T) where T <: BitInteger = Base.unchecked_oneto(x)
 
 @inline vec(t::NTuple{N}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))
 

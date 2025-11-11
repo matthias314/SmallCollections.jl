@@ -70,8 +70,8 @@ function show(io::IO, s::SmallBitSet{U}) where U
     print(io, "])")
 end
 
-MapStyle(::Type{SmallBitSet}, ::Type{Base.OneTo{T}}) where T = iffasttypes(StrictStyle(), T)
-MapStyle(::Type{SmallBitSet{U}}, ::Type{Base.OneTo{T}}) where {U,T} = iffasttypes(StrictStyle(), U, T)
+MapStyle(::Type{SmallBitSet}, ::Type{OneTo{T}}) where T = iffasttypes(StrictStyle(), T)
+MapStyle(::Type{SmallBitSet{U}}, ::Type{OneTo{T}}) where {U,T} = iffasttypes(StrictStyle(), U, T)
 
 ==(s::SmallBitSet, t::SmallBitSet) = s.mask == t.mask
 

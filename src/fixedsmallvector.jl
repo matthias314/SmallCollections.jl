@@ -191,7 +191,7 @@ function issorted(v::AbstractFixedOrSmallVector{N,T};
     end
 end
 
-issorted_strict(v, o) = all(i -> @inbounds(Base.Order.lt(o, v[i], v[i+1])), Base.OneTo(length(v)-1))
+issorted_strict(v, o) = all(i -> @inbounds(Base.Order.lt(o, v[i], v[i+1])), OneTo(length(v)-1))
 
 function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSmallVector{N,T}) where {N, T <: Base.HWReal}
     if isempty(v)

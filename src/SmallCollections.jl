@@ -23,7 +23,7 @@ See [`AbstractFixedVector`](@ref), [`AbstractSmallDict`](@ref),
 """
 module SmallCollections
 
-using Base: @propagate_inbounds, BitInteger
+using Base: @propagate_inbounds, @assume_effects, Fix1, Fix2, BitInteger, OneTo
 using Base: _InitialValue as Void
 
 using Random: Random, AbstractRNG, SamplerType
@@ -95,11 +95,11 @@ element_type(::Type{I}) where I = eltype(I)
 element_type(::Type{<:Tuple{Vararg{T}}}) where T = T
 element_type(::Type{<:Tuple{Vararg{T}}}) where T <: Pair = T
 
-Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Union{Tuple,NamedTuple}
+@assume_effects :foldable function element_type(::Type{I}) where I <: Union{Tuple,NamedTuple}
     promote_type(fieldtypes(I)...)
 end
 
-Base.@assume_effects :foldable function element_type(::Type{I}) where I <: Tuple{Vararg{Pair}}
+@assume_effects :foldable function element_type(::Type{I}) where I <: Tuple{Vararg{Pair}}
     K = promote_type(map(first∘fieldtypes, fieldtypes(I))...)
     V = promote_type(map(last∘fieldtypes, fieldtypes(I))...)
     Pair{K,V}
