@@ -21,11 +21,39 @@ isinteger(x) = x isa Number && Base.isinteger(x)
     SmallBitSet([iter])
 
 `SmallBitSet{U}` is an immutable set that can hold integers between `1` and the bit length of `U`.
-Called without an argument, it returns an empty set. If `U` is omitted, then `UInt` is taken.
+The argument `iter` can be any iterator giving such values. If `U` is omitted, then `UInt` is taken.
+Called without an argument, the constructor returns an empty set.
 
 All non-mutating functions for sets are supported. The non-mutating analogs
 [`push`](@ref push(::SmallBitSet, ::Vararg{Any})), [`pop`](@ref pop(::SmallBitSet)) and
 [`delete`](@ref) of the corresponding `!`-functions are also provided.
+
+# Examples
+```jldoctest
+julia> SmallBitSet((1, 3, 5))
+SmallBitSet{UInt64} with 3 elements:
+  1
+  3
+  5
+
+julia> s = SmallBitSet{UInt8}(2*k for k in 1:3)
+SmallBitSet{UInt8} with 3 elements:
+  2
+  4
+  6
+
+julia> first(s), last(s)
+(2, 6)
+
+julia> 4.0 in s
+true
+
+julia> SmallBitSet{UInt32}(s)
+SmallBitSet{UInt32} with 3 elements:
+  2
+  4
+  6
+```
 """
 struct SmallBitSet{U<:Unsigned} <: AbstractSet{Int}
     mask::U

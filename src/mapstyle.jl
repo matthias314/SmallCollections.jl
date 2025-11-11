@@ -297,13 +297,6 @@ julia> Inbounds(f).(v)
  -2
  -3
  -4
-
-julia> Inbounds(UInt8).(v)
-4-element FixedVector{4, UInt8}:
- 0x01
- 0x02
- 0x03
- 0x04
 ```
 """
 struct Inbounds{F}

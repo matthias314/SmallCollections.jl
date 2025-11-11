@@ -15,6 +15,7 @@ SmallCollections.MapStyle
 SmallCollections.FixedVectorStyle
 SmallCollections.SmallVectorStyle
 SmallCollections.padtail
+SmallCollections.unsafe_circshift
 ```
 
 ### Functionality for `SmallBitSet`
