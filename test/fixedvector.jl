@@ -233,6 +233,13 @@ end
         s = @inferred sum_fast(v)
         @test s ≈ sum(u)
         @test_inferred prod(v) prod(u)
+
+        u2 = rand(r, N) * im
+        v2 = V{N}(u2)
+        du = dot(u2, u)
+        d = @inferred dot_fast(v2, v)
+        @test d ≈ du && typeof(d) == typeof(du)
+
         T <: AbstractFloat || continue
         u = fill(-T(0), N)
         v = SmallVector{N}(u)
