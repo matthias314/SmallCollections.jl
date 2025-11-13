@@ -21,8 +21,8 @@ using Base.FastMath: eq_fast
         @test_inferred v == v2 true
         if T <: Number
             @test_inferred eq_fast(v, v2) true
-            T <: Integer && bitsize(T) >= bitsize(Float64) && continue
-            v4 = V{N,Float64}(u)
+            numerictype(T) <: Integer && bitsize(T) >= bitsize(Float64) && continue
+            v4 = V{N,setnumerictype(T, Float64)}(u)
             @test_inferred v == v4 true
             @test_inferred eq_fast(v, v4) true
         end
@@ -210,9 +210,9 @@ end
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         if T <: Unsigned
-            u = rand(T(1):T(9), N)
+            u = rand(unitrange(T(1), T(9)), N)
         else
-            u = rand(T(-9):T(9), N)
+            u = rand(unitrange(T(-9), T(9)), N)
         end
         v = FixedVector{N}(u)
         for f in (maximum, minimum)
@@ -272,7 +272,7 @@ end
         u3 = map(f, u1)
         w = @test_inferred map(f, v1) u3 FixedVector{N,eltype(u3)}
         for T2 in test_types
-            T2 <: Number || continue
+            (T2 <: Number && dimension(T1) == dimension(T2)) || continue
             u2 = rand(T2, N+1)
             v2 = V{N+1}(u2)
             u4 = map(f, u1, u2)
@@ -291,7 +291,7 @@ end
     for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         k = max(N ÷ 2, 1)
-        for u in (rand(T(0):(T == Bool ? true : T(2)), N), zeros(T, N), ones(T, N))
+        for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), N), zeros(T, N), ones(T, N))
             v = V{N,T}(u)
             @test_inferred support(iszero, v) Set(findall(iszero, u)) SmallBitSet
             for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
@@ -347,9 +347,9 @@ end
 @testset "FixedVector support" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
-        u = rand(0:2, N)
+        u = rand(unitrange(T(0), T(2)), N)
         v = V{N,T}(u)
-        @test_inferred support(v) Set{Int}(i for i in 1:N if u[i] != 0) SmallBitSet
+        @test_inferred support(v) Set{Int}(i for i in 1:N if !iszero(u[i])) SmallBitSet
     end
 end
 

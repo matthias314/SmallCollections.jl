@@ -2,6 +2,19 @@ using Test, SmallCollections, BitIntegers
 
 using SmallCollections: LazyStyle, EagerStyle, RigidStyle, StrictStyle, SmallLength
 
+using Unitful: Unitful, Quantity, @u_str, dimension, ustrip
+
+numerictype(::Type{T}) where T = T
+numerictype(::Type{<:Quantity{T}}) where T = T
+
+setnumerictype(::Type, ::Type{S}) where S = S
+setnumerictype(::Type{Quantity{T,D,U}}, ::Type{S}) where {T,D,U,S} = Quantity{S,D,U}
+
+unitrange(a, b) = a:b
+unitrange(a::Quantity, b::Quantity) = a:oneunit(a):b
+
+@inline Base.isodd(x::Quantity) = isodd(ustrip(x))  # otherwise we get an infinite recursion
+
 macro test_inferred(expr, good, goodtype = missing)
     msg = """
 
@@ -78,7 +91,7 @@ end
 
 rand_unique(::Type{T}, m::Integer) where T = foldl((v, _) -> push!(v, rand_notin(T, v)), 1:m; init = T[])
 
-test_types = (Int8, UInt64, Int128, UInt256, Float32, Float64, Char, String, Symbol, TestEnum, TestStruct1, TestStruct2)
+test_types = (Int8, UInt64, typeof(Int128(1)u"m"), UInt256, typeof(Float32(1)u"s"), Float64, Char, String, Symbol, TestEnum, TestStruct1, TestStruct2)
 
 # isvalid
 

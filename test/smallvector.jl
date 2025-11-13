@@ -25,8 +25,8 @@ const VS = (SmallVector, MutableSmallVector)
         if T <: Number
             @test_inferred eq_fast(v, v2) true
             @test_inferred eq_fast(v, v3) true
-            T <: Integer && bitsize(T) >= bitsize(Float64) && continue
-            v4 = V{N,Float64}(u)
+            numerictype(T) <: Integer && bitsize(T) >= bitsize(Float64) && continue
+            v4 = V{N,setnumerictype(T, Float64)}(u)
             @test_inferred v == v4 true
             @test_inferred eq_fast(v, v4) true
         end
@@ -285,7 +285,7 @@ end
             @test_throws Exception prepend(v, xy[i] for i in 1:2)
             @test_throws Exception prepend(v, (x,), [y])
         end
-        if T <: Integer
+        if numerictype(T) <: Integer
             @test_inferred filter(isodd, v) filter(isodd, u) SmallVector(v)
         end
     end
@@ -369,7 +369,7 @@ end
             @test_throws Exception prepend!(copy(v), xy[i] for i in 1:2)
             @test_throws Exception prepend!(copy(v), (x,), [y])
         end
-        if T <: Integer
+        if numerictype(T) <: Integer
             @test_inferred filter!(isodd, copy(v)) filter!(isodd, copy(u)) v
         end
     end
@@ -396,9 +396,9 @@ using Base.FastMath: mul_fast
     for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (1, round(Int, 0.7*N), N-1, N)
         T1 <: Number || continue
         if T1 <: Unsigned
-            u1 = rand(T1(1):T1(9), m)
+            u1 = rand(unitrange(T1(1), T1(9)), m)
         else
-            u1 = rand(T1(-9):T1(9), m)
+            u1 = rand(unitrange(T1(-9), T1(9)), m)
         end
         v1 = V{N}(u1)
         w = @test_inferred +v1 u1 SmallVector(v1)
@@ -407,14 +407,28 @@ using Base.FastMath: mul_fast
         @test isvalid(w)
         for T2 in test_types
             T2 <: Number || continue
-            if T2 <: Unsigned
-                u2 = rand(T2(1):T2(9), m)
-                c = rand(T2(1):T2(9))
+            if numerictype(T2) <: Unsigned
+                u2 = rand(unitrange(T2(1), T2(9)), m)
+                c = rand(unitrange(T2(1), T2(9)))
             else
-                u2 = rand(T2(-9):T2(9), m)
-                c = rand(T2(-9):T2(9))
+                u2 = rand(unitrange(T2(-9), T2(9)), m)
+                c = rand(unitrange(T2(-9), T2(9)))
             end
             v2 = V{N}(u2)
+            T1T2 = eltype(c*u1)
+            w = @test_inferred c*v1 c*u1 SmallVector{N,T1T2}
+            @test isvalid(w)
+            if numerictype(T1T2) <: Unsigned && (minimum(v1; init = zero(T1)) < zero(T1) ||
+                    (c < zero(c) && !(isempty(v1) && SmallCollections.MapStyle(mul_fast, T2, T1) isa SmallCollections.LazyStyle)))
+                # Julia bug, see julia#58188
+                @test_broken mul_fast(c, v1) == mul_fast.(c, u1)
+            else
+                w = @inferred mul_fast(c, v1)
+                @test isapprox(w, mul_fast.(c, u1)) && w isa SmallVector{N,T1T2}
+                @test isvalid(w)
+            end
+            @test_inferred v1*c c*v1
+            dimension(T1) == dimension(T2) || continue
             T = promote_type(T1, T2)
             for op in (+, -)
                 w = @test_inferred op(v1, v2) op(u1, u2) SmallVector{N,T}
@@ -425,18 +439,6 @@ using Base.FastMath: mul_fast
                 w = @test_inferred op(v3, v1) op(u2, u1) SmallVector{N,T}
                 @test isvalid(w)
             end
-            w = @test_inferred c*v1 c*u1 SmallVector{N,T}
-            @test isvalid(w)
-            if T <: Unsigned && (minimum(v1; init = zero(T1)) < 0 ||
-                (c < 0 && !(isempty(v1) && SmallCollections.MapStyle(mul_fast, T2, T1) isa SmallCollections.LazyStyle)))
-                # Julia bug, see julia#58188
-                @test_broken mul_fast(c, v1) == mul_fast.(c, u1)
-            else
-                w = @inferred mul_fast(c, v1)
-                @test isapprox(w, mul_fast.(c, u1)) && w isa SmallVector{N,T}
-                @test isvalid(w)
-            end
-            @test_inferred v1*c c*v1
         end
     end
 
@@ -456,9 +458,9 @@ end
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
         if T <: Unsigned
-            u = rand(T(1):T(9), m)
+            u = rand(unitrange(T(1), T(9)), m)
         else
-            u = rand(T(-9):T(9), m)
+            u = rand(unitrange(T(-9), T(9)), m)
         end
         v = V{N}(u)
         for f in (maximum, minimum)
@@ -471,14 +473,18 @@ end
         end
         if isempty(u)
             @test_throws Exception extrema(v)
-            @test_inferred extrema(v; init = (one(T), zero(T))) extrema(u; init = (one(T), zero(T)))
+            @test_inferred extrema(v; init = (oneunit(T), zero(T))) extrema(u; init = (oneunit(T), zero(T)))
         else
             @test_inferred extrema(v) extrema(u)
         end
         @test_inferred sum(v) sum(u)
         s = @inferred sum_fast(v)
         @test s ≈ sum(u)
-        @test_inferred prod(v) prod(u)
+        if T <: Quantity
+            @test prod(v) == prod(u)
+        else
+            @test_inferred prod(v) prod(u)
+        end
         T <: AbstractFloat || continue
         u = fill(-T(0), m)
         v = V{N}(u)
@@ -519,7 +525,7 @@ end
         w = @test_inferred map(f, v1) u3 SmallVector{N,eltype(u3)}
         @test isvalid(w)
         for T2 in test_types
-            T2 <: Number || continue
+            (T2 <: Number && dimension(T1) == dimension(T2)) || continue
             u2 = rand(T2, m+1)
             v2 = V{N+2}(u2)
             u4 = map(f, u1, u2)
@@ -541,7 +547,7 @@ end
     for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (SmallVector, MutableSmallVector), m in (0, 1, N-1, N)
         T <: Number || continue
         k = max(m ÷ 2, 1)
-        for u in (rand(T(0):(T == Bool ? true : T(2)), m), zeros(T, m), ones(T, m))
+        for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), m), zeros(T, m), ones(T, m))
             v = V{N,T}(u)
             for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
                 @test_inferred support(!iszero, v; style) Set(findall(!iszero, u)) SmallBitSet
@@ -638,9 +644,9 @@ end
 @testset "SmallVector support" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
-        u = rand(0:2, m)
+        u = rand(unitrange(T(0), T(2)), m)
         v = V{N,T}(u)
-        @test_inferred support(v) Set{Int}(i for i in 1:m if u[i] != 0) SmallBitSet
+        @test_inferred support(v) Set{Int}(i for i in 1:m if !iszero(u[i])) SmallBitSet
     end
 end
 

@@ -1,6 +1,6 @@
 DS = (SmallDict, MutableSmallDict)
 
-key_types = [Int8, UInt32, Float64, String, TestEnum]
+key_types = [Int8, typeof(UInt32(1)u"m"), Float64, String, TestEnum]
 val_types = [Bool, Int64, Char, TestStruct2]
 
 @testset "SmallDict" begin

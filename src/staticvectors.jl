@@ -568,7 +568,7 @@ hwvalue(x) = hwvalue(getfield(x, 1))
 
 from_hwvalue(::Type{T}, x::T) where T <: HWType = x
 from_hwvalue(::Type{T}, x) where T = reinterpret(T, x)  # custom implementations are faster
-from_hwvalue(::Type{T}, x) where T <: Base.RefValue = T(x)
+from_hwvalue(::Type{T}, x) where T <: Union{Number, Base.RefValue} = T(x)  # Number is for unitful quantities
 from_hwvalue(::Type{OneTo{T}}, x::T) where T <: BitInteger = Base.unchecked_oneto(x)
 
 @inline vec(t::NTuple{N}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))

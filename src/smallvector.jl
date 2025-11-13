@@ -295,7 +295,7 @@ ones(::Type{<:AbstractSmallVector}, ::Integer)
 function ones(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
     n <= N || error("vector cannot have more than $N elements")
     t = ntuple(Val(N)) do i
-        i <= n ? one(T) : zero(T)
+        i <= n ? oneunit(T) : zero(T)
     end
     V(FixedVector{N,T}(t), n)
 end
