@@ -1,6 +1,7 @@
 using SmallCollections: default, bitsize
 
 using Base.FastMath: eq_fast
+using LinearAlgebra: dot
 
 const VS = (SmallVector, MutableSmallVector)
 
@@ -457,11 +458,8 @@ end
 @testset "SmallVector sum/max" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
-        if T <: Unsigned
-            u = rand(unitrange(T(1), T(9)), m)
-        else
-            u = rand(unitrange(T(-9), T(9)), m)
-        end
+        r = T <: Unsigned ? unitrange(T(1), T(9)) : unitrange(T(-9), T(9))
+        u = rand(r, m)
         v = V{N}(u)
         for f in (maximum, minimum)
             if isempty(u)
@@ -485,6 +483,22 @@ end
         else
             @test_inferred prod(v) prod(u)
         end
+
+        u2 = rand(r, m) * im
+        v2 = V{N}(u2)
+        du = dot(u2, u)
+        if m == 0 && (numerictype(T) <: Union{AbstractFloat, Complex{<:AbstractFloat}})
+            # dot for empty vectors is not always the zero element (w.r.t. isequal)
+            # see LinearAlgebra.jl#1483
+            d = @inferred dot(v2, v)
+            @test d ≈ du && typeof(d) == typeof(du)
+            @test_broken isequal(dot(v2, v), du)
+        else
+            @test_inferred dot(v2, v) du
+        end
+        d = @inferred dot_fast(v2, v)
+        @test d ≈ du && typeof(d) == typeof(du)
+
         T <: AbstractFloat || continue
         u = fill(-T(0), m)
         v = V{N}(u)

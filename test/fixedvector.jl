@@ -1,6 +1,7 @@
 using SmallCollections: bitsize
 
 using Base.FastMath: eq_fast
+using LinearAlgebra: dot
 
 @testset "FixedVector" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
@@ -209,12 +210,9 @@ end
 @testset "FixedVector sum/max" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
-        if T <: Unsigned
-            u = rand(unitrange(T(1), T(9)), N)
-        else
-            u = rand(unitrange(T(-9), T(9)), N)
-        end
-        v = FixedVector{N}(u)
+        r = T <: Unsigned ? unitrange(T(1), T(9)) : unitrange(T(-9), T(9))
+        u = rand(r, N)
+        v = V{N}(u)
         for f in (maximum, minimum)
             if isempty(u)
                 @test_throws Exception f(v)
@@ -233,9 +231,16 @@ end
         s = @inferred sum_fast(v)
         @test s ≈ sum(u)
         @test_inferred prod(v) prod(u)
+
+        u2 = rand(r, N) * im
+        v2 = V{N}(u2)
+        du = dot(u2, u)
+        d = @inferred dot_fast(v2, v)
+        @test d ≈ du && typeof(d) == typeof(du)
+
         T <: AbstractFloat || continue
         u = fill(-T(0), N)
-        v = SmallVector{N}(u)
+        v = V{N}(u)
         @test_inferred sum(v) sum(u)
         @test_inferred prod(-v) prod(-u)
     end

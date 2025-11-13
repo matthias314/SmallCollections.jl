@@ -1,5 +1,5 @@
 export AbstractFixedVector, FixedVector, MutableFixedVector, fixedvector,
-    sum_fast, extrema_fast, bits, fasthash
+    sum_fast, dot_fast, extrema_fast, bits, fasthash
 
 using Base: tail, haslength, IteratorEltype, HasEltype, Generator
 
@@ -338,6 +338,16 @@ See also `Base.sum`, `Base.@fastmath`.
 """
 sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
 
+"""
+    dot_fast(v::AbstractFixedVector, w::AbstractFixedVector)
+
+Return the `@fastmath` dot product of `v` and `w`
+by recursively applying `dot_fast` to pairs of elements from `v` and `w`.
+For elements not supporting `dot_fast` this is the same as applying `dot`.
+
+See also `LinearAlgebra.dot`.
+"""
+dot_fast(v::AbstractFixedVector, w::AbstractFixedVector) = sum_fast(dot_fast.(v, w))
 
 """
     any(f::Function, v::AbstractFixedVector; dims = :, [style::MapStyle])

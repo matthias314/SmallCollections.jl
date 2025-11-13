@@ -31,6 +31,11 @@ using Random: Random, AbstractRNG, SamplerType
 using BitIntegers: AbstractBitSigned, AbstractBitUnsigned,
     UInt256, UInt512, UInt1024
 
+using LinearAlgebra: dot
+
+dot_fast(v, w) = dot(v, w)
+dot_fast(x::Number, y::Number) = @fastmath conj(x)*y
+
 """
     $(@__MODULE__).AbstractBitInteger
 

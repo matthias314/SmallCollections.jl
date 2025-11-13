@@ -176,7 +176,7 @@ hasfixedlength(::Type{<:Number}) = true
 # (-1) * 0.0 === -0.0, not 0.0
 # also, 0 * [1] is not a vector of length 0
 @assume_effects :total function MapStyle(::Union{typeof.(
-        (*, mul_fast)
+        (*, mul_fast, dot, dot_fast)
     )...}, types::Type...)
     style = if !all(hasfixedlength, types)
         EagerStyle()

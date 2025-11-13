@@ -2,7 +2,8 @@
 # small vectors
 #
 
-export AbstractSmallVector, SmallVector, fixedvector, bits, resize, sum_fast, extrema_fast,
+export AbstractSmallVector, SmallVector, fixedvector, bits, resize,
+    sum_fast, dot_fast, extrema_fast,
     capacity, support, setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend, unsafe_circshift
 
@@ -13,6 +14,8 @@ import Base: ==, Tuple, empty, iterate,
     circshift
 
 import Base.FastMath: eq_fast, mul_fast
+
+import LinearAlgebra: dot
 
 """
     AbstractSmallVector{N,T} <: AbstractVector{T}
@@ -410,6 +413,25 @@ julia> sum(v), sum_fast(v)
 ```
 """
 sum_fast(v::AbstractSmallVector) = @fastmath foldl(+, v.b)
+
+@propagate_inbounds function dot(v::AbstractSmallVector, w::AbstractSmallVector)
+    u = dot.(v, w)
+    T = eltype(u)
+    foldl(+, isfasttype(T) ? u.b : u; init = zero(T))
+end
+
+"""
+    dot_fast(v::AbstractSmallVector, w::AbstractSmallVector)
+
+Return the `@fastmath` dot product of `v` and `w`
+by recursively applying `dot_fast` to pairs of elements from `v` and `w`.
+For elements not supporting `dot_fast` this is the same as applying `dot`.
+
+See also `LinearAlgebra.dot`.
+"""
+@propagate_inbounds function dot_fast(v::AbstractSmallVector, w::AbstractSmallVector)
+    sum_fast(dot_fast.(v, w))
+end
 
 function prod(v::AbstractSmallVector{N,T}) where {N,T}
     if T <: Base.BitInteger
