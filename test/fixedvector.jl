@@ -214,7 +214,7 @@ end
         else
             u = rand(unitrange(T(-9), T(9)), N)
         end
-        v = FixedVector{N}(u)
+        v = V{N}(u)
         for f in (maximum, minimum)
             if isempty(u)
                 @test_throws Exception f(v)
@@ -242,7 +242,7 @@ end
 
         T <: AbstractFloat || continue
         u = fill(-T(0), N)
-        v = SmallVector{N}(u)
+        v = V{N}(u)
         @test_inferred sum(v) sum(u)
         @test_inferred prod(-v) prod(-u)
     end
