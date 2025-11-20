@@ -21,3 +21,15 @@ exchange
 any(::Function, ::SmallBitSet)
 checkbounds
 ```
+
+## Orderings
+
+The following orderings are available to compare one `SmallBitSet` to another.
+
+```@docs
+isless(::SmallBitSet, ::SmallBitSet)
+SmallCollections.Lex
+SmallCollections.Colex
+SmallCollections.GradedLex
+SmallCollections.GradedColex
+```

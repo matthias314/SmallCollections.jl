@@ -571,6 +571,76 @@ symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet{U}}) where U <: Unsigned = _SmallBitSet(rand(rng, U))
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet}) = rand(rng, SmallBitSet{UInt})
 
+# ordering and sorting
+
+using Base: Order, Sort
+
+"""
+    isless(s::SmallBitSet, t::SmallBitSet) -> Bool
+
+Compares `s` and `t` in the colexicographic ordering.
+
+Currently, sorting with the default ordering given by `isless` is significantly
+faster than specifiying one of the other orderings (including `Colex`).
+
+See also [`$(@__MODULE__).Colex`](@ref).
+"""
+Base.isless(s::SmallBitSet, t::SmallBitSet) = Order.lt(Colex, s, t)
+
+"""
+    $(@__MODULE__).Colex <: Base.Order.Ordering
+
+The colexicographic ordering for `SmallBitSet`.
+
+See also [`$(@__MODULE__).Lex`](@ref), [`$(@__MODULE__).GradedColex`](@ref).
+"""
+const Colex = Order.ord(isless, bits, false)
+
+"""
+    $(@__MODULE__).GradedColex <: Base.Order.Ordering
+
+The graded colexicographic ordering for `SmallBitSet`.
+A smaller set either has smaller size,
+or for equal size it is smaller in the colexicographic ordering.
+
+See also [`$(@__MODULE__).GradedLex`](@ref), [`$(@__MODULE__).Colex`](@ref).
+"""
+const GradedColex = Order.ord(identity, false) do s::SmallBitSet, t::SmallBitSet
+    (length(s) < length(t)) | ((length(s) == length(t)) & Order.lt(Colex, s, t))
+end
+
+"""
+    $(@__MODULE__).Lex <: Base.Order.Ordering
+
+The lexicographic ordering for `SmallBitSet`. This is the slowest among the available orderings.
+
+See also [`$(@__MODULE__).Colex`](@ref), [`$(@__MODULE__).GradedLex`](@ref).
+"""
+const Lex = Order.ord(bits, false) do x::Unsigned, y::Unsigned
+    a = blsi(x ⊻ y)
+    b = ~blsmsk(x ⊻ y)
+    (!iszero(x & a) & !iszero(y & b)) | (iszero(x & b) & !iszero(y & a))
+end
+
+"""
+    $(@__MODULE__).GradedLex <: Base.Order.Ordering
+
+The graded lexicographic ordering for `SmallBitSet`.
+A smaller set either has smaller size,
+or for equal size it is smaller in the lexicographic ordering.
+
+See also [`$(@__MODULE__).Lex`](@ref), [`$(@__MODULE__).GradedColex`](@ref).
+"""
+const GradedLex = Order.ord(identity, false) do s::SmallBitSet, t::SmallBitSet
+    u = first_as_set(symdiff(s, t))
+    (length(s) < length(t)) | ((length(s) == length(t)) & !isempty(s ∩ u))
+end
+
+# The following definitions don't work for custom orderings, see julia#60184
+Sort.uint_map(s::SmallBitSet, ::Order.ForwardOrdering) = bits(s)
+Sort.uint_unmap(::Type{SmallBitSet{U}}, u::U, ::Order.ForwardOrdering) where U <: Unsigned = _SmallBitSet(u)
+Sort.UIntMappable(::Type{SmallBitSet{U}}, ::Order.ForwardOrdering) where U <: Unsigned = U
+
 # HWType conversion
 
 from_hwvalue(::Type{SmallBitSet{U}}, x::U) where U <: Unsigned = _SmallBitSet(x)

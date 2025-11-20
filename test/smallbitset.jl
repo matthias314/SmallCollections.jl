@@ -140,3 +140,25 @@ VERSION >= v"1.11" && @testset "SmallBitSet checkbounds" begin
         end
     end
 end
+
+@testset "SmallBitSet orderings" begin
+    using SmallCollections: Lex, Colex, GradedLex, GradedColex
+    using Base.Order: ForwardOrdering, lt
+    lex_lt(s, t) = collect(s) < collect(t)
+    colex_lt(s, t) = reverse!(collect(s)) < reverse!(collect(t))
+    graded_lex_lt(s, t) = length(s) < length(t) || (length(s) == length(t) && lex_lt(s, t))
+    graded_colex_lt(s, t) = length(s) < length(t) || (length(s) == length(t) && colex_lt(s, t))
+    for a in UInt(0):UInt(63), b in UInt(0):UInt(63)
+        s = convert(SmallBitSet{UInt8}, a)
+        t = convert(SmallBitSet{UInt32}, b)
+        @test_inferred lt(Lex, s, t) lex_lt(s, t)
+        @test_inferred lt(Colex, s, t) colex_lt(s, t)
+        @test_inferred lt(GradedLex, s, t) graded_lex_lt(s, t)
+        @test_inferred lt(GradedColex, s, t) graded_colex_lt(s, t)
+        @test_inferred isless(s, t) lt(Colex, s, t)
+    end
+
+    @test_inferred Base.Sort.UIntMappable(UInt16, ForwardOrdering()) UInt16
+    v = rand(SmallBitSet{UInt16}, 50)
+    @test sort(v) == sort(v; lt = colex_lt)  # does UIntMappable work?
+end
