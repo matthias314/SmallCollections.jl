@@ -2,7 +2,7 @@
 # small sets
 #
 
-export SmallBitSet, bits, delete, pop, push, exchange
+export SmallBitSet, bits, delete, pop, push, exchange, first_as_set
 
 using Base: hasfastin
 
@@ -215,6 +215,28 @@ end
     @boundscheck isempty(s) && error("collection must be non-empty")
     top_set_bit(bits(s))
 end
+
+"""
+    first_as_set(s::S) where S <: SmallBitSet -> S
+
+Returns the smallest element of `s` as a singleton.
+If `s` is empty, then an empty set is returned.
+
+See also `Base.first`.
+
+# Examples
+```jldoctest
+julia> s = SmallBitSet{UInt8}(3:5);
+
+julia> first_as_set(s)
+SmallBitSet{UInt8} with 1 element:
+  3
+
+julia> first_as_set(empty(s))
+SmallBitSet{UInt8}([])
+```
+"""
+first_as_set(s::SmallBitSet) = _SmallBitSet(blsi(s.mask))
 
 function minimum(s::SmallBitSet; init = missing)
     if !isempty(s)

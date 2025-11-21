@@ -11,6 +11,7 @@ convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
 fasthash(::SmallBitSet, ::UInt)
 empty(::SmallBitSet)
+first_as_set
 push(::SmallBitSet, ::Vararg)
 pop(::SmallBitSet)
 pop(::SmallBitSet, ::Any)

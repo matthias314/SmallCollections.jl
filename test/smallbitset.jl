@@ -8,6 +8,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
         s = SmallBitSet{U}()
         @test_inferred isempty(s) true
         @test_inferred empty(s) SmallBitSet{U}()
+        @test_inferred first_as_set(s) s
         m = bitsize(U)
         @test_throws Exception SmallBitSet{U}([1, 2, 'x'])
         @test_throws Exception SmallBitSet{U}([1, 2, m+1])
@@ -20,6 +21,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
         @test_inferred s == t true
         @test_inferred copy(s) === s true
         @test_inferred s == s true
+        @test_inferred first_as_set(s) isempty(s) ? s : SmallBitSet{U}((first(s),))
         v = collect(Float32, t)
         @test_inferred SmallBitSet{U}(v) s
         s3 = @inferred SmallBitSet{UInt512}(s)
