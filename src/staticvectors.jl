@@ -558,18 +558,24 @@ default(::Type{V}) where {N,T,V<:AbstractFixedVector{N,T}} = V(default(NTuple{N,
 
 function hwtype(::Type{T}) where T
 # the resulting type must have the same size as T
-    isstructtype(T) && fieldcount(T) == 1 ? hwtype(fieldtype(T, 1)) : T
+    !ismutabletype(T) && isstructtype(T) && fieldcount(T) == 1 ? hwtype(fieldtype(T, 1)) : T
 end
 
 ishwtype(::Type{T}) where T = hwtype(T) <: HWType
 
 hwvalue(x::HWType) = x
-hwvalue(x) = hwvalue(getfield(x, 1))
+
+function hwvalue(x::T) where T
+    @assert !ismutabletype(T) && isstructtype(T) && fieldcount(T) == 1 "default method does not apply to type $T"
+    hwvalue(getfield(x, 1))
+end
 
 from_hwvalue(::Type{T}, x::T) where T <: HWType = x
-from_hwvalue(::Type{T}, x) where T = reinterpret(T, x)  # custom implementations are faster
-from_hwvalue(::Type{T}, x) where T <: Union{Number, Base.RefValue} = T(x)  # Number is for unitful quantities
-from_hwvalue(::Type{OneTo{T}}, x::T) where T <: BitInteger = Base.unchecked_oneto(x)
+
+@generated function from_hwvalue(::Type{T}, x) where T
+    @assert !ismutabletype(T) && isstructtype(T) && fieldcount(T) == 1 "default method does not apply to type $T"
+    Expr(:new, T, Expr(:call, :from_hwvalue, fieldtype(T, 1), :x))
+end
 
 @inline vec(t::NTuple{N}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))
 
