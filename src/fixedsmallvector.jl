@@ -202,9 +202,16 @@ function checkindex(::Type{Bool}, inds::AbstractUnitRange, v::AbstractFixedOrSma
     end
 end
 
-@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange) where {N,T}
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange{<:Integer}) where {N,T}
     @boundscheck checkbounds(v, ii)
-    @inbounds SmallVector{N,T}(v[i] for i in ii)
+    if ii isa OneTo
+        @inbounds resize(v, length(ii))
+    elseif ii isa AbstractUnitRange && shufflewidth(v) != 0
+        w = unsafe_circshift(fixedvector(v), 1-first(ii))
+        SmallVector(padtail(w, length(ii)), length(ii))
+    else
+        @inbounds SmallVector{N,T}(v[i] for i in ii)
+    end
 end
 
 """
