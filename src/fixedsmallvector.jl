@@ -71,16 +71,19 @@ function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     end
 end
 
-@inline function findmin(v::AbstractFixedOrSmallVector{N,T}) where {N, T <: BitInteger}
+@propagate_inbounds findmin(v::AbstractFixedOrSmallVector) = findmin(identity, v)
+@propagate_inbounds findmax(v::AbstractFixedOrSmallVector) = findmax(identity, v)
+
+@inline function findmin(f::F, v::AbstractFixedOrSmallVector{N,T}; style = MapStyle(f, T)) where {F,N,T}
     @boundscheck isempty(v) && error("argument must not be empty")
-    x = minimum(v)
-    x, findfirst(==(x), fixedvector(v))::Int
+    y = minimum(f, v)
+    y, findfirst(isequal(y)∘f, fixedvector(v); style)::Int
 end
 
-@inline function findmax(v::AbstractFixedOrSmallVector{N,T}) where {N, T <: BitInteger}
+@inline function findmax(f::F, v::AbstractFixedOrSmallVector{N,T}; style = MapStyle(f, T)) where {F,N,T}
     @boundscheck isempty(v) && error("argument must not be empty")
-    x = maximum(v)
-    x, findfirst(==(x), fixedvector(v))::Int
+    y = maximum(f, v)
+    y, findfirst(isequal(y)∘f, fixedvector(v); style)::Int
 end
 
 any(v::AbstractFixedOrSmallVector; kw...) = any(identity, v; kw...)
