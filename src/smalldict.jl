@@ -479,8 +479,8 @@ function pop!(d::MutableSmallDict, key, default)
 end
 
 """
-    popmin!(d::AbstractSmallDict) -> Pair{<:K,<:V}
-    popmax!(d::AbstractSmallDict) -> Pair{<:K,<:V}
+    popmin!(d::MutableSmallDict) -> Pair{<:K,<:V}
+    popmax!(d::MutableSmallDict) -> Pair{<:K,<:V}
 
 Find a key-values pair that realizes the minimum (or maximum) among the values
 of the non-empty dictionary `d`. Return that pair and delete it from `d`.
