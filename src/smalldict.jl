@@ -3,7 +3,7 @@
 #
 
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
-    setindex, push, delete, pop, invget, getmin, getmax,
+    setindex, push, delete, pop, invget, findmin, findmax,
     popmin, popmax, popmin!, popmax!, findall
 
 import Base: keys, values, copy, length, iterate, haskey,
@@ -241,19 +241,13 @@ end
 
 @inline unsafe_get(d::AbstractSmallDict, i::Int) = @inbounds d.keys[i] => d.vals[i]
 
-"""
-    getmin(d::AbstractSmallDict) -> Pair{<:K,<:V}
-    getmax(d::AbstractSmallDict) -> Pair{<:K,<:V}
-
-Return a key-values pair that realizes the minimum (or maximum) among the values
-of the non-empty dictionary `d`.
-
-See also [`popmin`](@ref), [`popmin!`](@ref).
-"""
-getmin, getmax
-
-@propagate_inbounds getmin(d::AbstractSmallDict) = unsafe_get(d, last(findmin(d.vals)))
-@propagate_inbounds getmax(d::AbstractSmallDict) = unsafe_get(d, last(findmax(d.vals)))
+for g in (:findmin, :findmax)
+    @eval @propagate_inbounds $g(d::AbstractSmallDict) = $g(identity, d)
+    @eval @propagate_inbounds function $g(f::F, d::AbstractSmallDict{N,K,V}; style = MapStyle(f, V)) where {F,N,K,V}
+        v, i = $g(f, d.vals; style)
+        @inbounds v, d.keys[i]
+    end
+end
 
 """
     push(d::AbstractSmallDict{N,K,V}, key1 => val1, key2 => val2, ...) where {N,K,V} -> Tuple{SmallDict{N,K,V}, V}
@@ -386,7 +380,7 @@ Find a key-values pair that realizes the minimum (or maximum) among the values
 of the non-empty dictionary `d`. Return the pair together with a dictionary
 obtained from `d` by removing that pair.
 
-See also [`getmin`](@ref), [`popmin!`](@ref).
+See also [`popmin!`](@ref), `Base.findmin`, `Base.findmax`.
 """
 popmin, popmax
 
@@ -491,7 +485,7 @@ end
 Find a key-values pair that realizes the minimum (or maximum) among the values
 of the non-empty dictionary `d`. Return that pair and delete it from `d`.
 
-See also [`getmin`](@ref), [`popmin`](@ref).
+See also [`popmin`](@ref).
 """
 popmin!, popmax!
 

@@ -190,14 +190,16 @@ end
     end
 end
 
-@testset "SmallDict getmin/popmin" begin
+@testset "SmallDict findmin/popmin" begin
     N = 16
     for D in DS, K in (Int8, UInt16), V in (UInt8, Int32), m in (0, 1, N-2)
         d = D{N,K,V}(rand(K) => rand(V) for _ in 1:m)
         w = collect(d)
         if m == 0
-            @test_throws Exception getmin(d)
-            @test_throws Exception getmax(d)
+            @test_throws Exception findmin(d)
+            @test_throws Exception findmax(d)
+            @test_throws Exception findmin(-, d)
+            @test_throws Exception findmax(-, d)
             @test_throws Exception popmin(d)
             @test_throws Exception popmax(d)
             D <: MutableSmallDict || continue
@@ -210,8 +212,12 @@ end
             v2 = maximum(last, w)
             k2 = invget(d, v2)
             kv2 = k2 => v2
-            @test_inferred getmin(d) kv1
-            @test_inferred getmax(d) kv2
+            @test_inferred findmin(d) last(kv1), first(kv1)
+            @test_inferred findmax(d) last(kv2), first(kv2)
+            if V <: Signed
+                @test_inferred findmin(-, d) -last(kv2), first(kv2)
+                @test_inferred findmax(-, d) -last(kv1), first(kv1)
+            end
             @test_inferred popmin(d) (first(pop(d, k1)), kv1)
             @test_inferred popmax(d) (first(pop(d, k2)), kv2)
             D <: MutableSmallDict || continue
