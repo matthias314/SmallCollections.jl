@@ -8,7 +8,7 @@ export AbstractSmallVector, SmallVector, fixedvector, bits, resize,
     insert, duplicate, deleteat, popat, append, prepend, unsafe_circshift
 
 import Base: ==, Tuple, empty, iterate,
-    length, size, getindex, setindex, rest, split_rest,
+    length, size, IndexStyle, getindex, setindex, rest, split_rest,
     zeros, ones, zero, map, reverse, in,
     +, -, *, sum, prod, maximum, minimum, extrema, replace,
     circshift
@@ -212,6 +212,8 @@ if VERSION >= v"1.9"
         @inbounds v[i:m], v[m+1:end]
     end
 end
+
+IndexStyle(::Type{<:AbstractSmallVector}) = IndexLinear()
 
 @inline function getindex(v::AbstractSmallVector, i::Int)
     @boundscheck checkbounds(v, i)
