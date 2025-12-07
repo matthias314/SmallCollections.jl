@@ -25,11 +25,11 @@ abstract type AbstractSmallDict{N,K,V} <: AbstractDict{K,V} end
 
     SmallDict{N,K,V}()
     SmallDict{N,K,V}(itr; unique = itr isa AbstractDict)
-    SmallDict{N,K,V}(key1 => val1, key2 => val2, ...; unique = false)
+    SmallDict{N,K,V}(key1 => val1, (key2, val2), ...; unique = false)
 
 An immutable dictionary with key type `K` and value type `V` that can store up to `N` entries.
 All entries come from the key-value iterator `itr` provided at construction time or from the
-explicitly given pairs.
+explicitly given pairs or tuples.
 
 If the key and value types are omitted, they will be inferred from the pairs or, if possible,
 from the iterator. If `unique` is set to `true`, then the elements of `itr` are assumed to have
@@ -62,11 +62,14 @@ SmallDict(d::AbstractSmallDict{N,K,V}) where {N,K,V} = SmallDict{N,K,V}(d)
 
 SmallDict{N,K,V}() where {N,K,V} = SmallDict(SmallVector{N,K}(), SmallVector{N,V}())
 
+to_pair(kv::Pair) = kv
+to_pair((k, v)::Tuple) = k => v
+
 @inline function keys_vals_unique(::Val{N}, ::Type{K}, ::Type{V}, itr) where {N,K,V}
     keys = MutableSmallVector{N,K}()
     vals = MutableSmallVector{N,V}()
     i = 0
-    for ikv::Tuple{Int,Pair} in enumerate(itr)
+    for ikv::Tuple{Int,Pair} in enumerate(to_pair(kv) for kv in itr)
         i, (key, val) = ikv
         i <= N || error("dictionary cannot have more than $N elements")
         unsafe_setindex!(keys, key, i)
@@ -80,14 +83,16 @@ function SmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,V}
     if unique && isbitstype(Tuple{K,V})
         SmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     elseif !isbitstype(Tuple{K,V})
-        foldl(push, itr; init = SmallDict{N,K,V}())::SmallDict{N,K,V}   # type annotation needed for inference
+        foldl(itr; init = SmallDict{N,K,V}()) do d, kv
+            push(d, to_pair(kv))
+        end::SmallDict{N,K,V}   # type annotation needed for inference
     else
         d = MutableSmallDict{N,K,V}()
         if itr isa Tuple
-            @inline push!(d, itr...)
+            @inline push!(d, map(to_pair, itr)...)
         else
             for p in itr
-                @inline push!(d, p)
+                @inline push!(d, to_pair(p))
             end
         end
         SmallDict(d)
@@ -144,7 +149,9 @@ function MutableSmallDict{N,K,V}(itr; unique = itr isa AbstractDict) where {N,K,
     if unique
         MutableSmallDict(keys_vals_unique(Val(N), K, V, itr)...)
     else
-        foldl(push!, itr; init = MutableSmallDict{N,K,V}())
+        foldl(itr; init = MutableSmallDict{N,K,V}()) do d, kv
+            push!(d, to_pair(kv))
+        end
     end
 end
 

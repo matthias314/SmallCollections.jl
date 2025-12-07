@@ -9,14 +9,24 @@ val_types = [Bool, Int64, Char, TestStruct2]
         d = @inferred D{N,K,V}()
         @test d isa D{N,K,V} && isempty(d)
 
+        itr = ((rand(K), rand(V)) for _ in 1:m)
+        d = @inferred D{N,K,V}(itr)
+        @test d == Dict(d)
+
+        kv = collect(Tuple{K,V}, itr)
+        d = @inferred D{N}(kv)
+        e = Dict(kv)
+        @test d == e
+
         itr = (rand(K) => rand(V) for _ in 1:m)
-        d = @inferred D{N,K,V}(rand(K) => rand(V) for _ in 1:m)
+        d = @inferred D{N,K,V}(itr)
         @test d == Dict(d)
 
         kv = collect(Pair{K,V}, itr)
         d = @inferred D{N}(kv)
-        e = Dict(d)
+        e = Dict(kv)
         @test d == e
+
         @test_inferred capacity(d) N
         @test_inferred length(d) length(e)
         @test_inferred isempty(d) isempty(e)
