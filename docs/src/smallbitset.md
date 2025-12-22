@@ -9,6 +9,7 @@ SmallBitSet
 bits(::SmallBitSet)
 convert(::Type{SmallBitSet}, ::Integer)
 capacity(::Type{<:SmallBitSet})
+smallbitsettype
 fasthash(::SmallBitSet, ::UInt)
 empty(::SmallBitSet)
 first_as_set

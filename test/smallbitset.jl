@@ -30,6 +30,10 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
         @test_inferred fasthash(s) fasthash(s3)
         @test_inferred Set(s) t
     end
+
+    @test_inferred smallbitsettype(Val(2)) SmallBitSet{UInt8}
+    @test_inferred smallbitsettype(Val(20)) SmallBitSet{UInt32}
+    @test_inferred smallbitsettype(Val(200)) SmallBitSet{UInt256}
 end
 
 @testset "SmallBitSet first/min etc" begin

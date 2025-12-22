@@ -2,7 +2,7 @@
 # small sets
 #
 
-export SmallBitSet, bits, delete, pop, push, exchange, first_as_set
+export SmallBitSet, bits, delete, pop, push, exchange, first_as_set, smallbitsettype
 
 using Base: hasfastin
 
@@ -97,6 +97,22 @@ capacity(::SmallBitSet)
 
 capacity(::Type{SmallBitSet{U}}) where U = bitsize(U)
 capacity(::Type{SmallBitSet}) = capacity(SmallBitSet{UInt})
+
+"""
+    smallbitsettype(::Val{N}) where N -> Type{<:SmallBitSet}
+
+Returns a type `SmallBitSet{U}` where `U <: Unsigned` has at least `N` bits.
+
+# Examples
+```jldoctest
+julia> smallbitsettype(Val(30))
+SmallBitSet{UInt32}
+
+julia> smallbitsettype(Val(200))
+SmallBitSet{BitIntegers.UInt256}
+```
+"""
+smallbitsettype(::Val{N}) where N = SmallBitSet{uinttype(Val(N))}
 
 """
     fasthash(s::SmallBitSet [, h0::UInt]) -> UInt
