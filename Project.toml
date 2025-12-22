@@ -19,7 +19,7 @@ StaticArraysExt = "StaticArrays"
 
 [compat]
 BangBang = "0.4"
-BitIntegers = "0.3"
+BitIntegers = "0.3.6"
 CpuId = "0.3"
 LinearAlgebra = "1"
 StaticArrays = "1.5"

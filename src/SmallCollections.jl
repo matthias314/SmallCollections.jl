@@ -46,14 +46,13 @@ const AbstractBitInteger = Union{BitInteger,AbstractBitSigned,AbstractBitUnsigne
 
 const HWType = Union{Base.HWReal, Bool, Char, Enum}
 
-@generated function inttype(::Type{T}) where T
-    @assert ishwtype(T)
-    Symbol(:Int, 8*sizeof(T))
-end
+inttype(TM) = signed(uinttype(TM))
 
-@generated function uinttype(::Type{T}) where T
+@generated uinttype(::Val{M}) where M = Symbol(:UInt, max(8, nextpow(2, M)))
+
+function uinttype(::Type{T}) where T
     @assert ishwtype(T)
-    Symbol(:UInt, 8*sizeof(T))
+    uinttype(Val(8*sizeof(T)))
 end
 
 @inline function smallint(N::Int)
