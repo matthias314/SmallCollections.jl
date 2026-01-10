@@ -109,7 +109,7 @@ function show(io::IO, s::S) where {N, T, S <: AbstractSmallSet{N,T}}
         print(io, ", ", T, "}()")
     else
         print(io, "}(")
-        isconcretetype(T) || get(io, :typeinfo, Any) == S || print(io, T)
+        (isconcretetype(T) && (T == Int || !(T <: Signed))) || get(io, :typeinfo, Any) == S || print(io, T)
         print(io, '[')
         for (i, x) in enumerate(s)
             i == 1 || print(io, ", ")
