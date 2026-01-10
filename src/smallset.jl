@@ -3,9 +3,9 @@
 #
 
 export AbstractSmallSet, SmallSet, MutableSmallSet, capacity,
-    empty, push, pop, delete, sum_fast, extrema_fast
+    push, pop, delete, sum_fast, extrema_fast
 
-import Base: show, copy, length, iterate, values, in, empty!,
+import Base: show, copy, length, iterate, values, in, empty, empty!,
     push!, pop!, delete!, filter!, filter,
     union!, intersect!, setdiff!, symdiff!,
     union, intersect, setdiff, symdiff

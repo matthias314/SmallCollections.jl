@@ -3,13 +3,13 @@
 #
 
 export AbstractSmallDict, SmallDict, MutableSmallDict, capacity,
-    setindex, push, delete, pop, invget, findmin, findmax,
-    popmin, popmax, popmin!, popmax!, findall
+    setindex, push, delete, pop, invget,
+    popmin, popmax, popmin!, popmax!
 
 import Base: keys, values, copy, length, iterate, haskey,
     empty, getindex, get, getkey, setindex, filter, mergewith,
     setindex!, get!, empty!, delete!, pop!, filter!, mergewith!,
-    replace!, push!
+    replace!, push!, findmin, findmax, findall
 
 """
     AbstractSmallDict{N,K,V} <: AbstractDict{K,V}
