@@ -283,8 +283,8 @@ See also [`ones`](@ref ones(::Type{<:AbstractSmallVector}, ::Integer)).
 """
 zeros(::Type{<:AbstractSmallVector}, ::Integer)
 
-function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
-    n <= N || error("vector cannot have more than $N elements")
+@inline function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
+    @boundscheck n <= N || error("vector cannot have more than $N elements")
     V(zero(FixedVector{N,T}), n)
 end
 
@@ -332,7 +332,7 @@ end
     @inbounds v[s]
 end
 
-function SmallVector{N,T}(iter) where {N,T}
+@propagate_inbounds function SmallVector{N,T}(iter) where {N,T}
     isbitstype(T) && return @inline SmallVector(MutableSmallVector{N,T}(iter))
     b = default(FixedVector{N,T})
     n = 0
