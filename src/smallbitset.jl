@@ -31,7 +31,7 @@ All non-mutating functions for sets are supported. The non-mutating analogs
 # Examples
 ```jldoctest
 julia> SmallBitSet((1, 3, 5))
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{$UInt} with 3 elements:
   1
   3
   5
@@ -156,7 +156,7 @@ julia> u = bits(s)
 0x0031
 
 julia> convert(SmallBitSet, u)
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{$UInt} with 3 elements:
   1
   5
   6
@@ -313,13 +313,13 @@ Examples
 julia> using $(@__MODULE__): unsafe_push
 
 julia> unsafe_push(SmallBitSet(1:2), 5)
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{$UInt} with 3 elements:
   1
   2
   5
 
 julia> unsafe_push(SmallBitSet(1:2), 0)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{$UInt} with 2 elements:
   1
   2
 ```
@@ -429,22 +429,22 @@ See also `Base.replace`.
 # Examples
 ```jldoctest
 julia> s = SmallBitSet((1, 2)); exchange(s, 1, 2)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{$UInt} with 2 elements:
   1
   2
 
 julia> s = SmallBitSet((1, 2)); exchange(s, 2, 3)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{$UInt} with 2 elements:
   1
   3
 
 julia> s = SmallBitSet((1, 2)); exchange(s, 3, 4)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{$UInt} with 2 elements:
   1
   2
 
 julia> s = SmallBitSet((1, 2)); exchange(s, 1, 1)
-SmallBitSet{UInt64} with 2 elements:
+SmallBitSet{$UInt} with 2 elements:
   1
   2
 ```

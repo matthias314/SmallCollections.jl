@@ -45,7 +45,7 @@ SmallDict{8, Int32, Float64} with 2 entries:
   3 => 4.0
 
 julia> SmallDict{8,Char,Int}('a'+k => k^2 for k in 0:2; unique = true)
-SmallDict{8, Char, Int64} with 3 entries:
+SmallDict{8, Char, $Int} with 3 entries:
   'a' => 0
   'b' => 1
   'c' => 4
@@ -122,14 +122,14 @@ See also [`AbstractSmallDict`](@ref), [`SmallDict`](@ref).
 # Examples
 ```jldoctest
 julia> d = MutableSmallDict{8}('a' => 0, 'b' => 1, 'c' => 4)
-MutableSmallDict{8, Char, Int64} with 3 entries:
+MutableSmallDict{8, Char, $Int} with 3 entries:
   'a' => 0
   'b' => 1
   'c' => 4
 
 
 julia> delete!(d, 'b')
-MutableSmallDict{8, Char, Int64} with 2 entries:
+MutableSmallDict{8, Char, $Int} with 2 entries:
   'a' => 0
   'c' => 4
 ```

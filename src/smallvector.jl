@@ -108,12 +108,12 @@ See also [`$(@__MODULE__).default`](@ref), [`fixedvector(::AbstractFixedVector)`
 # Example
 ```jldoctest
 julia> v = SmallVector{4}(1:2)
-2-element SmallVector{4, Int64}:
+2-element SmallVector{4, $Int}:
  1
  2
 
 julia> fixedvector(v)
-4-element FixedVector{4, Int64}:
+4-element FixedVector{4, $Int}:
  1
  2
  0

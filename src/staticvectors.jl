@@ -71,14 +71,14 @@ Providing an out-of-bounds index `i` does not produce an error.
 julia> v = FixedVector{4,Int}(1:4);
 
 julia> $(@__MODULE__).padtail(v, 2)
-4-element FixedVector{4, Int64}:
+4-element FixedVector{4, $Int}:
  1
  2
  0
  0
 
 julia> $(@__MODULE__).padtail(v, 2, -1)
-4-element FixedVector{4, Int64}:
+4-element FixedVector{4, $Int}:
   1
   2
  -1
@@ -295,14 +295,14 @@ See also [`circshift!`](@ref circshift!(::MutableFixedVector, ::Union{Integer,Va
 julia> v = FixedVector{4}(1:4);
 
 julia> circshift(v, 1)
-4-element FixedVector{4, Int64}:
+4-element FixedVector{4, $Int}:
  4
  1
  2
  3
 
 julia> circshift(v, Val(-1))
-4-element FixedVector{4, Int64}:
+4-element FixedVector{4, $Int}:
  2
  3
  4
@@ -403,14 +403,14 @@ See also [`circshift`](@ref circshift(::AbstractFixedVector, ::Union{Integer,Val
 julia> v = MutableFixedVector{4}(1:4);
 
 julia> circshift!(v, 1)
-4-element MutableFixedVector{4, Int64}:
+4-element MutableFixedVector{4, $Int}:
  4
  1
  2
  3
 
 julia> circshift!(v, Val(-1))  # undo previous step
-4-element MutableFixedVector{4, Int64}:
+4-element MutableFixedVector{4, $Int}:
  1
  2
  3

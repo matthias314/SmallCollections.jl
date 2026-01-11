@@ -43,8 +43,8 @@ See also [`capacity`](@ref capacity(::Type{<:PackedVector})), [`$(@__MODULE__).b
 
 # Examples
 ```jldoctest
-julia> v = PackedVector{UInt64,5,Int8}(-5:5:10)
-4-element PackedVector{UInt64, 5, Int8}:
+julia> v = PackedVector{UInt,5,Int8}(-5:5:10)
+4-element PackedVector{$UInt, 5, Int8}:
  -5
   0
   5
@@ -53,22 +53,22 @@ julia> v = PackedVector{UInt64,5,Int8}(-5:5:10)
 julia> capacity(v)
 12
 
-julia> w = PackedVector{UInt64,5,Int8}([1, 2, 3, 4])
-4-element PackedVector{UInt64, 5, Int8}:
+julia> w = PackedVector{UInt,5,Int8}([1, 2, 3, 4])
+4-element PackedVector{$UInt, 5, Int8}:
  1
  2
  3
  4
 
 julia> v+w
-4-element PackedVector{UInt64, 5, Int8}:
+4-element PackedVector{$UInt, 5, Int8}:
  -4
   2
   8
  14
 
 julia> Int8(2)*v
-4-element PackedVector{UInt64, 5, Int8}:
+4-element PackedVector{$UInt, 5, Int8}:
  -10
    0
   10
@@ -337,8 +337,8 @@ See also [`checkbounds`](@ref).
 
 # Example
 ```jldoctest
-julia> v = PackedVector{UInt64,6,Int8}(-2:2)
-5-element PackedVector{UInt64, 6, Int8}:
+julia> v = PackedVector{UInt,6,Int8}(-2:2)
+5-element PackedVector{$UInt, 6, Int8}:
  -2
  -1
   0
@@ -346,13 +346,13 @@ julia> v = PackedVector{UInt64,6,Int8}(-2:2)
   2
 
 julia> s = SmallBitSet((1, 3, 4))
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{$UInt} with 3 elements:
   1
   3
   4
 
 julia> v[s]
-3-element PackedVector{UInt64, 6, Int8}:
+3-element PackedVector{$UInt, 6, Int8}:
  -2
   0
   1
@@ -571,13 +571,13 @@ See also [`insert`](@ref).
 # Example
 ```jldoctest
 julia> v = PackedVector{UInt,5,Int8}(1:3)
-3-element PackedVector{UInt64, 5, Int8}:
+3-element PackedVector{$UInt, 5, Int8}:
  1
  2
  3
 
 julia> duplicate(v, 2)
-4-element PackedVector{UInt64, 5, Int8}:
+4-element PackedVector{$UInt, 5, Int8}:
  1
  2
  2
@@ -882,7 +882,7 @@ See also [`SmallBitSet`](@ref).
 julia> v = PackedVector{UInt,5,Int8}([1, 0, 2, 0, 0, 3]);
 
 julia> support(v)
-SmallBitSet{UInt64} with 3 elements:
+SmallBitSet{$UInt} with 3 elements:
   1
   3
   6
