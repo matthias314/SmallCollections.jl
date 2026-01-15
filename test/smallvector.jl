@@ -1,7 +1,7 @@
 using SmallCollections: default, bitsize
 
 using Base.FastMath: eq_fast
-using LinearAlgebra: dot
+using LinearAlgebra: LinearAlgebra, dot
 
 const VS = (SmallVector, MutableSmallVector)
 
@@ -487,7 +487,8 @@ end
         u2 = rand(r, m) * im
         v2 = V{N}(u2)
         du = dot(u2, u)
-        if m == 0 && (numerictype(T) <: Union{AbstractFloat, Complex{<:AbstractFloat}})
+        if (VERSION < v"1.11" || pkgversion(LinearAlgebra) < v"1.12") &&
+                m == 0 && (numerictype(T) <: Union{AbstractFloat, Complex{<:AbstractFloat}})
             # dot for empty vectors is not always the zero element (w.r.t. isequal)
             # see LinearAlgebra.jl#1483
             d = @inferred dot(v2, v)
