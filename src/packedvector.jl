@@ -79,7 +79,7 @@ struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractVector{T
     m::U
     n::Int
     function PackedVector{U,M,T}(m::U, n::Int) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
-        bitsize(T) < M && error("type $T has fewer than $M bits")
+        bitsize(T) < M && error(LazyString("type ", T, " has fewer than ", M, " bits"))
         new{U,M,T}(m, n)
     end
 end
@@ -119,7 +119,7 @@ end
     if bitsize(T) == M && (T <: Signed) == (S <: Signed)
         @boundscheck begin
             c = capacity(PackedVector{U,M,S})
-            c >= N || length(v) <= c || error("vector cannot have more than $c elements")
+            c >= N || length(v) <= c || error(LazyString("vector cannot have more than ", c, " elements"))
         end
         PackedVector{U,M,S}(bits(v.b) % U, length(v))
     else
@@ -224,7 +224,7 @@ See also [`ones`](@ref ones(::Type{<:PackedVector}, ::Integer)).
 zeros(::Type{<:PackedVector}, ::Integer)
 
 function zeros(::Type{V}, n::Integer) where {U, V <: PackedVector{U}}
-    n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
+    n <= capacity(V) || error(LazyString("vector cannot have more than ", capacity(V), " elements"))
     V(zero(U), n)
 end
 
@@ -241,7 +241,7 @@ See also [`zeros`](@ref zeros(::Type{<:PackedVector}, ::Integer)).
 ones(::Type{<:PackedVector}, ::Integer)
 
 function ones(::Type{V}, n::Integer) where {U, M, V <: PackedVector{U,M}}
-    n <= capacity(V) || error("vector cannot have more than $(capacity(V)) elements")
+    n <= capacity(V) || error(LazyString("vector cannot have more than ", capacity(V), " elements"))
     mask = one(U) << unsigned(M*n) - one(U)
     m = all_ones(U, M) & mask
     V(m, n)
@@ -269,16 +269,16 @@ end
 @inline function checkvalue(M, x::T) where T
     bitsize(T) == M && return
     if T <: Signed
-        -one(T) << (M-1) <= x < one(T) << (M-1) || error("value $x out of range for $M bits signed integer")
+        -one(T) << (M-1) <= x < one(T) << (M-1) || error(LazyString("value ", x, " out of range for ", M, " bits signed integer"))
     else
-        x < one(T) << M || error("value $x out of range for $M bits unsigned integer")
+        x < one(T) << M || error(LazyString("value ", x, " out of range for ", M, " bits unsigned integer"))
     end
     nothing
 end
 
 function checklength(v::PackedVector, m = 1)
     c = capacity(v)
-    length(v) <= c-m || error("vector cannot have more than $c elements")
+    length(v) <= c-m || error(LazyString("vector cannot have more than ", c, " elements"))
     nothing
 end
 
@@ -891,7 +891,7 @@ SmallBitSet{$UInt} with 3 elements:
 function support(v::PackedVector{U,M}) where {U,M}
     S = SmallBitSet{UInt}
     capacity(v) <= capacity(S) || length(v) <= capacity(S) ||
-        error("$S can only contain integers between 1 and $(capacity(S))")
+        error(LazyString(S, " can only contain integers between 1 and ", capacity(S)))
     mask = one(U) << M - one(U)
     m = zero(UInt)
     b = one(m)
@@ -920,7 +920,7 @@ end
 @propagate_inbounds function SmallVector{N,T}(v::PackedVector{U,M,S}) where {N,T,U,M,S}
     if bitsize(T) == M && (T <: Signed) == (S <: Signed)
         @boundscheck if N < capacity(PackedVector{U,M,S})
-            length(v) <= N || error("vector cannot have more than $N elements")
+            length(v) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
         end
         b = convert(FixedVector{N,T}, v.m)
         SmallVector{N,T}(b, length(v))

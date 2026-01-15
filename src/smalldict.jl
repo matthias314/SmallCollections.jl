@@ -71,7 +71,7 @@ to_pair((k, v)::Tuple) = k => v
     i = 0
     for ikv::Tuple{Int,Pair} in enumerate(to_pair(kv) for kv in itr)
         i, (key, val) = ikv
-        i <= N || error("dictionary cannot have more than $N elements")
+        i <= N || error(LazyString("dictionary cannot have more than ", N, " elements"))
         unsafe_setindex!(keys, key, i)
         unsafe_setindex!(vals, val, i)
     end

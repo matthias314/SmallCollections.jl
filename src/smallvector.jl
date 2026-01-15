@@ -266,7 +266,7 @@ is longer, then the new elements are initialized with `default(T)`.
 See also `Base.resize!`, [`$(@__MODULE__).default`](@ref).
 """
 @inline function resize(v::AbstractSmallVector{N}, n::Integer) where N
-    @boundscheck 0 <= n <= N || error("length must be between 0 and $N")
+    @boundscheck 0 <= n <= N || error(LazyString("length must be between 0 and ", N))
     SmallVector(padtail(v.b, n), n)
 end
 
@@ -284,7 +284,7 @@ See also [`ones`](@ref ones(::Type{<:AbstractSmallVector}, ::Integer)).
 zeros(::Type{<:AbstractSmallVector}, ::Integer)
 
 @inline function zeros(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
-    @boundscheck n <= N || error("vector cannot have more than $N elements")
+    @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     V(zero(FixedVector{N,T}), n)
 end
 
@@ -298,7 +298,7 @@ See also [`zeros`](@ref zeros(::Type{<:AbstractSmallVector}, ::Integer)).
 ones(::Type{<:AbstractSmallVector}, ::Integer)
 
 function ones(::Type{V}, n::Integer) where {N, T, V <: AbstractSmallVector{N,T}}
-    n <= N || error("vector cannot have more than $N elements")
+    n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     t = ntuple(Val(N)) do i
         i <= n ? oneunit(T) : zero(T)
     end
@@ -308,7 +308,7 @@ end
 (::Type{V})() where {N,T,V<:AbstractSmallVector{N,T}} = V(default(FixedVector{N,T}), 0)
 
 @inline function SmallVector{N,T}(v::AbstractFixedOrSmallVector{M}) where {N,T,M}
-    @boundscheck M <= N || length(v) <= N || error("vector cannot have more than $N elements")
+    @boundscheck M <= N || length(v) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     w = fixedvector(v)
     t = ntuple(Val(N)) do i
         i <= M ? convert(T, w[i]) : default(T)
@@ -321,7 +321,7 @@ end
     i0, i1 = first(v), last(v)
     @boundscheck isempty(v) || begin
         T(i0), T(i1)  # check if we can convert
-        length(v) <= N || error("vector cannot have more than $N elements")
+        length(v) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
     SmallVector(fixedvector_range(Val(N), length(v), i0 % T), length(v))
 end
@@ -337,7 +337,7 @@ end
     b = default(FixedVector{N,T})
     n = 0
     for (i, x) in enumerate(iter)
-        (n = i) <= N || error("vector cannot have more than $N elements")
+        (n = i) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
         b = @inbounds setindex(b, x, i)
     end
     SmallVector{N,T}(b, n)
@@ -620,7 +620,7 @@ See also `Base.push!`, `BangBang.push!!`.
 @propagate_inbounds function push(v::AbstractSmallVector{N,T}, x) where {N,T}
     isbitstype(T) && bitsize(T) < bitsize(Int) && return append(v, (x,))
     n = length(v)
-    @boundscheck n < N || error("vector cannot have more than $N elements")
+    @boundscheck n < N || error(LazyString("vector cannot have more than ", N, " elements"))
     @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
 end
 
@@ -650,7 +650,7 @@ See also `Base.pushfirst!`, `BangBang.pushfirst!!`.
 """
 @inline function pushfirst(v::AbstractSmallVector{N}, xs...) where N
     n = length(xs)+length(v)
-    @boundscheck n <= N || error("vector cannot have more than $N elements")
+    @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     SmallVector(pushfirst(v.b, xs...), n)
 end
 
@@ -684,7 +684,7 @@ See also [`duplicate`](@ref duplicate(::AbstractSmallVector, ::Integer)).
     n = length(v)
     @boundscheck begin
         1 <= i <= n+1 || throw(BoundsError(v, i))
-        n < N || error("vector cannot have more than $N elements")
+        n < N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
     @inbounds SmallVector(insert(v.b, i, x), n+1)
 end
@@ -715,7 +715,7 @@ julia> duplicate(v, 2)
 @inline function duplicate(v::AbstractSmallVector{N,T}, i::Integer) where {N,T}
     @boundscheck begin
         checkbounds(v, i)
-        length(v) < N || error("vector cannot have more than $N elements")
+        length(v) < N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
     @inbounds SmallVector(duplicate(v.b, i), length(v)+1)
 end
@@ -765,7 +765,7 @@ See also `Base.append!`, `BangBang.append!!`.
     end
     n = length(v)
     m = n+length(w)
-    @boundscheck m <= N || error("vector cannot have more than $N elements")
+    @boundscheck m <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     t = ntuple(Val(N)) do i
         @inbounds n < i <= m ? convert(T, w[i-n]) : v.b[i]
     end
@@ -787,7 +787,7 @@ end
 @inline function prepend(v::AbstractSmallVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T}
     n = length(v)
     m = n+length(w)
-    @boundscheck m <= N || error("vector cannot have more than $N elements")
+    @boundscheck m <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     SmallVector{N,T}(prepend(v.b, w), m)
 end
 

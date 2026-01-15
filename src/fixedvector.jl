@@ -244,7 +244,7 @@ end
 
 @propagate_inbounds function setindex!(v::MutableFixedVector{N,T}, x, i::Int) where {N,T}
     @boundscheck checkbounds(v, i)
-    isbitstype(T) || error("setindex! is only supported for isbits element types, not for $T")
+    isbitstype(T) || error(LazyString("setindex! is only supported for isbits element types, not for ", T))
     GC.@preserve v unsafe_store!(Ptr{T}(pointer_from_objref(v)), x, i)
     return v
 end

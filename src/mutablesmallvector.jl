@@ -70,7 +70,7 @@ mutable struct MutableSmallVector{N,T} <: AbstractSmallVector{N,T}
 end
 
 function MutableSmallVector{N,T}(::UndefInitializer, n::Integer) where {N,T}
-    0 <= n <= N || error("length must be between 0 and $N")
+    0 <= n <= N || error(LazyString("length must be between 0 and ", N))
     v = _MutableSmallVector(Val(N), T)
     for i in n+1:N
         unsafe_setindex!(v, default(T), i)
@@ -87,12 +87,12 @@ end
 
 @inline function MutableSmallVector{N,T}(itr) where {N,T}
     isbitstype(T) || return MutableSmallVector(SmallVector{N,T}(itr))
-    @boundscheck !haslength(itr) || length(itr) <= N || error("vector cannot have more than $N elements")
+    @boundscheck !haslength(itr) || length(itr) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     v = MutableSmallVector{N,T}()
     i = 0
     for ix in enumerate(itr)
         i, x = ix
-        @boundscheck haslength(itr) || i <= N || error("vector cannot have more than $N elements")
+        @boundscheck haslength(itr) || i <= N || error(LazyString("vector cannot have more than ", N, " elements"))
         unsafe_setindex!(v, x, i)
     end
     v.n = i % SmallLength
@@ -109,7 +109,7 @@ end
 end
 
 @inline function unsafe_setindex!(v::MutableSmallVector{N,T}, x, i) where {N,T}
-    isbitstype(T) || error("setindex! is only supported for isbits element types, not for $T")
+    isbitstype(T) || error(LazyString("setindex! is only supported for isbits element types, not for ", T))
     GC.@preserve v unsafe_store!(pointer(v, i), x)
     v
 end
@@ -207,7 +207,7 @@ empty(v::MutableSmallVector{N,T}, ::Type{U} = T) where {N,T,U} = MutableSmallVec
 empty!(v::MutableSmallVector) = resize!(v, 0)
 
 @inline function resize!(v::MutableSmallVector{N,T}, n::Integer) where {N,T}
-    @boundscheck 0 <= n <= N || error("length must be between 0 and $N")
+    @boundscheck 0 <= n <= N || error(LazyString("length must be between 0 and ", N))
     v.n = n % SmallLength
     for i in n+1:length(v)
         @inbounds v[i] = default(T)
@@ -275,14 +275,14 @@ end
 
 @inline function append!(v::MutableSmallVector{N,T}, w::MemoryVector{T}) where {N,T}
     n = length(v)+length(w)
-    @boundscheck n <= N || error("vector cannot have more than $N elements")
+    @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     GC.@preserve v unsafe_copyto!(pointer(v, length(v)+1), pointer(w), length(w))
     v.n = n % SmallLength
     v
 end
 
 @inline function push!(v::MutableSmallVector{N}, x) where N
-    @boundscheck v.n < N || error("vector cannot have more than $N elements")
+    @boundscheck v.n < N || error(LazyString("vector cannot have more than ", N, " elements"))
     v.n += 1 % SmallLength
     @inbounds v[v.n] = x
     v
@@ -292,7 +292,7 @@ end
 
 @inline function prepend!(v::MutableSmallVector{N,T}, w::MemoryVector{T}) where {N,T}
     n = length(v)+length(w)
-    @boundscheck n <= N || error("vector cannot have more than $N elements")
+    @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     GC.@preserve v begin
         unsafe_copyto!(pointer(v, length(w)+1), pointer(v), length(v))
         unsafe_copyto!(pointer(v), pointer(w), length(w))
@@ -305,14 +305,14 @@ end
     if w isa Tuple && ishwtype(T)
         M = length(w)
         n = length(v) + M
-        @boundscheck n <= N || error("vector cannot have more than $N elements")
+        @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
         v.n = n % SmallLength
         vec_circshift!(pointer(v), Val(N), Val(M))
         unsafe_copyto!(v, NTuple{M,T}(w))
         v
     elseif haslength(w)
         n = length(v)+length(w)
-        @boundscheck n <= N || error("vector cannot have more than $N elements")
+        @boundscheck n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
         GC.@preserve v unsafe_copyto!(pointer(v, length(w)+1), pointer(v), length(v))
         v.n = n % SmallLength
         for (i, x) in enumerate(w)
@@ -329,7 +329,7 @@ end
 @inline function duplicate!(v::MutableSmallVector{N}, i::Integer) where N
     @boundscheck begin
         checkbounds(v, i)
-        @boundscheck length(v) < N || error("vector cannot have more than $N elements")
+        @boundscheck length(v) < N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
     if shufflewidth(v) != 0
         @inbounds assignto!(v, duplicate(v, i))

@@ -530,7 +530,7 @@ function default(::Type{T}) where T
     elseif Int <: T
         0
     else
-        error("no default value defined for type $T")
+        error(LazyString("no default value defined for type ", T))
     end
 end
 
@@ -625,7 +625,7 @@ function bits(v::AbstractFixedVector{N,T}) where {N,T}
     if ishwtype(T)
         bits(map(hwvalue, v))
     else
-        error("element type $T not supported")
+        error(LazyString("element type ", T, " not supported"))
     end
 end
 
@@ -740,7 +740,7 @@ convert(::Type{<:AbstractFixedVector}, ::Unsigned)
 
 function convert(::Type{V}, x::Unsigned) where {N, T, V <: AbstractFixedVector{N,T}}
     H = hwtype(T)
-    H <: HWType || error("element type $T not supported")
+    H <: HWType || error(LazyString("element type ", T, " not supported"))
     V(map(Fix1(from_hwvalue, T), convert(FixedVector{N,H}, x)))
 end
 

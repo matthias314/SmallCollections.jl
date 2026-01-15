@@ -172,7 +172,7 @@ convert(::Type{SmallBitSet}, mask::Integer) = convert(SmallBitSet{UInt}, mask)
 @inline function _push(mask::U, iter) where U
     for n in iter
         @boundscheck if !isinteger(n) || n <= 0 || n > bitsize(U)
-                error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+                error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
             end
         k = Integer(n)
         mask |= unsafe_shl(one(U), k-one(k))
@@ -185,7 +185,7 @@ end
 @inline function SmallBitSet{U}(s::SmallBitSet) where U
     mask = s.mask % U
     @boundscheck if mask != s.mask
-        error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+        error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
     end
     _SmallBitSet(mask)
 end
@@ -197,7 +197,7 @@ SmallBitSet{U}() where U = _SmallBitSet(zero(U))
 @inline function SmallBitSet{U}(r::AbstractUnitRange{<:Integer}) where U
     r0, r1 = first(r), last(r)
     @boundscheck if r0 <= r1 && (r0 < 1 || r1 > bitsize(U))
-        error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+        error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
     end
     m = one(U) << unsigned(r1-(r0-1)) - one(U)
     _SmallBitSet(unsafe_shl(m, r0-1))
@@ -407,7 +407,7 @@ MapStyle(::typeof(unsafe_delete), ::Type{SmallBitSet{U}}, ::Type{T}) where {U <:
 @inline function replace(s::SmallBitSet{U}, ps::Vararg{Pair,N}) where {U,N}
     @boundscheck all(ps) do p
         p[1] isa Integer && p[2] isa Integer && 1 <= minimum(p) && maximum(p) <= bitsize(U)
-    end || error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+    end || error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
 
     v, u = foldl(ps; init = (bits(s), zero(U))) do (v, u), p
         m = v & unsafe_shl(U(1), p[1]-1)
@@ -451,7 +451,7 @@ SmallBitSet{$UInt} with 2 elements:
 """
 @inline function exchange(s::SmallBitSet{U}, i::Integer, j::Integer) where U
     @boundscheck (1 <= i <= bitsize(U) && 1 <= j <= bitsize(U)) ||
-        error("SmallBitSet{$U} can only contain integers between 1 and $(bitsize(U))")
+        error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
     t = unsafe_shl(one(U), i-1) ⊻ unsafe_shl(one(U), j-1) # xor needed for the case i == j
     m = bits(s)
     convert(SmallBitSet{U}, ifelse(iszero(m & t) || m & t == t, m, m ⊻ t))
