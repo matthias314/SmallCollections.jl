@@ -113,6 +113,7 @@ ntuple(f, n) = Base.ntuple(f, n)
 @inline @generated ntuple(f, ::Val{N}) where N = :(Base.Cartesian.@ntuple $(Int(N)) i -> f($(typeof(N))(i)))
 
 @noinline keyerror(key) = throw(KeyError(key))
+@noinline overflowerror(msg) = throw(OverflowError(msg))
 
 include("bits.jl")
 include("mapstyle.jl")
