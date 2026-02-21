@@ -266,6 +266,68 @@ end
     end
 end
 
+@testset "FixedVector overflow" begin
+    for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32)
+        U = SmallCollections.uinttype(Val(N))
+        vv = rand(T, N)
+        vv[1] = rand((typemin(T), zero(T)))
+        v = FixedVector{N}(vv)
+        w = FixedVector{N}(rand(T, N))
+
+        u = -v
+        uu = -collect(Int, v)
+        s = SmallBitSet{U}(i for i in 1:N if u[i] != uu[i])
+        if isempty(s)
+            @test_inferred Base.Checked.checked_neg(v) u
+        else
+            @test_throws OverflowError Base.Checked.checked_neg(v)
+        end
+
+        u = v+w
+        uu = collect(Int, v) + collect(Int, w)
+        s = SmallBitSet{U}(i for i in 1:N if u[i] != uu[i])
+        @test_inferred Base.Checked.add_with_overflow(v, w) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_add(v, w) u
+        else
+            @test_throws OverflowError Base.Checked.checked_add(v, w)
+        end
+
+        u = v+w+v
+        uu = collect(Int, v) + collect(Int, w) + collect(Int, v)
+        s = SmallBitSet{U}(i for i in 1:N if u[i] != uu[i])
+        if isempty(s)
+            @test_inferred Base.Checked.checked_add(v, w, v) u
+        else
+            @test_throws OverflowError Base.Checked.checked_add(v, w, v)
+        end
+
+        u = v-w
+        uu = collect(Int, v) - collect(Int, w)
+        s = SmallBitSet{U}(i for i in 1:N if u[i] != uu[i])
+        @test_inferred Base.Checked.sub_with_overflow(v, w) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_sub(v, w) u
+        else
+            @test_throws OverflowError Base.Checked.checked_sub(v, w)
+        end
+
+        c = T(2)
+        u = c*v
+        uu = Int(c) * v
+        s = SmallBitSet{U}(i for i in 1:N if u[i] != uu[i])
+        @test_inferred Base.Checked.mul_with_overflow(c, v) (u, s)
+        @test_inferred Base.Checked.mul_with_overflow(v, c) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_mul(c, v) u
+            @test_inferred Base.Checked.checked_mul(v, c) u
+        else
+            @test_throws OverflowError Base.Checked.checked_mul(c, v)
+            @test_throws OverflowError Base.Checked.checked_mul(v, c)
+        end
+    end
+end
+
 @testset "FixedVector map" begin
     f(x) = Int32(2)*x
     f(x, y) = 2*x + y

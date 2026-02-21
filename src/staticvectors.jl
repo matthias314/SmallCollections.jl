@@ -477,6 +477,221 @@ end
     end
 end
 
+# checked arithmetic
+
+"""
+    Base.Checked.checked_neg(v::FixedVector{N}) where N -> FixedVector{N}
+
+Returns `-v`, but throws an `OverflowError` if an overflow occurs.
+The elements of `v` must be integers.
+
+See also [`Base.Checked.checked_sub`](@ref Base.Checked.checked_sub(::FixedVector, ::FixedVector)).
+"""
+Base.Checked.checked_neg(::FixedVector)
+
+function Base.Checked.checked_neg(v::FixedVector{N,T}) where {N, T <: Integer}
+    T <: Union{Bool, BigInt} && return -v
+    u, s = Base.Checked.sub_with_overflow(zero(v), v)
+    isempty(s) || overflowerror("overflow during negation")
+    u
+end
+
+for op_with_name in ((:+, "add"), (:-, "sub"))
+    global op, op_name = op_with_name
+    global op_with_overflow = Symbol(op_name, "_with_overflow")
+    global checked_op = Symbol("checked_", op_name)
+
+    @eval begin
+        example_ans = if op == :+
+            (Int8[-128, 4, 4, -128], SmallBitSet{UInt8}([4]))
+        else
+            (Int8[-128, -2, 0, 126], SmallBitSet{UInt8}([1]))
+        end
+
+        """
+            Base.Checked.$op_with_overflow(v::FixedVector{N,T}, w::FixedVector{N,T}) where {N,T} -> Tuple{FixedVector{N,T}, SmallBitSet}
+
+        Returns `v$(op)w` as the first component of the resulting tuple.
+        The second component is a `SmallBitSet` whose elements are the indices where an overflow occurred.
+        The element type `T` must be a bit integer type.
+
+        See also [`Base.Checked.$checked_op`](@ref Base.Checked.$checked_op(::FixedVector, ::FixedVector)).
+
+        # Example
+        ```jldoctest
+        julia> v = FixedVector{4,Int8}((0, 1, 2, 127));
+
+        julia> w = FixedVector{4,Int8}((-128, 3, 2, 1));
+
+        julia> Base.Checked.$op_with_overflow(v, w)
+        $example_ans
+        ```
+        """
+        Base.Checked.$op_with_overflow(::FixedVector, ::FixedVector)
+
+        @inline @generated function Base.Checked.$op_with_overflow(v::FixedVector{N,T}, w::FixedVector{N,T}) where {N, T <: AbstractBitInteger}
+            L = llvm_type(T)
+            VL = llvm_type(N, T)
+            U = uinttype(Val(N))
+            LU = llvm_type(U)
+            bc = if bitsize(U) == N
+                """
+                    %d = bitcast <$N x i1> %c to $LU
+                """
+            else
+                """
+                    %d1 = bitcast <$N x i1> %c to i$N
+                    %d = zext i$N %d1 to $LU
+                """
+            end
+            s = T <: Signed ? 's' : 'u'
+            ir = """
+                declare {<$N x $L>, <$N x i1>} @llvm.$s$($op_name).with.overflow.$VL(<$N x $L>, <$N x $L>)
+                define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) #0 {
+                    %a = call {<$N x $L>, <$N x i1>} @llvm.$s$($op_name).with.overflow.$VL(<$N x $L> %0, <$N x $L> %1)
+                    %b = extractvalue {<$N x $L>, <$N x i1>} %a, 0
+                    %c = extractvalue {<$N x $L>, <$N x i1>} %a, 1
+                    $bc
+                    %e = insertvalue {<$N x $L>, $LU} poison, <$N x $L> %b, 0
+                    %f = insertvalue {<$N x $L>, $LU} %e, $LU %d, 1
+                    ret {<$N x $L>, $LU} %f
+                }
+                attributes #0 = { alwaysinline }
+            """
+            quote
+                u, o = Base.llvmcall(($ir, "f"), Tuple{NTuple{N,VecElement{T}}, $U},
+                    Tuple{NTuple{N,VecElement{T}}, NTuple{N,VecElement{T}}}, vec(v.t), vec(w.t))
+                FixedVector(unvec(u)), _SmallBitSet(o)
+            end
+        end
+
+    end
+end
+
+"""
+    Base.Checked.checked_add(v::FixedVector{N}, ws::FixedVector{N}...) where N -> FixedVector{N}
+
+Returns the sum of the argument vectors, but throws an `OverflowError` if an overflow occurs.
+All arguments must have integer elements.
+
+See also [`Base.Checked.add_with_overflow`](@ref Base.Checked.add_with_overflow(::FixedVector, ::FixedVector)).
+"""
+Base.Checked.checked_add(::FixedVector, ::FixedVector...)
+
+Base.Checked.checked_add(v::FixedVector{N, <:Integer}) where N = +v
+
+function Base.Checked.checked_add(v::FixedVector{N,T1}, ws::Vararg{FixedVector{N, <:Integer},M}) where {N,T1,M}
+    T = promote_type(T1, map(eltype, ws)...)
+    T <: Union{Bool, BigInt} && return +(v, ws...)
+    U = uinttype(Val(N))
+    u, s = foldl(ws; init = (FixedVector{N,T}(v), SmallBitSet{U}())) do (vv, s), ww
+        uu, t = Base.Checked.add_with_overflow(vv, FixedVector{N,T}(ww))
+        uu, union(s, t)
+    end
+    isempty(s) || overflowerror("overflow during addition")
+    u
+end
+
+"""
+    Base.Checked.checked_sub(v::FixedVector{N}, w::FixedVector{N}) where N -> FixedVector{N}
+
+Returns `v-w`, but throws an `OverflowError` if an overflow occurs.
+The elements of `v` and `w` must be integers.
+
+See also [`Base.Checked.sub_with_overflow`](@ref Base.Checked.sub_with_overflow(::FixedVector, ::FixedVector)).
+"""
+Base.Checked.checked_sub(::FixedVector, ::FixedVector)
+
+function Base.Checked.checked_sub(v::FixedVector{N,T1}, w::FixedVector{N,T2}) where {N, T1 <: Integer, T2 <: Integer}
+    T = promote_type(T1, T2)
+    T == Union{Bool, BigInt} && return v-w
+    u, s = Base.Checked.sub_with_overflow(FixedVector{N,T}(v), FixedVector{N,T}(w))
+    isempty(s) || overflowerror("overflow during subtraction")
+    u
+end
+
+"""
+    Base.Checked.mul_with_overflow(c::T, v::FixedVector{N,T}) where {N,T} -> Tuple{FixedVector{N,T}, SmallBitSet}
+    Base.Checked.mul_with_overflow(v::FixedVector{N,T}, c::T) where {N,T} -> Tuple{FixedVector{N,T}, SmallBitSet}
+
+Returns `c*v` as the first component of the resulting tuple.
+The second component is a `SmallBitSet` whose elements are the indices where an overflow occurred.
+The element type `T` must be a bit integer type.
+
+See also [`Base.Checked.checked_mul`](@ref Base.Checked.checked_mul(::Integer, ::FixedVector)).
+
+# Example
+```jldoctest
+julia> v = FixedVector{4,Int8}((0, 1, 2, 127));
+
+julia> Base.Checked.mul_with_overflow(Int8(2), v)
+(Int8[0, 2, 4, -2], SmallBitSet{UInt8}([4]))
+```
+"""
+Base.Checked.mul_with_overflow(::Integer, ::FixedVector),
+Base.Checked.mul_with_overflow(::FixedVector, ::Integer)
+
+@inline @generated function Base.Checked.mul_with_overflow(c::T, v::FixedVector{N,T}) where {N, T <: AbstractBitInteger}
+    L = llvm_type(T)
+    VL = llvm_type(N, T)
+    U = uinttype(Val(N))
+    LU = llvm_type(U)
+    bc = if bitsize(U) == N
+        """
+            %d = bitcast <$N x i1> %c to $LU
+        """
+    else
+        """
+            %d1 = bitcast <$N x i1> %c to i$N
+            %d = zext i$N %d1 to $LU
+        """
+    end
+    s = T <: Signed ? 's' : 'u'
+    ir = """
+        declare {<$N x $L>, <$N x i1>} @llvm.$(s)mul.with.overflow.$VL(<$N x $L>, <$N x $L>)
+        define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) #0 {
+            %a = call {<$N x $L>, <$N x i1>} @llvm.$(s)mul.with.overflow.$VL(<$N x $L> %0, <$N x $L> %1)
+            %b = extractvalue {<$N x $L>, <$N x i1>} %a, 0
+            %c = extractvalue {<$N x $L>, <$N x i1>} %a, 1
+            $bc
+            %e = insertvalue {<$N x $L>, $LU} poison, <$N x $L> %b, 0
+            %f = insertvalue {<$N x $L>, $LU} %e, $LU %d, 1
+            ret {<$N x $L>, $LU} %f
+        }
+        attributes #0 = { alwaysinline }
+    """
+    quote
+        w = FixedVector(ntuple(Returns(c), Val(N)))
+        u, o = Base.llvmcall(($ir, "f"), Tuple{NTuple{N,VecElement{T}}, $U},
+            Tuple{NTuple{N,VecElement{T}}, NTuple{N,VecElement{T}}}, vec(v.t), vec(w.t))
+        FixedVector(unvec(u)), _SmallBitSet(o)
+    end
+end
+
+Base.Checked.mul_with_overflow(v::FixedVector{N,T}, c::T) where {N, T <: AbstractBitInteger} = Base.Checked.mul_with_overflow(c, v)
+
+"""
+    Base.Checked.checked_mul(c, v::FixedVector{N}) where N -> FixedVector{N}
+    Base.Checked.checked_mul(v::FixedVector{N}, c) where N -> FixedVector{N}
+
+Returns `c*v`, but throws an `OverflowError` if an overflow occurs.
+The scalar `c` and the elements of `v` must be integers.
+
+See also [`Base.Checked.mul_with_overflow`](@ref Base.Checked.mul_with_overflow(::Integer, ::FixedVector)).
+"""
+Base.Checked.checked_mul(::Integer, ::FixedVector),
+Base.Checked.checked_mul(::FixedVector, ::Integer)
+
+function Base.Checked.checked_mul(c::T1, v::FixedVector{N,T2}) where {N, T1 <: Integer, T2 <: Integer}
+    T = promote_type(T1, T2)
+    T <: Union{Bool, BigInt} && return c*v
+    u, s = Base.Checked.mul_with_overflow(T(c), FixedVector{N,T}(v))
+    isempty(s) || overflowerror("overflow during multiplication")
+    u
+end
+
+Base.Checked.checked_mul(v::FixedVector{N,T1}, c::T2) where {N, T1 <: Integer, T2 <: Integer} = Base.Checked.checked_mul(c, v)
+
 """
     $(@__MODULE__).default(::Type{T}) where T -> T
     $(@__MODULE__).default(::T) where T -> T
