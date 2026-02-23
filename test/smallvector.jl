@@ -530,6 +530,83 @@ end
     end
 end
 
+@testset "SmallVector overflow" begin
+    for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32), m in [0, 1, N-1, N]
+        S = smallbitsettype(Val(N))
+        vv = rand(T, m)
+        if m > 0
+            vv[1] = rand((typemin(T), zero(T)))
+        end
+        v = MutableSmallVector{N}(vv)
+        w = SmallVector{N}(rand(T, m))
+        ww = SmallVector{N+2}(w)
+
+        u = -v
+        uu = -collect(Int, v)
+        s = S(i for i in 1:m if u[i] != uu[i])
+        if isempty(s)
+            @test_inferred Base.Checked.checked_neg(v) u
+        else
+            @test_throws OverflowError Base.Checked.checked_neg(v)
+        end
+
+        u = v+w
+        uu = collect(Int, v) + collect(Int, w)
+        s = S(i for i in 1:m if u[i] != uu[i])
+        @test_inferred Base.Checked.add_with_overflow(v, w) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_add(v, ww) u
+        else
+            @test_throws OverflowError Base.Checked.checked_add(v, ww)
+        end
+        if m < N
+            www = push(w, zero(T))
+            @test_throws DimensionMismatch Base.Checked.add_with_overflow(v, www)
+        end
+        www = push(ww, zero(T))
+        @test_throws DimensionMismatch Base.Checked.checked_add(v, www)
+
+        u = v+w+v
+        uu = collect(Int, v) + collect(Int, w) + collect(Int, v)
+        s = S(i for i in 1:m if u[i] != uu[i])
+        if isempty(s)
+            @test_inferred Base.Checked.checked_add(v, ww, v) u
+        else
+            @test_throws OverflowError Base.Checked.checked_add(v, ww, v)
+        end
+
+        u = v-w
+        uu = collect(Int, v) - collect(Int, w)
+        s = S(i for i in 1:m if u[i] != uu[i])
+        @test_inferred Base.Checked.sub_with_overflow(v, w) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_sub(v, ww) u
+        else
+            @test_throws OverflowError Base.Checked.checked_sub(v, ww)
+        end
+        if m < N
+            www = push(w, zero(T))
+            @test_throws DimensionMismatch Base.Checked.sub_with_overflow(v, www)
+        end
+        www = push(ww, zero(T))
+        @test_throws DimensionMismatch Base.Checked.checked_sub(v, www)
+
+        c = T(2)
+        u = c*v
+        uu = Int(c) * v
+        s = S(i for i in 1:m if u[i] != uu[i])
+        @test_inferred Base.Checked.mul_with_overflow(c, v) (u, s)
+        @test_inferred Base.Checked.mul_with_overflow(v, c) (u, s)
+        if isempty(s)
+            @test_inferred Base.Checked.checked_mul(c, v) u
+            @test_inferred Base.Checked.checked_mul(v, c) u
+        else
+            @test_throws OverflowError Base.Checked.checked_mul(c, v)
+            @test_throws OverflowError Base.Checked.checked_mul(v, c)
+        end
+    end
+end
+
 @testset "SmallVector map" begin
     f(x) = Int32(2)*x
     f(x, y) = 2*x + y
