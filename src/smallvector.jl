@@ -851,6 +851,150 @@ function circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
     end
 end
 
+# checked arithmetic
+
+"""
+    Base.Checked.checked_neg(v::AbstractSmallVector{N,T}) where {N,T} -> SmallVector{N,T}
+
+Returns `-v`, but throws an `OverflowError` if an overflow occurs.
+The elements of `v` must be integers.
+
+See also [`Base.Checked.checked_sub`](@ref Base.Checked.checked_sub(::AbstractSmallVector, ::AbstractSmallVector)).
+"""
+Base.Checked.checked_neg(::AbstractSmallVector)
+
+function Base.Checked.checked_neg(v::AbstractSmallVector{N,T}) where {N, T <: Integer}
+    b = Base.Checked.checked_neg(v.b)
+    SmallVector(b, length(v))
+end
+
+for op_with_name in ((:+, "add"), (:-, "sub"))
+    global op, op_name = op_with_name
+    global op_with_overflow = Symbol(op_name, "_with_overflow")
+    global checked_op = Symbol("checked_", op_name)
+
+    @eval begin
+        example_ans = if op == :+
+            (Int8[-128, 4, 4, -128], SmallBitSet{UInt8}([4]))
+        else
+            (Int8[-128, -2, 0, 126], SmallBitSet{UInt8}([1]))
+        end
+
+        """
+            Base.Checked.$op_with_overflow(v::AbstractSmallVector{N,T}, w::AbstractSmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T}, SmallBitSet}
+
+        Returns `v$(op)w` as the first component of the resulting tuple.
+        The second component is a `SmallBitSet` whose elements are the indices where an overflow occurred.
+        The element type `T` must be a bit integer type.
+
+        See also [`Base.Checked.$checked_op`](@ref Base.Checked.$checked_op(::AbstractSmallVector, ::AbstractSmallVector)).
+
+        # Example
+        ```jldoctest
+        julia> v = SmallVector{8,Int8}((0, 1, 2, 127));
+
+        julia> w = SmallVector{8,Int8}((-128, 3, 2, 1));
+
+        julia> Base.Checked.$op_with_overflow(v, w)
+        $example_ans
+        ```
+        """
+        Base.Checked.$op_with_overflow(::AbstractSmallVector, ::AbstractSmallVector)
+
+        @inline function Base.Checked.$op_with_overflow(v::AbstractSmallVector{N,T}, w::AbstractSmallVector{N,T}) where {N, T <: AbstractBitInteger}
+            @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+            b, s = Base.Checked.$op_with_overflow(v.b, w.b)
+            SmallVector(b, length(v)), s
+        end
+
+    end
+end
+
+"""
+    Base.Checked.checked_add(v::AbstractSmallVector, ws::AbstractSmallVector...) -> SmallVector
+
+Returns the sum of the argument vectors, but throws an `OverflowError` if an overflow occurs.
+All arguments must have integer elements.
+
+See also [`Base.Checked.add_with_overflow`](@ref Base.Checked.add_with_overflow(::AbstractSmallVector, ::AbstractSmallVector)).
+"""
+Base.Checked.checked_add(::AbstractSmallVector, ::AbstractSmallVector...)
+
+@inline function Base.Checked.checked_add(v::AbstractSmallVector{<:Any, <:Integer}, ws::Vararg{AbstractSmallVector{<:Any, <:Integer}, M}) where M
+    vs = (v, ws...)
+    @boundscheck allequal(length, vs) || throw(DimensionMismatch("vectors must have the same length"))
+    N = minimum(capacity, vs)
+    vvs = map(Fix2(fixedvector, Val(N)), vs)
+    b = Base.Checked.checked_add(vvs...)
+    SmallVector(b, length(v))
+end
+
+"""
+    Base.Checked.checked_sub(v::AbstractSmallVector, w::AbstractSmallVector) -> SmallVector
+
+Returns `v-w`, but throws an `OverflowError` if an overflow occurs.
+The elements of `v` and `w` must be integers.
+
+See also [`Base.Checked.sub_with_overflow`](@ref Base.Checked.sub_with_overflow(::AbstractSmallVector, ::AbstractSmallVector)).
+"""
+Base.Checked.checked_sub(::AbstractSmallVector, ::AbstractSmallVector)
+
+@inline function Base.Checked.checked_sub(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1, T1 <: Integer, N2, T2 <: Integer}
+    @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+    N = min(N1, N2)
+    vv = fixedvector(v, Val(N))
+    ww = fixedvector(w, Val(N))
+    b = Base.Checked.checked_sub(vv, ww)
+    SmallVector(b, length(v))
+end
+
+"""
+    Base.Checked.mul_with_overflow(c::T, v::AbstractSmallVector{N,T}) where {N,T} -> Tuple{SmallVector{N,T}, SmallBitSet}
+    Base.Checked.mul_with_overflow(v::AbstractSmallVector{N,T}, c::T) where {N,T} -> Tuple{SmallVector{N,T}, SmallBitSet}
+
+Returns `c*v` as the first component of the resulting tuple.
+The second component is a `SmallBitSet` whose elements are the indices where an overflow occurred.
+The element type `T` must be a bit integer type.
+
+See also [`Base.Checked.checked_mul`](@ref Base.Checked.checked_mul(::Integer, ::AbstractSmallVector)).
+
+# Example
+```jldoctest
+julia> v = SmallVector{8,Int8}((0, 1, 2, 127));
+
+julia> Base.Checked.mul_with_overflow(Int8(2), v)
+(Int8[0, 2, 4, -2], SmallBitSet{UInt8}([4]))
+```
+"""
+Base.Checked.mul_with_overflow(::Integer, ::AbstractSmallVector),
+Base.Checked.mul_with_overflow(::AbstractSmallVector, ::Integer)
+
+function Base.Checked.mul_with_overflow(c::T, v::AbstractSmallVector{N,T}) where {N, T <: AbstractBitInteger}
+    b, s = Base.Checked.mul_with_overflow(c, v.b)
+    SmallVector(b, length(v)), s
+end
+
+Base.Checked.mul_with_overflow(v::AbstractSmallVector{N,T}, c::T) where {N, T <: AbstractBitInteger} = Base.Checked.mul_with_overflow(c, v)
+
+"""
+    Base.Checked.checked_mul(c, v::AbstractSmallVector{N}) where N -> SmallVector{N}
+    Base.Checked.checked_mul(v::AbstractSmallVector{N}, c) where N -> SmallVector{N}
+
+Returns `c*v`, but throws an `OverflowError` if an overflow occurs.
+The scalar `c` and the elements of `v` must be integers.
+
+See also [`Base.Checked.mul_with_overflow`](@ref Base.Checked.mul_with_overflow(::Integer, ::AbstractSmallVector)).
+"""
+Base.Checked.checked_mul(::Integer, ::AbstractSmallVector),
+Base.Checked.checked_mul(::AbstractSmallVector, ::Integer)
+
+function Base.Checked.checked_mul(c::T1, v::AbstractSmallVector{N,T2}) where {N, T1 <: Integer, T2 <: Integer}
+    b = Base.Checked.checked_mul(c, v.b)
+    SmallVector(b, length(v))
+end
+
+Base.Checked.checked_mul(v::AbstractSmallVector{N,T1}, c::T2) where {N, T1 <: Integer, T2 <: Integer} = Base.Checked.checked_mul(c, v)
+
 """
     support(v::AbstractSmallVector) -> SmallBitSet
 
