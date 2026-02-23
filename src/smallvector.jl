@@ -349,7 +349,7 @@ function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
     V{T}(iter)
 end
 
-function (::Type{V})(v::AbstractFixedOrSmallVector{M,T}) where {N, V <: AbstractSmallVector{N}, M, T}
+@propagate_inbounds function (::Type{V})(v::AbstractFixedOrSmallVector{M,T}) where {N, V <: AbstractSmallVector{N}, M, T}
     V{T}(v)
 end
 
