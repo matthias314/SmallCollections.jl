@@ -452,6 +452,6 @@ end
 
 @propagate_inbounds function copyto!(v::MutableSmallVector{N,T}, bc::Broadcasted{SmallVectorStyle}) where {N,T}
     w = copy(bc)
-    @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+    @boundscheck length(v) == length(w) || dimensionmismatch("vectors must have the same length")
     unsafe_copyto!(v, SmallVector{N,T}(w))
 end

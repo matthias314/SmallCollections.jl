@@ -902,7 +902,7 @@ for op_with_name in ((:+, "add"), (:-, "sub"))
         Base.Checked.$op_with_overflow(::AbstractSmallVector, ::AbstractSmallVector)
 
         @inline function Base.Checked.$op_with_overflow(v::AbstractSmallVector{N,T}, w::AbstractSmallVector{N,T}) where {N, T <: AbstractBitInteger}
-            @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+            @boundscheck length(v) == length(w) || dimensionmismatch("vectors must have the same length")
             b, s = Base.Checked.$op_with_overflow(v.b, w.b)
             SmallVector(b, length(v)), s
         end
@@ -923,9 +923,9 @@ Base.Checked.checked_add(::AbstractSmallVector, ::AbstractSmallVector...)
 @inline function Base.Checked.checked_add(v::AbstractSmallVector{<:Any, <:Integer}, ws::Vararg{AbstractSmallVector{<:Any, <:Integer}, M}) where M
     vs = (v, ws...)
     @static if VERSION < v"1.11"
-        @boundscheck allequal(map(length, vs)) || throw(DimensionMismatch("vectors must have the same length"))
+        @boundscheck allequal(map(length, vs)) || dimensionmismatch("vectors must have the same length")
     else
-        @boundscheck allequal(length, vs) || throw(DimensionMismatch("vectors must have the same length"))
+        @boundscheck allequal(length, vs) || dimensionmismatch("vectors must have the same length")
     end
     N = minimum(capacity, vs)
     vvs = map(Fix2(fixedvector, Val(N)), vs)
@@ -944,7 +944,7 @@ See also [`Base.Checked.sub_with_overflow`](@ref Base.Checked.sub_with_overflow(
 Base.Checked.checked_sub(::AbstractSmallVector, ::AbstractSmallVector)
 
 @inline function Base.Checked.checked_sub(v::AbstractSmallVector{N1,T1}, w::AbstractSmallVector{N2,T2}) where {N1, T1 <: Integer, N2, T2 <: Integer}
-    @boundscheck length(v) == length(w) || throw(DimensionMismatch("vectors must have the same length"))
+    @boundscheck length(v) == length(w) || dimensionmismatch("vectors must have the same length")
     N = min(N1, N2)
     vv = fixedvector(v, Val(N))
     ww = fixedvector(w, Val(N))
@@ -1178,7 +1178,7 @@ end
     i = findfirst(v -> v isa AbstractSmallVector, bcflat.args)
     n = length(bcflat.args[i])
     @boundscheck any(v -> v isa AbstractSmallVector && length(v) != n, bcflat.args) &&
-        throw(DimensionMismatch("vectors must have the same length"))
+        dimensionmismatch("vectors must have the same length")
     smallvector_bc(bc_mapstyle(bc), n, bcflat.f, bcflat.args...)
 end
 
