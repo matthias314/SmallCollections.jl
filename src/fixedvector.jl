@@ -176,6 +176,20 @@ See also [`fixedvector(::AbstractSmallVector)`](@ref).
 fixedvector(v::AbstractFixedVector{N,T}) where {N,T} = FixedVector{N,T}(v.t)
 
 """
+    fixedvector(v::AbstractFixedVector{N,T}, ::Val{M}) where {N,T,M} -> FixedVector{M,T}
+
+Returns the argument as a `FixedVector`, resized to length `M`.
+Appended elements, if any, are equal to `default(T)`.
+
+The purpose of this function is to make is easier to write code
+that works for both `AbstractFixedVector` and `AbstractSmallVector`.
+
+See also [`$(@__MODULE__).default`](@ref), [`fixedvector(::AbstractFixedVector)`](@ref),
+[`fixedvector(::AbstractSmallVector, ::Val)`](@ref).
+"""
+fixedvector(::AbstractFixedVector, ::Val)
+
+"""
     capacity(::Type{<:AbstractFixedVector{N}}) where N -> N
     capacity(v::AbstractFixedVector{N}) where N -> N
 

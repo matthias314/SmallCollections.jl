@@ -2,7 +2,7 @@
 # common definitions for AbstractFixedVector and AbstractSmallVector
 #
 
-export support
+export fixedvector, support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
     any, all, allequal, allunique, count, getindex, filter, checkindex, copy,
@@ -11,6 +11,11 @@ import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
 capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
 
 copy(v::V) where V <: AbstractFixedOrSmallVector = V(v)
+
+function fixedvector(v::AbstractFixedOrSmallVector{N,T}, ::Val{M}) where {N,T,M}
+    b = fixedvector(v)
+    FixedVector{M,T}(ntuple(i -> i <= N ? b[i] : default(T), Val(M)))
+end
 
 support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 

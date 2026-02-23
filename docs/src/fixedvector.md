@@ -10,6 +10,7 @@ FixedVector
 MutableFixedVector
 capacity(::Type{<:AbstractFixedVector})
 fixedvector(::AbstractFixedVector)
+fixedvector(::AbstractFixedVector, ::Val)
 bits(::AbstractFixedVector)
 convert(::Type{<:AbstractFixedVector}, ::Unsigned)
 fasthash(::AbstractFixedVector, ::UInt)

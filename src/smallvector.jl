@@ -123,6 +123,21 @@ julia> fixedvector(v)
 fixedvector(v::AbstractSmallVector) = v.b
 
 """
+    fixedvector(v::AbstractSmallVector{N,T}, ::Val{M}) where {N,T,M} -> FixedVector{M,T}
+
+Return the `FixedVector` underlying `v`, resized to capacity `M`.
+It agrees with `v` at all positions up to `min(length(v), M)`;
+the remaining elements are equal to `default(T)`.
+
+The purpose of this function is to make is easier to write code
+that works for both `AbstractFixedVector` and `AbstractSmallVector`.
+
+See also [`$(@__MODULE__).default`](@ref), [`fixedvector(::AbstractSmallVector)`](@ref),
+[`fixedvector(::AbstractFixedVector, ::Val)`](@ref).
+"""
+fixedvector(::AbstractSmallVector, ::Val)
+
+"""
     bits(v::AbstractSmallVector) -> Unsigned
 
 Return the bit representation of `fixedvector(v)`.

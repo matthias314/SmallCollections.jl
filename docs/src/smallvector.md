@@ -10,6 +10,7 @@ SmallVector
 MutableSmallVector
 capacity(::Type{<:AbstractSmallVector})
 fixedvector(::AbstractSmallVector)
+fixedvector(::AbstractSmallVector, ::Val)
 bits(::AbstractSmallVector)
 fasthash(::AbstractSmallVector, ::UInt)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N

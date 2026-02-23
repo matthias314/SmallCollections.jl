@@ -1,4 +1,4 @@
-using SmallCollections: bitsize
+using SmallCollections: default, bitsize
 
 using Base.FastMath: eq_fast
 using LinearAlgebra: dot
@@ -8,6 +8,9 @@ using LinearAlgebra: dot
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         @test_inferred capacity(v) N
+        @test_inferred fixedvector(v) FixedVector(v)
+        @test_inferred fixedvector(v, Val(N)) fixedvector(v)
+        @test_inferred fixedvector(v, Val(N+3)) [i <= length(v) ? v[i] : default(T) for i in 1:N+3] FixedVector{N+3,T}
         if ismutabletype(V)
             @test v !== @inferred copy(v)
         else
