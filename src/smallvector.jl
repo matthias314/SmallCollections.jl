@@ -240,7 +240,7 @@ end
 
 Substitute `x` for the `i`-th component of `v` and return the new vector.
 
-See also `Base.setindex`,  [`addindex`](@ref addindex(::AbstractSmallVector, ::Any, ::Integer)).
+See also `Base.setindex`, [`addindex`](@ref addindex(::AbstractSmallVector, ::Any, ::Integer)).
 """
 @inline function setindex(v::AbstractSmallVector, x, i::Integer)
     @boundscheck checkbounds(v, i)
@@ -568,7 +568,7 @@ end
 end
 
 for g in (:sum, :prod, :minimum, :maximum, :extrema)
-    @eval $g(f::F, v::AbstractSmallVector;  kw...) where F = $g(map(f, v);  kw...)
+    @eval $g(f::F, v::AbstractSmallVector; kw...) where F = $g(map(f, v);  kw...)
 end
 
 """

@@ -346,8 +346,8 @@ for g in (:union, :intersect, :setdiff, :symdiff)
 end
 
 for g in (:sum, :prod, :minimum, :maximum, :extrema)
-    @eval $g(s::AbstractSmallSet;  kw...) = $g(values(s);  kw...)
-    @eval $g(f::F, s::AbstractSmallSet;  kw...) where F = $g(f, values(s);  kw...)
+    @eval $g(s::AbstractSmallSet; kw...) = $g(values(s); kw...)
+    @eval $g(f::F, s::AbstractSmallSet; kw...) where F = $g(f, values(s); kw...)
 end
 
 """

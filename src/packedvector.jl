@@ -766,7 +766,7 @@ unsafe_add(v::V, w::V) where V <: PackedVector = V(v.m+w.m, v.n)
     $(@__MODULE__).unsafe_sub(v::V, w::V) where V <: PackedVector -> V
 
 Subtract `w` from `v` and return the result. It is not checked that `v` and `w` have the same length.
-No overflow or underflow  is allowed in any component, nor are sign changes in the case of signed integers.
+No overflow or underflow is allowed in any component, nor are sign changes in the case of signed integers.
 
 This function is much faster than regular addition.
 
