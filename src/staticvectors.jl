@@ -11,7 +11,7 @@ export setindex, unsafe_circshift, unsafe_circshift!
 
 Substitute `x` for the `i`-th component of `v` and return the result. The vector `v` is not modified.
 
-See also `Base.setindex`,  [`addindex`](@ref addindex(::AbstractFixedVector, ::Any, ::Integer)).
+See also `Base.setindex`, [`addindex`](@ref addindex(::AbstractFixedVector, ::Any, ::Integer)).
 """
 setindex(::AbstractFixedVector, ::Any, ::Integer)
 
