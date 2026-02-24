@@ -671,7 +671,17 @@ end
             @test_inferred any(isodd, v) any(isodd, u) Bool
             @test_inferred all(isodd, v) all(isodd, u) Bool
             @test_inferred findall(!iszero, v) findall(!iszero, u) SmallVector{N,SmallLength}
-            @test_inferred count(!iszero, v; init = Int32(0)) count(!iszero, u; init = Int32(0)) Int32
+            if VERSION > v"1.13-" && SmallCollections.MapStyle(!iszero, T) == SmallCollections.LazyStyle()
+                # work around type instability for `count`, see julia#59869
+                try
+                    @inferred count(!iszero, v; init = Int32(0))
+                    @test_broken true
+                catch
+                    @test_broken false
+                end
+            else
+                @test_inferred count(!iszero, v; init = Int32(0)) count(!iszero, u; init = Int32(0)) Int32
+            end
             if T == Bool
                 @test_inferred support(v) Set(findall(u)) SmallBitSet
                 @test_inferred findall(v) findall(u) SmallVector{N,SmallLength}
