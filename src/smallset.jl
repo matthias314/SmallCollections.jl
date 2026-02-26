@@ -351,14 +351,15 @@ for g in (:sum, :prod, :minimum, :maximum, :extrema)
 end
 
 """
-    sum_fast(s::AbstractSmallSet{N,T}) where {N,T}
+    sum_fast(s::AbstractSmallSet{N,T}; [init]) where {N,T}
 
 Return the `@fastmath` sum of the elements of `s`.
-Unlike for `sum`, the return value always is of the element type of `s`, even for small bit integers.
+Unlike for `sum`, the default return value always has the element type of `s`, even
+for small bit integers. This can be changed by supplying an `init` keyword argument.
 
 See also `Base.sum`, `Base.@fastmath`.
 """
-sum_fast(s::AbstractSmallSet) = sum_fast(values(s))
+sum_fast(s::AbstractSmallSet; kw...) = sum_fast(values(s); kw...)
 
 """
     extrema_fast(s::AbstractSmallSet; [init])

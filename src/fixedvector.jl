@@ -343,14 +343,15 @@ for (g, op, init) in ((:_sum, :+, 0), (:_prod, :*, 1))
 end
 
 """
-    sum_fast(v::AbstractFixedVector)
+    sum_fast(v::AbstractFixedVector; [init])
 
 Return the `@fastmath` sum of the elements of `v`.
-Unlike for `sum`, the return value always is of the element type of `v`, even for small bit integers.
+Unlike for `sum`, the default return value always has the element type of `v`, even
+for small bit integers. This can be changed by supplying an `init` keyword argument.
 
 See also `Base.sum`, `Base.@fastmath`.
 """
-sum_fast(v::AbstractFixedVector) = @fastmath foldl(+, v)
+sum_fast(v::AbstractFixedVector; init = Base._InitialValue()) = @fastmath foldl(+, v; init)
 
 """
     dot_fast(v::AbstractFixedVector, w::AbstractFixedVector)

@@ -234,6 +234,9 @@ end
         @test_inferred sum(v) sum(u)
         s = @inferred sum_fast(v)
         @test s ≈ sum(u)
+        if T <: SmallCollections.AbstractBitInteger
+            @test_inferred sum_fast(v; init = Int32(0)) sum(v) promote_type(T, Int32)
+        end
         @test_inferred prod(v) prod(u)
 
         u2 = rand(r, N) * im

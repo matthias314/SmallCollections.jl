@@ -403,10 +403,11 @@ function sum(v::AbstractSmallVector{N,T}) where {N,T}
 end
 
 """
-    sum_fast(v::AbstractSmallVector{N,T}) where {N,T}
+    sum_fast(v::AbstractSmallVector{N,T}; [init]) where {N,T}
 
 Return the `@fastmath` sum of the elements of `v`.
-Unlike for `sum`, the return value always is of the element type of `v`, even for small bit integers.
+Unlike for `sum`, the default return value always has the element type of `v`, even
+for small bit integers. This can be changed by supplying an `init` keyword argument.
 
 See also `Base.sum`, `Base.@fastmath`.
 
@@ -427,9 +428,12 @@ julia> v = SmallVector{4}(Int8[80, 90])
 
 julia> sum(v), sum_fast(v)
 (170, -86)
+
+julia> sum_fast(v; init = Int16(0))
+170
 ```
 """
-sum_fast(v::AbstractSmallVector) = @fastmath foldl(+, v.b)
+sum_fast(v::AbstractSmallVector; kw...) = @fastmath foldl(+, v.b; kw...)
 
 @propagate_inbounds function dot(v::AbstractSmallVector, w::AbstractSmallVector)
     u = dot.(v, w)
