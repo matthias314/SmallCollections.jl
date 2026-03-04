@@ -14,7 +14,7 @@ bitsize(::Type{Bool}) = 1
 llvm_type(::Type{Float16}) = "half"
 llvm_type(::Type{Float32}) = "float"
 llvm_type(::Type{Float64}) = "double"
-llvm_type(::Type{T}) where T <: Union{Bool, BitInteger, Char, Enum} = string('i', 8*sizeof(T))
+llvm_type(::Type{T}) where T <: Union{Bool, AbstractBitInteger, Char, Enum} = string('i', 8*sizeof(T))
 
 function llvm_type(N, ::Type{T}) where T
     if T <: AbstractFloat
