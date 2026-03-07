@@ -378,6 +378,17 @@ end
     end
 end
 
+@testset "SmallVector cmp" begin
+    base_isless(v, w) = invoke(isless, Tuple{AbstractVector{UInt8},AbstractVector{UInt8}}, v, w)
+
+    for N in [8, 16], _ in 1:250
+        v = SmallVector{N,UInt8}(rand((0, 255), rand(0:N)))
+        w = MutableSmallVector{N,UInt8}(rand((0, 255), rand(0:N)))
+        @test_inferred isless(v, w) base_isless(v, w)
+        @test_inferred isless(v, v) base_isless(v, v)
+    end
+end
+
 @testset "SmallVector circshift" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
