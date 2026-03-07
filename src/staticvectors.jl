@@ -804,10 +804,11 @@ Convert the given vector to an unsigned integer. The element type `T` must ultim
 Here "ultimately" means that it can also be a `struct` with a single field of such a type or a nested sequence
 of such structs. For example, `SmallBitSet{UInt8}` or `FixedVector{16,SmallBitSet{UInt8}}` are allowed.
 
-For bit integers, hardware floats, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))` provided that
-`U` is an unsigned integer type with `N*bitsize(T)` bits, possibly defined by the package
-`BitIntegers`. Otherwise the result will be zero-extended to the next unsigned integer type `U`
-whose bit length is a power of `2`.
+For bit integers, hardware floats, `Char` and `Enum` types this is the same as `reinterpret(U, Tuple(v))`
+on little-endian host machines, provided that `U` is an unsigned integer type with `N*bitsize(T)` bits,
+possibly defined by the package `BitIntegers`. Otherwise the result will be zero-extended to the next
+unsigned integer type `U` whose bit length is a power of `2`. The resulting integer is independent of
+the endianness of the host machine.
 
 If the element type is `Bool`, then each element only takes one bit in the return value.
 If `N` is less than `8` or not a power of `2`, then the result will again be zero-extended.
@@ -844,26 +845,20 @@ function bits(v::AbstractFixedVector{N,T}) where {N,T}
     end
 end
 
-@generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: HWType}
-    M = llvm_type(T)
-    b = N*bitsize(T)
-    c = nextpow(2, b)
-    U = Symbol(:UInt, c)
-    if b == c
-        ir = """
-            %b = bitcast <$N x $M> %0 to i$b
-            ret i$b %b
-        """
-    else
-        ir = """
-            %b = bitcast <$N x $M> %0 to i$b
-            %c = zext i$b %b to i$c
-            ret i$c %c
-        """
-    end
+@inline @generated function bits(v::AbstractFixedVector{N,T}) where {N, T <: HWType}
+    M = nextpow(2, N)
+    b = M*bitsize(T)
+    U = uinttype(Val(b))
+    L = llvm_type(T)
+    ir = """
+        %b = bitcast <$M x $L> %0 to i$b
+        ret i$b %b
+    """
     quote
-        $(Expr(:meta, :inline))
-        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{T}}}, vec(Tuple(v)))
+        w = fixedvector(v, Val($M))
+        t = Tuple(map(htol, w))
+        m = Base.llvmcall($ir, $U, Tuple{NTuple{$M, VecElement{T}}}, vec(t))
+        ltoh(m)
     end
 end
 
@@ -879,26 +874,18 @@ end
 end
 =#
 
-@generated function bits(v::AbstractFixedVector{N,Bool}) where N
-    c = max(nextpow(2, N), 8)
-    U = Symbol(:UInt, c)
-    if N == c
-        ir = """
-            %b = trunc <$N x i8> %0 to <$N x i1>
-            %c = bitcast <$N x i1> %b to i$N
-            ret i$N %c
-        """
-    else
-        ir = """
-            %a = trunc <$N x i8> %0 to <$N x i1>
-            %b = bitcast <$N x i1> %a to i$N
-            %c = zext i$N %b to i$c
-            ret i$c %c
-        """
-    end
+@inline @generated function bits(v::AbstractFixedVector{N,Bool}) where N
+    U = uinttype(Val(N))
+    M = bitsize(U)
+    ir = """
+        %b = trunc <$M x i8> %0 to <$M x i1>
+        %c = bitcast <$M x i1> %b to i$M
+        ret i$M %c
+    """
     quote
-        $(Expr(:meta, :inline))
-        Base.llvmcall($ir, $U, Tuple{NTuple{N, VecElement{Bool}}}, vec(Tuple(v)))
+        w = fixedvector(v, Val($M))
+        m = Base.llvmcall($ir, $U, Tuple{NTuple{$M, VecElement{Bool}}}, vec(Tuple(w)))
+        ltoh(m)
     end
 end
 

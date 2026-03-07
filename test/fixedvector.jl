@@ -172,7 +172,7 @@ end
             @test m isa U
             W = eval(Symbol(:UInt, bitsize(T)))
             for (i, x) in enumerate(v)
-                @test m % W == reinterpret(W, x)
+                @test m % W == htol(reinterpret(W, x))
                 m >>= bitsize(T)
             end
             @test iszero(m)
