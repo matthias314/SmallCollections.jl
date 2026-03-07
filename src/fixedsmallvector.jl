@@ -6,7 +6,7 @@ export fixedvector, support
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
     any, all, allequal, allunique, count, getindex, filter, checkindex, copy,
-    issorted, checkbounds, isless
+    issorted, checkbounds, isless, <=
 
 capacity(::Type{<:AbstractFixedOrSmallVector{N}}) where N = N
 
@@ -21,6 +21,12 @@ function isless(v::V, w::V) where V <: Union{AbstractFixedOrSmallVector{8,UInt8}
     bv = bswap(bits(v))
     bw = bswap(bits(w))
     bv < bw || (bv == bw) & (length(v) < length(w))
+end
+
+for T in (:Integer, :AbstractChar, :AbstractString)
+    @eval function <=(v::AbstractFixedOrSmallVector{<:Any, <:$T}, w::AbstractFixedOrSmallVector{<:Any, <:$T})
+        !(w < v)
+    end
 end
 
 support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
