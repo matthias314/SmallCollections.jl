@@ -139,6 +139,37 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     end
 end
 
+@inline @generated function shuffle(::Val{128}, ::Val{NR}, v::AbstractFixedVector{NV,VT}, p::NTuple{NP,PT}) where {M, NR, NV, VT <: Union{Int8,UInt8}, NP, PT <: BitInteger}
+    # vv = fixedvector(v, Val(128))
+    # pp = fixedvector(p .% UInt8, Val(128))
+
+    t1 = join((string("i32 ", k) for k in 0:63), ", ")
+    t2 = join((string("i32 ", k) for k in 64:127), ", ")
+    t = join((string("i32 ", k) for k in 0:127), ", ")
+    ir = """
+        declare <64 x i8> @llvm.x86.avx512.vpermi2var.qi.512(<64 x i8>, <64 x i8>, <64 x i8>)
+        define <128 x i8> @shuffle(<128 x i8>, <128 x i8>) #0 {
+            %v1 = shufflevector <128 x i8> %0, <128 x i8> poison, <64 x i32> <$t1>
+            %v2 = shufflevector <128 x i8> %0, <128 x i8> poison, <64 x i32> <$t2>
+            %p1 = shufflevector <128 x i8> %1, <128 x i8> poison, <64 x i32> <$t1>
+            %p2 = shufflevector <128 x i8> %1, <128 x i8> poison, <64 x i32> <$t2>
+            %w1 = call <64 x i8> @llvm.x86.avx512.vpermi2var.qi.512(<64 x i8> %v1, <64 x i8> %p1, <64 x i8> %v2)
+            %w2 = call <64 x i8> @llvm.x86.avx512.vpermi2var.qi.512(<64 x i8> %v1, <64 x i8> %p2, <64 x i8> %v2)
+            %w = shufflevector <64 x i8> %w1, <64 x i8> %w2, <128 x i32> <$t>
+            ret <128 x i8> %w
+        }
+        attributes #0 = { alwaysinline }
+    """
+    quote
+        t = Base.llvmcall(($ir, "shuffle"),
+            NTuple{128,VecElement{VT}},
+            Tuple{NTuple{128,VecElement{VT}}, NTuple{128,VecElement{UInt8}}},
+            vec(Tuple(v)), vec(p))
+        w = FixedVector{128,NV}(unvec(t))
+        fixedvector(w, Val(NR))
+    end
+end
+
 function shufflewidth(::Val{N}, ::Type{T}) where {N,T}
     ishwtype(T) || return 0
     M = N*sizeof(T)
@@ -147,6 +178,7 @@ function shufflewidth(::Val{N}, ::Type{T}) where {N,T}
     end
     @static if cpufeature(:AVX512VBMI)
         M <= 64 && return 64
+        M <= 128 && bitsize(T) == 8 && return 128
     end
     @static if cpufeature(:AVX2)
         M <= 32 && return 32

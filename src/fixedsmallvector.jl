@@ -369,12 +369,12 @@ shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{
 
 """
     $(@__MODULE__).shuffle(::Val{M}, ::Val{N}, v::AbstractFixedVector{<:Any,T}, p::NTuple) where {M,N,T} -> FixedVector{N,T}
-    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{N,T}, p::NTuple{N}) where {M,N,T} -> FixedVector{N,T}
+    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{<:Any,T}, p::NTuple{N}) where {M,N,T} -> FixedVector{N,T}
 
 Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`.
 The permutation `p` must be 0-based. In other words, `w[i] == v[p[i]+1]` for any index `i` of `p`.
 If `p[i]` is negative, then `w[i]` is set to zero.
-Bounds are not checked. Moreover, negative index values must be in the range `-NV:-1`.
+Bounds are not checked. Moreover, negative index values must be in the range `-N:-1`.
 
 The parameter `M` indicates which hardware-accelerated method to use, as determined by `shufflewidth`.
 
@@ -382,4 +382,4 @@ See also [`$(@__MODULE__).shufflewidth`](@ref).
 """
 shuffle
 
-shuffle(::Val{M}, v::AbstractFixedVector{N}, p::NTuple{N}) where {M,N} = shuffle(Val(M), Val(N), v, p)
+shuffle(::Val{M}, v::AbstractFixedVector, p::NTuple{N}) where {M,N} = shuffle(Val(M), Val(N), v, p)
