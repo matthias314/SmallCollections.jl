@@ -228,7 +228,7 @@ end
     @boundscheck checkbounds(v, ii)
     if ii isa OneTo
         @inbounds resize(v, length(ii))
-    elseif ii isa AbstractUnitRange && shufflewidth(v) != 0
+    elseif ii isa AbstractUnitRange && hasshuffle(v)
         w = unsafe_circshift(fixedvector(v), 1-first(ii))
         SmallVector(padtail(w, length(ii)), length(ii))
     else
@@ -326,17 +326,15 @@ end
     map(i -> @inbounds(v[i]), ii)
 end
 
-@inline function getindex_shuffle(::Val{M}, v::AbstractFixedOrSmallVector, ii::AbstractFixedVector{N}) where {M,N}
-    p1 = one(inttype(eltype(v)))
-    p = map(i -> (i % typeof(p1)) - p1, ii)
-    shuffle(Val(M), Val(N), fixedvector(v), Tuple(p))
+@inline function getindex_shuffle(v::AbstractFixedOrSmallVector, ii::AbstractFixedVector)
+    U = uinttype(eltype(v))
+    shuffle(fixedvector(v), (ii .% U) .- one(U))
 end
 
 @inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{<:Any,<:BitInteger})
     @boundscheck checkbounds(v, ii)
-    M = shufflewidth(v, ii)
-    if M != 0
-        w = getindex_shuffle(Val(M), v, fixedvector(ii))
+    if hasshuffle(v, ii)
+        w = getindex_shuffle(v, fixedvector(ii))
         ii isa AbstractSmallVector ? SmallVector(w, length(ii)) : w
     else
         map(i -> @inbounds(v[i]), ii)
@@ -389,40 +387,35 @@ function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
 end
 
 """
-    $(@__MODULE__).shufflewidth(::Val{N}, ::Type{T}) where {N,T}
-    $(@__MODULE__).shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T}
-    $(@__MODULE__).shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI}
+    $(@__MODULE__).hasshuffle(::Val{N}, ::Type{T}) where {N,T}
+    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}) where {N,T}
+    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI}
 
-Returns a value `M` indicating which hardware-accelerated method to use
+Returns `true` if there is a hardware-accelerated method
 for vector indexing of a vector with element type `T` and capacity (at most) `N`.
 The index vector is assumed to have capacity at most `N`, too.
-The 2-argument version is equivalent to `shufflewidth(Val(max(N, NI)), T)`.
+The 2-argument version is equivalent to `hasshuffle(Val(max(N, NI)), T)`.
 
-The value `0` indicates no hardware acceleration. The currently supported methods have values
-`16` ([AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)),
-`32` ([AVX2](https://en.wikipedia.org/wiki/AVX2))
-and `64` ([AVX-512](https://en.wikipedia.org/wiki/AVX-512), more precisely AVX-512_VBMI).
+The currently supported methods are
+[AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) (up to 128 bits),
+[AVX2](https://en.wikipedia.org/wiki/AVX2) (up to 256 bits)
+and [AVX-512](https://en.wikipedia.org/wiki/AVX-512), more precisely AVX-512_VBMI (up to 1024 bits).
 
 See also [`$(@__MODULE__).shuffle`](@ref).
 """
-shufflewidth
+hasshuffle
 
-shufflewidth(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = shufflewidth(Val(N), T)
-shufflewidth(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = shufflewidth(Val(max(N, NI)), T)
+hasshuffle(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = hasshuffle(Val(N), T)
+hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = hasshuffle(Val(max(N, NI)), T)
 
 """
-    $(@__MODULE__).shuffle(::Val{M}, ::Val{N}, v::AbstractFixedVector{<:Any,T}, p::NTuple) where {M,N,T} -> FixedVector{N,T}
-    $(@__MODULE__).shuffle(::Val{M}, v::AbstractFixedVector{N,T}, p::NTuple{N}) where {M,N,T} -> FixedVector{N,T}
+    $(@__MODULE__).shuffle(v::AbstractFixedVector{NT,T}, p::AbstractFixedVector{NU}) where {NT,T,NU} -> FixedVector{NU,T}
 
 Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`.
 The permutation `p` must be 0-based. In other words, `w[i] == v[p[i]+1]` for any index `i` of `p`.
 If `p[i]` is negative, then `w[i]` is set to zero.
-Bounds are not checked. Moreover, negative index values must be in the range `-NV:-1`.
+Bounds are not checked. Moreover, negative index values must be in the range `-NU:-1`.
 
-The parameter `M` indicates which hardware-accelerated method to use, as determined by `shufflewidth`.
-
-See also [`$(@__MODULE__).shufflewidth`](@ref).
+See also [`$(@__MODULE__).hasshuffle`](@ref).
 """
 shuffle
-
-shuffle(::Val{M}, v::AbstractFixedVector{N}, p::NTuple{N}) where {M,N} = shuffle(Val(M), Val(N), v, p)

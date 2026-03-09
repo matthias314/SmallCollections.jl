@@ -143,7 +143,8 @@ end
 end
 
 @testset "SmallVector vec inds" begin
-    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+    for N in (1, 2, 8, 11, 32, 72, 128), T in (Int8, Char), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+        N*sizeof(T) <= 256 || continue
         u = rand(T, m)
         v = V{N,T}(u)
 
@@ -155,12 +156,12 @@ end
         m > 0 || continue
 
         M = 7
-        jj = rand(Int8(1):Int8(m), M)
+        jj = rand(UInt8(1):UInt8(m), M)
         ii = FixedVector{M}(jj)
         @test_inferred v[ii] u[ii] FixedVector{M,T}
         ii = SmallVector{M+1}(jj)
         @test_inferred v[ii] u[ii] SmallVector{M+1,T}
-        ii = PackedVector{UInt128,7,Int8}(jj)
+        ii = PackedVector{UInt128,12,Int16}(jj)
         @test_inferred v[ii] u[ii] u
         ii = 2:min(m, 5)
         @test_inferred v[ii] u[ii] SmallVector{N,T}
@@ -185,7 +186,8 @@ end
 end
 
 @testset "SmallVector reverse" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    for V in VS, N in (1, 2, 9, 16, 128), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
         u = rand(T, m)
         v = V{N,T}(u)
         @test_inferred reverse(v) reverse(u) SmallVector(v)
@@ -210,7 +212,8 @@ end
 end
 
 @testset "SmallVector push/pop" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    for V in VS, N in (1, 2, 9, 16, 128), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
         u = rand(T, m)
         v = V{N,T}(u)
         x = rand(T)
@@ -398,7 +401,8 @@ end
 end
 
 @testset "SmallVector circshift" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    for V in VS, N in [1, 2, 9, 16, 128], T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
         u = rand(T, m)
         v = V{N,T}(u)
         for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)

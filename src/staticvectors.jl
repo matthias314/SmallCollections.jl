@@ -200,13 +200,11 @@ function prepend(v::FixedVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T
 end
 
 function popfirst(v::FixedVector{N,T}) where {N,T}
-    M = shufflewidth(v)
-    if M != 0
-        P = inttype(T)
-        p = ntuple(Val(N % P)) do i
-            i < N ? i : -one(P)
-        end
-        shuffle(Val(M), v, p), v[1]
+    if hasshuffle(v)
+        U = uinttype(T)
+        u = FixedVector{N,U}(1:N)
+        p = ifelse.(u .< U(N), u, -U(1))
+        shuffle(v, p), v[1]
     else
         @inbounds popat(v, 1)
     end
@@ -253,12 +251,11 @@ end
 
 @inline function popat(v::FixedVector{N,T}, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    M = shufflewidth(v)
-    if M != 0
-        P = inttype(T)
-        ii = i % P
+    if hasshuffle(v)
+        U = uinttype(T)
+        ii = i % U
         w = first(@inline popfirst(v))
-        t = ntuple(Val(N % P)) do j
+        t = ntuple(Val(N % U)) do j
             j < ii ? v[j] : w[j]
         end
     else
@@ -325,18 +322,15 @@ unsafe_circshift(::AbstractFixedVector, ::Integer),
 unsafe_circshift!(::MutableFixedVector, ::Integer)
 
 @inline function unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
-    M = shufflewidth(v)
     if N == 1
         FixedVector{N,T}(v)
     elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 64
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
-    elseif M != 0
-        P = inttype(T)
-        k1 = ifelse(signbit(k), (k%P)+P(N), k%P)
-        p = ntuple(Val(N % P)) do i
-            i-k1 + (i > k1 ? -P(1) : P(N)-P(1))
-        end
-        shuffle(Val(M), fixedvector(v), p)
+    elseif hasshuffle(v)
+        U = uinttype(T)
+        u = FixedVector{N,U}(0:N-1) .- ifelse(k > 0, k-N, k) % U
+        p = ispow2(N) ? u .& U(N-1) : ifelse.(u .< U(N), u, u .- U(N))
+        shuffle(fixedvector(v), p)
     else
         t = ntuple(Val(N % SmallLength)) do i
             k2 = ifelse(signbit(k), k+N, k) % SmallLength
@@ -356,7 +350,8 @@ end
     elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 128  # for Bool one could go up to 512 bits
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
     else
-        unsafe_circshift(v, unsafe_rem(k, UInt16(N)))
+        k1 = ispow2(N) ? k & (N-1) : unsafe_rem(k, UInt16(N))
+        unsafe_circshift(v, k1)
     end
 end
 

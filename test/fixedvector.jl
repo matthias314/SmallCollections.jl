@@ -109,7 +109,8 @@ end
 end
 
 @testset "FixedVector vec inds" begin
-    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (FixedVector, MutableFixedVector)
+    for N in (1, 2, 9, 16, 25, 64), T in (Bool, Int16, UInt64), V in (FixedVector, MutableFixedVector)
+        N*sizeof(T) <= 256 || continue
         u = rand(T, N)
         v = V{N,T}(u)
 
@@ -119,14 +120,14 @@ end
         @test_inferred v[ii] u[ii] Vector{T}
 
         M = 7
-        jj = rand(Int8(1):Int8(N), M)
+        jj = rand(UInt8(1):UInt8(N), M)
         ii = jj
         @test_inferred v[ii] u[ii] u
         ii = FixedVector{M}(jj)
         @test_inferred v[ii] u[ii] FixedVector{M,T}
         ii = SmallVector{M+1}(jj)
         @test_inferred v[ii] u[ii] SmallVector{M+1,T}
-        ii = PackedVector{UInt128,7,Int8}(jj)
+        ii = PackedVector{UInt128,7,UInt8}(jj)
         @test_inferred v[ii] u[ii] u
         ii = 2:min(N, 5)
         @test_inferred v[ii] u[ii] SmallVector{N,T}
@@ -136,7 +137,8 @@ end
 end
 
 @testset "FixedVector reverse" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    for N in (1, 2, 9, 16, 128), T in test_types, V in (FixedVector, MutableFixedVector)
+        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         @test_inferred reverse(v) reverse(u) FixedVector(v)
@@ -210,8 +212,9 @@ end
 end
 
 @testset "FixedVector circshift" begin
-    for N in [1, 4, 7, 16], V in (FixedVector, MutableFixedVector)
+    for N in [1, 4, 7, 16, 128], V in (FixedVector, MutableFixedVector)
         for T in test_types
+            N == 128 && !(T in (Int8, UInt8, Bool)) && continue
             u = rand(T, N)
             v = V{N,T}(u)
             for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)

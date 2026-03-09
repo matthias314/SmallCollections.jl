@@ -53,6 +53,6 @@ SmallCollections.element_type
 SmallCollections.AbstractBitInteger
 SmallCollections.top_set_bit
 SmallCollections.fixedvector_range
+SmallCollections.hasshuffle
 SmallCollections.shuffle
-SmallCollections.shufflewidth
 ```
