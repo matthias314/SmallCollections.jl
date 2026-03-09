@@ -557,15 +557,14 @@ end
 
 @inline function reverse(v::AbstractSmallVector{N,T}, start::Integer = 1) where {N,T}
     @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         PT = inttype(T)
         k = start % PT
         l = (length(v) % PT) + k
         p = ntuple(Val(N % PT)) do i
             ifelse(i < k, i, l-i) - one(PT)
         end
-        SmallVector(shuffle(Val(M), fixedvector(v), p), length(v))
+        SmallVector(shuffle(fixedvector(v), FixedVector(p)), length(v))
     else
         reverse(v, start, length(v))
     end
@@ -815,15 +814,14 @@ end
 prepend(v::AbstractSmallVector{N,T}, w) where {N,T} = append(SmallVector{N,T}(w), v)
 
 function unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         P = inttype(T)
         n1 = length(v) % P
         k1 = ifelse(signbit(k), (k%P)+n1, k%P)
         p = ntuple(Val(N % P)) do i
             i-k1 + (i > k1 ? -P(1) : n1-P(1))
         end
-        w = shuffle(Val(M), fixedvector(v), p)
+        w = shuffle(fixedvector(v), FixedVector(p))
         SmallVector(padtail(w, length(v)), length(v))
     elseif N <= 16 || !isbitstype(T)
         n2 = length(v)

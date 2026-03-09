@@ -200,13 +200,12 @@ function prepend(v::FixedVector{N,T}, w::Union{AbstractVector,Tuple}) where {N,T
 end
 
 function popfirst(v::FixedVector{N,T}) where {N,T}
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         P = inttype(T)
         p = ntuple(Val(N % P)) do i
             i < N ? i : -one(P)
         end
-        shuffle(Val(M), v, p), v[1]
+        shuffle(v, FixedVector(p)), v[1]
     else
         @inbounds popat(v, 1)
     end
@@ -253,8 +252,7 @@ end
 
 @inline function popat(v::FixedVector{N,T}, i::Integer) where {N,T}
     @boundscheck checkbounds(v, i)
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         P = inttype(T)
         ii = i % P
         w = first(@inline popfirst(v))
@@ -325,18 +323,17 @@ unsafe_circshift(::AbstractFixedVector, ::Integer),
 unsafe_circshift!(::MutableFixedVector, ::Integer)
 
 @inline function unsafe_circshift(v::AbstractFixedVector{N,T}, k::Integer) where {N,T}
-    M = shufflewidth(v)
     if N == 1
         FixedVector{N,T}(v)
     elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 64
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
-    elseif M != 0
+    elseif hasshuffle(v)
         P = inttype(T)
         k1 = ifelse(signbit(k), (k%P)+P(N), k%P)
         p = ntuple(Val(N % P)) do i
             i-k1 + (i > k1 ? -P(1) : P(N)-P(1))
         end
-        shuffle(Val(M), fixedvector(v), p)
+        shuffle(fixedvector(v), FixedVector(p))
     else
         t = ntuple(Val(N % SmallLength)) do i
             k2 = ifelse(signbit(k), k+N, k) % SmallLength

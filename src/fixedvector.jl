@@ -444,8 +444,7 @@ end
 end
 
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1) where {N,T}
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
         PT = inttype(T)
         k = start % PT
@@ -455,15 +454,14 @@ end
         p = ntuple(Val(N % PT)) do i
             ifelse(i < k, u1[i], u2[i])
         end
-        shuffle(Val(M), v, p)
+        shuffle(v, p)
     else
         reverse(v, start, N)
     end
 end
 
 @propagate_inbounds function reverse!(v::MutableFixedVector, start::Integer)
-    M = shufflewidth(v)
-    if M != 0
+    if hasshuffle(v)
         copyto!(v, reverse(v, start))
     else
         invoke(reverse!, Tuple{AbstractVector,Integer}, v, start)
