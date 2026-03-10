@@ -2,7 +2,7 @@
 # common definitions for AbstractFixedVector and AbstractSmallVector
 #
 
-export fixedvector, support
+export fixedvector, support, invreplace
 
 import Base: findall, findfirst, findlast, findprev, findnext, findmin, findmax,
     any, all, allequal, allunique, count, getindex, filter, checkindex, copy,
@@ -339,6 +339,47 @@ end
     else
         map(i -> @inbounds(v[i]), ii)
     end
+end
+
+"""
+    invreplace(s::SmallBitSet, v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}}) where {N, T <: Integer} -> SmallBitSet
+
+Returns the set of all integers `i` such that `v[i]` is in `s`. The elements
+of `v` must be in the range `1:M` where `M` is the capacity of `s`.
+Hence if `p` is a permutation (sending each `i` to `p[i]`), then `invreplace(s, p)`
+contains the images of the elements of `s` under the permutation inverse to `p`.
+
+See also `Base.replace`, [`exchange`](@ref), [`capacity`](@ref capacity(::SmallBitSet)).
+
+# Example
+```jldoctest
+julia> s = SmallBitSet{UInt8}([1, 3, 7]);
+
+julia> p = FixedVector{8,Int8}([3, 1, 2, 8, 4, 5, 6, 7]);
+
+julia> t = invreplace(s, p)
+SmallBitSet{UInt8} with 3 elements:
+  1
+  2
+  8
+
+julia> t == replace(s, (j => i for (i, j) in enumerate(p))...)
+true
+
+julia> v = SmallVector{16,UInt8}([3, 3, 3, 3]);
+
+julia> invreplace(s, v)
+SmallBitSet{UInt16} with 4 elements:
+  1
+  2
+  3
+  4
+```
+"""
+@propagate_inbounds function invreplace(s::SmallBitSet, v::AbstractFixedOrSmallVector{N,T}) where {N, T <: Integer}
+    M = bitsize(s)
+    w = convert(FixedVector{M,Bool}, bits(s))
+    _SmallBitSet(bits(w[v]))
 end
 
 function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F

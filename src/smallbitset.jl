@@ -424,7 +424,7 @@ If `i` equals `j`, then the set is not modified.
 
 This function is faster than the equivalent `replace(s, i => j, j => i)`.
 
-See also `Base.replace`.
+See also [`invreplace`](@ref), `Base.replace`.
 
 # Examples
 ```jldoctest

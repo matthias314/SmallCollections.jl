@@ -1,4 +1,4 @@
-using SmallCollections: bitsize
+using SmallCollections: bitsize, uinttype
 
 unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 
@@ -124,6 +124,18 @@ end
         @test_inferred setdiff(s1, s2) setdiff(t1, t2) SmallBitSet{U1}
         @test_inferred setdiff(s1, t2) setdiff(t1, t2) SmallBitSet{U1}
         @test_inferred symdiff(s1, s2) symdiff(t1, t2) SmallBitSet{U}
+    end
+end
+
+@testset "SmallBitSet invreplace" begin
+    for U in [UInt8, UInt32, UInt128]  # UInt256 leads to a freeze
+        N = bitsize(U)
+        S = SmallBitSet{uinttype(Val(N))}
+        s = rand(SmallBitSet{U})
+        v = N < 128 ? FixedVector{N,Int8}(rand(1:N, N)) : FixedVector{N,UInt16}(rand(1:N, N))
+        @test_inferred invreplace(s, v) Set(i for (i, j) in enumerate(v) if j in s) S
+        v = SmallVector{N-2,Int16}(rand(1:N, N-4))
+        @test_inferred invreplace(s, v) Set(i for (i, j) in enumerate(v) if j in s) S
     end
 end
 
