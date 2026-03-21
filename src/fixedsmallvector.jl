@@ -103,8 +103,10 @@ end
     y, findfirst(isequal(y)∘f, fixedvector(v); style)::Int
 end
 
-any(v::AbstractFixedOrSmallVector; kw...) = any(identity, v; kw...)
-all(v::AbstractFixedOrSmallVector; kw...) = all(identity, v; kw...)
+if VERSION < v"1.14-"
+    any(v::AbstractFixedOrSmallVector; kw...) = any(identity, v; kw...)
+    all(v::AbstractFixedOrSmallVector; kw...) = all(identity, v; kw...)
+end
 
 function any(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, style::MapStyle = MapStyle(f, T)) where {F<:Function,N,T}
     @inline
