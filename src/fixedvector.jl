@@ -479,7 +479,9 @@ function vcat(v1::AbstractFixedVector{N1,T1}, v2::AbstractFixedVector{N2,T2}, vs
 
 Base.hasfastin(::Type{<:AbstractFixedVector{N,T}}) where {N,T} = isfasttype(T)
 
-in(x, v::AbstractFixedVector) = any(==(x), v)
+if VERSION < v"1.14-"
+    in(x, v::AbstractFixedVector) = any(==(x), v)
+end
 
 @inline replace_pair(v::AbstractFixedVector, w::AbstractFixedVector, p::Pair, ::Type{T}) where T =
     map((x, y) -> isequal(x, p[1]) ? convert(T, p[2]) : convert(T, y), v, w)

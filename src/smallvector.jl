@@ -613,7 +613,9 @@ count(::Any, ::AbstractSmallVector)
 
 Base.hasfastin(::Type{V}) where V <: AbstractSmallVector = Base.hasfastin(fieldtype(V, :b))
 
-in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
+if VERSION < v"1.14-"
+    in(x, v::AbstractSmallVector) = findfirst(==(x), v) !== nothing
+end
 
 function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {N,T,M}
     if ishwtype(T) && isempty(kw)
