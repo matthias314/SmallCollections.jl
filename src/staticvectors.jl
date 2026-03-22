@@ -201,11 +201,10 @@ end
 
 function popfirst(v::FixedVector{N,T}) where {N,T}
     if hasshuffle(v)
-        P = inttype(T)
-        p = ntuple(Val(N % P)) do i
-            i < N ? i : -one(P)
-        end
-        shuffle(v, FixedVector(p)), v[1]
+        U = uinttype(T)
+        u = FixedVector{N,U}(1:N)
+        p = ifelse.(u .< U(N), u, -U(1))
+        shuffle(v, p), v[1]
     else
         @inbounds popat(v, 1)
     end
@@ -328,12 +327,11 @@ unsafe_circshift!(::MutableFixedVector, ::Integer)
     elseif ishwtype(T) && ispow2(N) && 8 <= bitsize(T)*N <= 64
         convert(FixedVector{N,T}, bitrotate(bits(v), bitsize(T)*k))
     elseif hasshuffle(v)
-        P = inttype(T)
-        k1 = ifelse(signbit(k), (k%P)+P(N), k%P)
-        p = ntuple(Val(N % P)) do i
-            i-k1 + (i > k1 ? -P(1) : P(N)-P(1))
-        end
-        shuffle(fixedvector(v), FixedVector(p))
+        U = inttype(T)
+        k1 = ifelse(signbit(k), (k%U)+U(N), k%U)
+        u = FixedVector{N,U}(1:N) .- k1
+        p = u .+ ifelse.(u .> U(0), -U(1), U(N)-U(1))
+        shuffle(fixedvector(v), p)
     else
         t = ntuple(Val(N % SmallLength)) do i
             k2 = ifelse(signbit(k), k+N, k) % SmallLength

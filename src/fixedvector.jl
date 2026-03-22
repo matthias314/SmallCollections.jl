@@ -446,14 +446,11 @@ end
 @inline function reverse(v::AbstractFixedVector{N,T}, start::Integer = 1) where {N,T}
     if hasshuffle(v)
         @boundscheck 0 < start <= length(v)+1 || Base.throw_boundserror(v, start)
-        PT = inttype(T)
-        k = start % PT
-        l = (N-2) % PT + k
-        u1 = FixedVector{N,PT}(0:N-1)
-        u2 = l .- u1
-        p = ntuple(Val(N % PT)) do i
-            ifelse(i < k, u1[i], u2[i])
-        end
+        U = inttype(T)
+        k = (start-1) % U
+        l = U(N-1) + k
+        u = FixedVector{N,U}(0:N-1)
+        p = ifelse.(u .< k, u, l .- u)
         shuffle(v, p)
     else
         reverse(v, start, N)
