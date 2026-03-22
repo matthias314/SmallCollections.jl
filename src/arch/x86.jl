@@ -52,7 +52,7 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
         q = p .* a .+ b
         t = Base.llvmcall(($ir, "shuffle"), NTuple{N,VecElement{$HT}},
             Tuple{NTuple{N,VecElement{$HT}}, NTuple{N,VecElement{U}}},
-            vec(Tuple(v)), vec(Tuple(q)))
+            vec(v), vec(q))
         FixedVector{N,T}(unvec(T, t))
     end
 end
@@ -95,7 +95,7 @@ end
         q = p .* a .+ b
         t = Base.llvmcall(($ir, "shuffle"), NTuple{N,VecElement{$HT}},
             Tuple{NTuple{N,VecElement{$HT}}, NTuple{N,VecElement{U}}},
-            vec(Tuple(v)), vec(Tuple(q)))
+            vec(v), vec(q))
         FixedVector{N,T}(unvec(T, t))
     end
 end
@@ -128,7 +128,7 @@ avx512_suffix(::Type{<:Enum{T}}) where T = avx512_suffix(T)
         t = Base.llvmcall(($ir, "shuffle"),
             NTuple{N, VecElement{$HT}},
             Tuple{NTuple{N, VecElement{$HT}}, NTuple{N, VecElement{U}}},
-            vec(Tuple(v)), vec(Tuple(p)))
+            vec(v), vec(p))
         FixedVector{N,T}(unvec(T, t))
     end
 end
@@ -168,7 +168,7 @@ end
         t = Base.llvmcall(($ir, "shuffle"),
             NTuple{N, VecElement{$HT}},
             Tuple{NTuple{N, VecElement{$HT}}, NTuple{N, VecElement{U}}},
-            vec(Tuple(v)), vec(Tuple(p)))
+            vec(v), vec(p))
         FixedVector{N,T}(unvec(T, t))
     end
 end

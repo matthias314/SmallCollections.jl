@@ -115,7 +115,7 @@ end
         """
     quote
         @inline
-        b = Base.llvmcall($ir, NTuple{N, VecElement{$H}}, Tuple{NTuple{N, VecElement{$H}}, $U}, vec(Tuple(v)), n % $U)
+        b = Base.llvmcall($ir, NTuple{N, VecElement{$H}}, Tuple{NTuple{N, VecElement{$H}}, $U}, vec(v), n % $U)
         FixedVector{N,T}(unvec(T, b))
     end
 end
@@ -787,7 +787,7 @@ from_hwvalue(::Type{T}, x::T) where T <: HWType = x
     Expr(:new, T, Expr(:call, :from_hwvalue, fieldtype(T, 1), :x))
 end
 
-@inline vec(t::NTuple{N}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))
+@inline vec(t::Union{NTuple{N}, AbstractFixedVector{N}}) where N = ntuple(i -> VecElement(hwvalue(t[i])), Val(N))
 
 @inline unvec(t::NTuple{N,VecElement}) where N = ntuple(i -> t[i].value, Val(N))
 @inline unvec(::Type{T}, t::NTuple{N,VecElement}) where {T,N} = ntuple(i -> from_hwvalue(T, t[i].value), Val(N))
@@ -879,7 +879,7 @@ end
     """
     quote
         w = fixedvector(v, Val($M))
-        m = Base.llvmcall($ir, $U, Tuple{NTuple{$M, VecElement{Bool}}}, vec(Tuple(w)))
+        m = Base.llvmcall($ir, $U, Tuple{NTuple{$M, VecElement{Bool}}}, vec(w))
         ltoh(m)
     end
 end
@@ -1042,7 +1042,7 @@ end
     quote
         @inline
         w = default(MutableFixedVector{N,T})
-        Base.llvmcall(($ir, "compress"), Cvoid, Tuple{Ptr{T}, NTuple{N,VecElement{$H}}, U}, pointer(w), vec(Tuple(v)), bits(s))
+        Base.llvmcall(($ir, "compress"), Cvoid, Tuple{Ptr{T}, NTuple{N,VecElement{$H}}, U}, pointer(w), vec(v), bits(s))
         FixedVector(w)
     end
 end
