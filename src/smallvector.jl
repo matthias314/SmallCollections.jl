@@ -843,8 +843,8 @@ function unsafe_circshift(v::AbstractSmallVector{N,T}, k::Integer) where {N,T}
         k3 = ifelse(signbit(k), k+n3, k) % Int
         u = MutableSmallVector(v)
         w = similar(v)
-        unsafe_copyto!(pointer(w, k3), pointer(u, 1), n3-(k3-1))
-        unsafe_copyto!(pointer(w, 1), pointer(u, n3-(k3-1)+1), k3-1)
+        unsafe_copyto!(pointer(w, k3+1), pointer(u, 1), n3-k3)
+        unsafe_copyto!(pointer(w, 1), pointer(u, n3-k3+1), k3)
         SmallVector(w)
     end
 end
