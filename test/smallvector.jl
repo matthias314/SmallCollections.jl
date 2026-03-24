@@ -392,7 +392,7 @@ end
         @test_inferred isless(v, v) base_isless(v, v)
     end
 
-    for T in [UInt8, Int32, Char], N in [8, 13]
+    VERSION >= v"1.11" && for T in [UInt8, Int32, Char], N in [8, 13]
         v = rand(SmallVector{N,T})
         w = rand(SmallVector{N+2,T})
         @test_inferred v <= w base_le(v, w)
