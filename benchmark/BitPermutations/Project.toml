@@ -1,0 +1,3 @@
+[deps]
+BitPermutations = "81206824-6155-40a8-95f7-18696067be4d"
+SmallCollections = "2b935e18-93d6-40ac-ae34-fe54c09f00e1"
