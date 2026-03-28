@@ -542,7 +542,7 @@ for op_with_name in ((:+, "add"), (:-, "sub"))
             s = T <: Signed ? 's' : 'u'
             ir = """
                 declare {<$N x $L>, <$N x i1>} @llvm.$s$($op_name).with.overflow.$VL(<$N x $L>, <$N x $L>)
-                define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) #0 {
+                define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) alwaysinline {
                     %a = call {<$N x $L>, <$N x i1>} @llvm.$s$($op_name).with.overflow.$VL(<$N x $L> %0, <$N x $L> %1)
                     %b = extractvalue {<$N x $L>, <$N x i1>} %a, 0
                     %c = extractvalue {<$N x $L>, <$N x i1>} %a, 1
@@ -551,7 +551,6 @@ for op_with_name in ((:+, "add"), (:-, "sub"))
                     %f = insertvalue {<$N x $L>, $LU} %e, $LU %d, 1
                     ret {<$N x $L>, $LU} %f
                 }
-                attributes #0 = { alwaysinline }
             """
             quote
                 u, o = Base.llvmcall(($ir, "f"), Tuple{NTuple{N,VecElement{T}}, $U},
@@ -644,7 +643,7 @@ Base.Checked.mul_with_overflow(::AbstractFixedVector, ::Integer)
     s = T <: Signed ? 's' : 'u'
     ir = """
         declare {<$N x $L>, <$N x i1>} @llvm.$(s)mul.with.overflow.$VL(<$N x $L>, <$N x $L>)
-        define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) #0 {
+        define {<$N x $L>, $LU} @f(<$N x $L>, <$N x $L>) alwaysinline {
             %a = call {<$N x $L>, <$N x i1>} @llvm.$(s)mul.with.overflow.$VL(<$N x $L> %0, <$N x $L> %1)
             %b = extractvalue {<$N x $L>, <$N x i1>} %a, 0
             %c = extractvalue {<$N x $L>, <$N x i1>} %a, 1
@@ -653,7 +652,6 @@ Base.Checked.mul_with_overflow(::AbstractFixedVector, ::Integer)
             %f = insertvalue {<$N x $L>, $LU} %e, $LU %d, 1
             ret {<$N x $L>, $LU} %f
         }
-        attributes #0 = { alwaysinline }
     """
     quote
         w = FixedVector(ntuple(Returns(c), Val(N)))
@@ -1018,25 +1016,23 @@ end
     ir = if VERSION > v"1.12-"
         """
         declare void @llvm.masked.compressstore.$NL (<$N x $L>, ptr, <$N x i1>)
-        define void @compress(ptr, <$N x $L>, i$M) #0 {
+        define void @compress(ptr, <$N x $L>, i$M) alwaysinline {
             %a = $resize2
             %b = bitcast i$N %a to <$N x i1>
             call void @llvm.masked.compressstore.$NL(<$N x $L> %1, ptr %0, <$N x i1> %b)
             ret void
         }
-        attributes #0 = { alwaysinline }
         """
     else
         """
         declare void @llvm.masked.compressstore.$NL (<$N x $L>, ptr, <$N x i1>)
-        define void @compress(i64, <$N x $L>, i$M) #0 {
+        define void @compress(i64, <$N x $L>, i$M) alwaysinline {
             %a = $resize2
             %b = bitcast i$N %a to <$N x i1>
             %p = inttoptr i64 %0 to <$N x $L>*
             call void @llvm.masked.compressstore.$NL(<$N x $L> %1, <$N x $L>* %p, <$N x i1> %b)
             ret void
         }
-        attributes #0 = { alwaysinline }
         """
     end
     quote
