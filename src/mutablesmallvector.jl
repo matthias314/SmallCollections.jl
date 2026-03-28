@@ -412,12 +412,8 @@ function filter!(f::F, v::MutableSmallVector{N,T}; style::MapStyle = MapStyle(f,
     end
 end
 
-if VERSION >= v"1.11"
-
 function Random.rand(rng::AbstractRNG, ::SamplerType{MutableSmallVector{N,T}}) where {N,T}
     MutableSmallVector(rand(rng, SmallVector{N,T}))
-end
-
 end
 
 """

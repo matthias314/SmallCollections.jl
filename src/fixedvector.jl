@@ -542,12 +542,12 @@ support(::Any, ::AbstractFixedVector)
 
 @inline support(f::F, v::AbstractFixedVector) where F = support(@inline map(f, v))
 
-if VERSION >= v"1.11"
-
 function Random.rand(rng::AbstractRNG, ::SamplerType{V}) where {N,T,V<:AbstractFixedVector{N,T}}
-    V(rand(rng, NTuple{N,T}))
-end
-
+    @static if VERSION >= v"1.11"
+        V(rand(rng, NTuple{N,T}))
+    else
+        V(ntuple(_ -> rand(rng, T), Val(N)))
+    end
 end
 
 #

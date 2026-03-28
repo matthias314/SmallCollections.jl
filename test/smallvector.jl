@@ -68,7 +68,7 @@ const VS = (SmallVector, MutableSmallVector)
         @test_inferred empty(v, Char) V{N,Char}()
     end
 
-    VERSION >= v"1.11" && for V in VS, W in (FixedVector, MutableFixedVector), N in (9, 16), T in test_types
+    for V in VS, W in (FixedVector, MutableFixedVector), N in (9, 16), T in test_types
         w = rand(W{N,T})
         @test_inferred V(w) w V{N,T}
     end
@@ -392,7 +392,7 @@ end
         @test_inferred isless(v, v) base_isless(v, v)
     end
 
-    VERSION >= v"1.11" && for T in [UInt8, Int32, Char], N in [8, 13]
+    for T in [UInt8, Int32, Char], N in [8, 13]
         v = rand(SmallVector{N,T})
         w = rand(SmallVector{N+2,T})
         @test_inferred v <= w base_le(v, w)
@@ -780,7 +780,7 @@ end
     end
 end
 
-VERSION >= v"1.11" && @testset "SmallVector rand" begin
+@testset "SmallVector rand" begin
     for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T} && isvalid(v)

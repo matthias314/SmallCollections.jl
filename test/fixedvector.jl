@@ -203,7 +203,7 @@ end
         @test_inferred isless(v, v) base_isless(v, v)
     end
 
-    VERSION >= v"1.11" && for T in [UInt8, Int32, Char], N in [8, 13]
+    for T in [UInt8, Int32, Char], N in [8, 13]
         v = rand(FixedVector{N,T})
         w = rand(FixedVector{N+2,T})
         @test_inferred v <= w base_le(v, w)
@@ -449,7 +449,7 @@ end
     end
 end
 
-VERSION >= v"1.11" && @testset "FixedVector rand" begin
+@testset "FixedVector rand" begin
     for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T}
