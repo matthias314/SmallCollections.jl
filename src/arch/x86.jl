@@ -30,7 +30,7 @@ using CpuId: CpuFeature, __ECX
 const AVX512VBMI2 = CpuFeature(0x0000_0007, 0x00, __ECX, 6)
 const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
 
-@inline @generated function shuffle(::Val{:avx}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}) where {N, T, U}
+@inline @generated function shuffle(::Val{:avx}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}, @nospecialize(_)) where {N, T, U}
     @assert N*sizeof(T) == N*sizeof(U) == 16
     HT = hwtype(T)
     LHT = llvm_type(HT)
@@ -56,7 +56,7 @@ const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
     end
 end
 
-@inline @generated function shuffle(::Val{:avx2}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}) where {N, T, U}
+@inline @generated function shuffle(::Val{:avx2}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}, @nospecialize(_)) where {N, T, U}
     @assert N*sizeof(T) == N*sizeof(U) == 32
     HT = hwtype(T)
     LHT = llvm_type(HT)
@@ -106,7 +106,7 @@ avx512_suffix(::Type{Float32}) = "ps"
 avx512_suffix(::Type{Float64}) = "pd"
 avx512_suffix(::Type{<:Enum{T}}) where T = avx512_suffix(T)
 
-@inline @generated function shuffle(::Val{:avx512}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}) where {N,T,U}
+@inline @generated function shuffle(::Val{:avx512}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}, @nospecialize(_)) where {N,T,U}
     @assert N*sizeof(T) == N*sizeof(U) in (16, 32, 64)
     HT = hwtype(T)
     LHT = llvm_type(HT)
@@ -130,34 +130,87 @@ avx512_suffix(::Type{<:Enum{T}}) where T = avx512_suffix(T)
     end
 end
 
-@inline function shuffle(::Val{:avx512}, v::AbstractFixedVector{N,Float16}, p::AbstractFixedVector{N}) where N
+@inline function shuffle(::Val{:avx512}, v::AbstractFixedVector{N,Float16}, p::AbstractFixedVector{N}, inbounds::Val) where N
     u = reinterpret.(UInt16, v)
-    w = shuffle(Val(:avx512), u, p)
+    w = shuffle(Val(:avx512), u, p, inbounds)
     reinterpret.(Float16, w)
 end
 
-@inline @generated function shuffle(::Val{:avx512_1024}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}) where {N,T,U}
-    @assert N*sizeof(T) == N*sizeof(U) == 128
+function shuffle2ir(M, N, LT, LU, LS)
+    if M == 512
+        """
+            declare <$N x $LT> @llvm.x86.avx512.vpermi2var.$LS.512(<$N x $LT>, <$N x $LU>, <$N x $LT>)
+            define <$N x $LT> @shuffle2.512(<$N x $LT>, <$N x $LU>, <$N x $LT>) alwaysinline {
+                %w = call <$N x $LT> @llvm.x86.avx512.vpermi2var.$LS.512(<$N x $LT> %0, <$N x $LU> %1, <$N x $LT> %2)
+                ret <$N x $LT> %w
+            }
+        """
+    else
+        M2 = M ÷ 2
+        N2 = N ÷ 2
+        t1 = join((string("i32 ", k) for k in 0:N2-1), ", ")
+        t2 = join((string("i32 ", k) for k in N2:N-1), ", ")
+        m = VERSION >= v"1.12" ? "splat($LU $N)" : '<' * join(("$LU $N" for i in 0:N2-1), ',') * '>'
+        shuffle2ir(M2, N2, LT, LU, LS) * """
+            define <$N x $LT> @shuffle2.$M(<$N x $LT>, <$N x $LU>, <$N x $LT>) alwaysinline {
+                %u1 = shufflevector <$N x $LT> %0, <$N x $LT> poison, <$N2 x i32> <$t1>
+                %u2 = shufflevector <$N x $LT> %0, <$N x $LT> poison, <$N2 x i32> <$t2>
+                %v1 = shufflevector <$N x $LT> %2, <$N x $LT> poison, <$N2 x i32> <$t1>
+                %v2 = shufflevector <$N x $LT> %2, <$N x $LT> poison, <$N2 x i32> <$t2>
+                %p1 = shufflevector <$N x $LU> %1, <$N x $LU> poison, <$N2 x i32> <$t1>
+                %p2 = shufflevector <$N x $LU> %1, <$N x $LU> poison, <$N2 x i32> <$t2>
+                %w11 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %u1, <$N2 x $LU> %p1, <$N2 x $LT> %u2)
+                %w12 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %v1, <$N2 x $LU> %p1, <$N2 x $LT> %v2)
+                %m1 = and <$N2 x $LU> %p1, $m
+                %f1 = icmp ne <$N2 x $LU> %m1, zeroinitializer
+                %w1 = select <$N2 x i1> %f1, <$N2 x $LT> %w12, <$N2 x $LT> %w11
+                %w21 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %u1, <$N2 x $LU> %p2, <$N2 x $LT> %u2)
+                %w22 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %v1, <$N2 x $LU> %p2, <$N2 x $LT> %v2)
+                %m2 = and <$N2 x $LU> %p2, $m
+                %f2 = icmp ne <$N2 x $LU> %m2, zeroinitializer
+                %w2 = select <$N2 x i1> %f2, <$N2 x $LT> %w22, <$N2 x $LT> %w21
+                %w = shufflevector <$N2 x $LT> %w1, <$N2 x $LT> %w2, <$N x i32> <$t1, $t2>
+                ret <$N x $LT> %w
+            }
+        """
+    end
+end
+
+const avx512_maxbits_inline = 2048
+
+@generated function shuffle(::Val{:avx512merge}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}, ::Val{INB}) where {N,T,U,INB}
+    @assert N*sizeof(T) == N*sizeof(U) >= 128 && ispow2(N)
     HT = hwtype(T)
-    LHT = llvm_type(HT)
+    LT = llvm_type(HT)
     LU = llvm_type(U)
     LS = avx512_suffix(HT)
+    M = 8 * sizeof(HT) * N
+    inline = M <= avx512_maxbits_inline ? "alwaysinline" : ""
+    M2 = M ÷ 2
     N2 = N ÷ 2
     t1 = join((string("i32 ", k) for k in 0:N2-1), ", ")
     t2 = join((string("i32 ", k) for k in N2:N-1), ", ")
-    ir = """
-        declare <$N2 x $LHT> @llvm.x86.avx512.vpermi2var.$LS.512(<$N2 x $LHT>, <$N2 x $LU>, <$N2 x $LHT>)
-        define <$N x $LHT> @shuffle(<$N x $LHT>, <$N x $LU>) alwaysinline {
-            %v1 = shufflevector <$N x $LHT> %0, <$N x $LHT> poison, <$N2 x i32> <$t1>
-            %v2 = shufflevector <$N x $LHT> %0, <$N x $LHT> poison, <$N2 x i32> <$t2>
+    tail = if INB
+        """
+            ret <$N x $LT> %w
+        """
+    else
+        """
+            %f = icmp sge <$N x $LU> %1, zeroinitializer
+            %r = select <$N x i1> %f, <$N x $LT> %w, <$N x $LT> zeroinitializer  ; clear entry if highest bit of mask is set
+            ret <$N x $LT> %r
+        """
+    end
+    ir = shuffle2ir(M, N, LT, LU, LS) * """
+        define <$N x $LT> @shuffle(<$N x $LT>, <$N x $LU>) $inline {
+            %v1 = shufflevector <$N x $LT> %0, <$N x $LT> poison, <$N2 x i32> <$t1>
+            %v2 = shufflevector <$N x $LT> %0, <$N x $LT> poison, <$N2 x i32> <$t2>
             %p1 = shufflevector <$N x $LU> %1, <$N x $LU> poison, <$N2 x i32> <$t1>
             %p2 = shufflevector <$N x $LU> %1, <$N x $LU> poison, <$N2 x i32> <$t2>
-            %w1 = call <$N2 x $LHT> @llvm.x86.avx512.vpermi2var.$LS.512(<$N2 x $LHT> %v1, <$N2 x $LU> %p1, <$N2 x $LHT> %v2)
-            %w2 = call <$N2 x $LHT> @llvm.x86.avx512.vpermi2var.$LS.512(<$N2 x $LHT> %v1, <$N2 x $LU> %p2, <$N2 x $LHT> %v2)
-            %w = shufflevector <$N2 x $LHT> %w1, <$N2 x $LHT> %w2, <$N x i32> <$t1, $t2>
-            %f = icmp sge <$N x $LU> %1, zeroinitializer
-            %r = select <$N x i1> %f, <$N x $LHT> %w, <$N x $LHT> zeroinitializer  ; clear entry if highest bit of mask is set
-            ret <$N x $LHT> %r
+            %w1 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %v1, <$N2 x $LU> %p1, <$N2 x $LT> %v2)
+            %w2 = call <$N2 x $LT> @shuffle2.$M2(<$N2 x $LT> %v1, <$N2 x $LU> %p2, <$N2 x $LT> %v2)
+            %w = shufflevector <$N2 x $LT> %w1, <$N2 x $LT> %w2, <$N x i32> <$t1, $t2>
+            $tail
         }
     """
     quote
@@ -169,21 +222,21 @@ end
     end
 end
 
-@inline function shuffle(::Val{:avx512_1024}, v::AbstractFixedVector{64,Float16}, p::AbstractFixedVector{64})
+@inline function shuffle(::Val{:avx512merge}, v::AbstractFixedVector{N,Float16}, p::AbstractFixedVector{N}, inbounds::Val) where N
     u = reinterpret.(UInt16, v)
-    w = shuffle(Val(:avx512_1024), u, p)
+    w = shuffle(Val(:avx512merge), u, p, inbounds)
     reinterpret.(Float16, w)
 end
 
-@inline function shuffle(v::AbstractFixedVector{NT,T}, p::AbstractFixedVector{NU}) where {NT,T,NU}
+@inline function shuffle(v::AbstractFixedVector{NT,T}, p::AbstractFixedVector{NU}, inbounds::Val) where {NT,T,NU}
     @assert ishwtype(T)
     M = max(16, nextpow(2, max(NT,NU) * sizeof(T)))
     if (@static cpufeature(:AVX512VBMI) ? true : false) && M == 16 && sizeof(T) >= 4
         mode = :avx512
     elseif (@static cpufeature(:AVX) ? true : false) && M == 16
         mode = :avx
-    elseif (@static cpufeature(:AVX512VBMI) ? true : false) && M <= 128
-        mode = M <= 64 ? :avx512 : :avx512_1024
+    elseif (@static cpufeature(:AVX512VBMI) ? true : false)
+        mode = M <= 64 ? :avx512 : :avx512merge
     elseif (@static cpufeature(:AVX2) ? true : false) && M == 32
         mode = :avx2
     else
@@ -193,18 +246,19 @@ end
     U = uinttype(T)
     vv = fixedvector(v, Val(N))
     pp = fixedvector(p, Val(N)) .% U
-    ww = shuffle(Val(mode), vv, pp)
+    ww = shuffle(Val(mode), vv, pp, inbounds)
     fixedvector(ww, Val(NU))
 end
 
-function hasshuffle(::Val{N}, ::Type{T}) where {N,T}
+function hasshuffle(::Val{N}, ::Type{T}, ::Val{INB}) where {N,T,INB}
     ishwtype(T) || return false
+    N-1 <= typemax(INB ? uinttype(T) : inttype(T)) || return false
     M = N*sizeof(T)
     @static if cpufeature(:AVX)
         M <= 16 && return true
     end
     @static if cpufeature(:AVX512VBMI)
-        M <= 128 && return true
+        M <= avx512_maxbits && return true
     end
     @static if cpufeature(:AVX2)
         M <= 32 && return true

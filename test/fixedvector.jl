@@ -1,4 +1,4 @@
-using SmallCollections: default, bitsize
+using SmallCollections: default, bitsize, getindex0
 
 using Base.FastMath: eq_fast
 using LinearAlgebra: dot
@@ -125,6 +125,8 @@ end
         @test_inferred v[ii] u[ii] u
         ii = FixedVector{M}(jj)
         @test_inferred v[ii] u[ii] FixedVector{M,T}
+        ii0 = FixedVector{M}(jj .- UInt8(1))
+        @test_inferred getindex0(v, ii0) u[ii] FixedVector{M,T}
         ii = SmallVector{M+1}(jj)
         @test_inferred v[ii] u[ii] SmallVector{M+1,T}
         ii = PackedVector{UInt128,7,UInt8}(jj)
@@ -137,8 +139,7 @@ end
 end
 
 @testset "FixedVector reverse" begin
-    for N in (1, 2, 9, 16, 128), T in test_types, V in (FixedVector, MutableFixedVector)
-        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
+    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         @test_inferred reverse(v) reverse(u) FixedVector(v)
@@ -212,9 +213,8 @@ end
 end
 
 @testset "FixedVector circshift" begin
-    for N in [1, 4, 7, 16, 128], V in (FixedVector, MutableFixedVector)
+    for N in [1, 4, 7, 16], V in (FixedVector, MutableFixedVector)
         for T in test_types
-            N == 128 && !(T in (Int8, UInt8, Bool)) && continue
             u = rand(T, N)
             v = V{N,T}(u)
             for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
@@ -229,6 +229,37 @@ end
                 v3 = @test_inferred circshift!(v2, Val(k)) circshift(u, k) v2
                 @test v3 === v2
             end
+        end
+    end
+end
+
+@testset "FixedVector shuffle 256" begin
+    T = Int8
+    U = UInt8
+    for N in [128, 127, 256, 255]
+        v = rand(FixedVector{N,T})
+        vv = collect(v)
+        for k in [-N, -N+1, -N+2, -2, -1, 0, 1, 2, N-2, N-1, N]
+            @test circshift(v, k) == circshift(vv, k)
+            @test circshift!(MutableFixedVector(v), k) == circshift(vv, k)
+        end
+        for k in [1, 2, 3, N-1, N, N+1]
+            @test reverse(v, k) == reverse(vv, k)
+            @test reverse!(MutableFixedVector(v), k) == reverse(vv, k)
+        end
+        @test first(popfirst(v)) == push!(deleteat!(copy(vv), 1), default(T))
+        for k in [1, 2, 3, N-2, N-1, N]
+            @test duplicate(v, k) == [vv[1:k]; vv[k:N-1]]
+            @test first(popat(v, k)) == push!(deleteat!(copy(vv), k), default(T))
+        end
+        for k in [1, 2, 3, N-2, N-1, N], l in [k-1, k, N-1, N]
+            @test v[k:l] == vv[k:l]
+        end
+        for M in [128, 127, 256, 255]
+            ii = FixedVector{M,U}(rand(0:N-1, M))
+            @test getindex0(v, ii) == vv[ii .+ 1]
+            N < typemax(U) || continue
+            @test v[ii .+ U(1)] == vv[ii .+ 1]
         end
     end
 end

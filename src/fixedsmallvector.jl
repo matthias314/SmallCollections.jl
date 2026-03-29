@@ -228,7 +228,7 @@ end
     @boundscheck checkbounds(v, ii)
     if ii isa OneTo
         @inbounds resize(v, length(ii))
-    elseif ii isa AbstractUnitRange && hasshuffle(v)
+    elseif ii isa AbstractUnitRange && hasshuffle(v, Val(true))
         w = unsafe_circshift(fixedvector(v), 1-first(ii))
         SmallVector(padtail(w, length(ii)), length(ii))
     else
@@ -326,16 +326,85 @@ end
     map(i -> @inbounds(v[i]), ii)
 end
 
-@inline function getindex_shuffle(v::AbstractFixedOrSmallVector, ii::AbstractFixedVector)
-    U = uinttype(eltype(v))
-    shuffle(fixedvector(v), (ii .% U) .- one(U))
+"""
+    $(@__MODULE__).getindex0(
+        v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}},
+        ii::AbstractFixedVector{M,S}
+    ) where {N, T, M, S <: Integer} -> FixedVector{M,T}
+
+This function for vector indexing is analogous to `getindex` with the difference
+that the index vector `ii` is assumed to be `0`-based. This is particularly useful
+for indexing a vector `v` with capacity `N = 256` efficiently via a vector `ii` with
+element type `UInt8`.
+
+See also `Base.getindex(::AbstractVector, ::AbstractVector{<:Integer})`.
+
+# Example
+```jldoctest
+julia> using $(@__MODULE__): getindex0
+
+julia> v = -FixedVector{8,Int8}(1:8);
+
+julia> ii = FixedVector{4,UInt8}([0, 2, 3, 5]);
+
+julia> getindex0(v, ii)
+4-element FixedVector{4, Int8}:
+ -1
+ -3
+ -4
+ -6
+
+julia> getindex0(v, ii) == v[ii .+ 1]
+true
+```
+"""
+@inline function getindex0(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedVector{M,S}) where {N, T, M, S <: Integer}
+    @boundscheck begin
+        x, y = extrema(ii)
+        checkbounds(v, x+1:y+1)
+    end
+    if hasshuffle(v, ii, Val(true))
+        U = uinttype(T)
+        shuffle(fixedvector(v), ii .% U, Val(true))
+    elseif isbitstype(T)
+        w = MutableFixedVector{M,T}(undef)
+        for j in 1:M
+            @inbounds w[j] = v[ii[j]+1]
+        end
+        FixedVector(w)
+    else
+        map(i -> @inbounds(v[i+1]), ii)
+    end
 end
 
-@inline function getindex(v::AbstractFixedOrSmallVector, ii::AbstractFixedOrSmallVector{<:Any,<:BitInteger})
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedVector{M,S}) where {N, T, M, S <: BitInteger}
     @boundscheck checkbounds(v, ii)
-    if hasshuffle(v, ii)
-        w = getindex_shuffle(v, fixedvector(ii))
-        ii isa AbstractSmallVector ? SmallVector(w, length(ii)) : w
+    if hasshuffle(v, ii, Val(true))
+        U = uinttype(T)
+        shuffle(fixedvector(v), ii .% U .- one(U), Val(true))
+    elseif isbitstype(T)
+        w = MutableFixedVector{M,T}(undef)
+        for j in 1:M
+            @inbounds w[j] = v[ii[j]]
+        end
+        FixedVector(w)
+    else
+        map(i -> @inbounds(v[i]), ii)
+    end
+end
+
+@inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractSmallVector{M,S}) where {N, T, M, S <: BitInteger}
+    @boundscheck checkbounds(v, ii)
+    if hasshuffle(v, ii, Val(false))
+        U = inttype(T)
+        w = shuffle(fixedvector(v), (fixedvector(ii) .% U) .- one(U), Val(false))
+        SmallVector(w, length(ii))
+    elseif isbitstype(T)
+        w = MutableSmallVector{M,T}(undef, length(ii))
+        for j in 1:length(ii)
+            @inbounds w[j] = v[ii[j]]
+        end
+        SmallVector(w)
     else
         map(i -> @inbounds(v[i]), ii)
     end
@@ -386,36 +455,43 @@ function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]
 end
 
+const avx512_maxbits = 8192
+
 """
-    $(@__MODULE__).hasshuffle(::Val{N}, ::Type{T}) where {N,T}
-    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}) where {N,T}
-    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI}
+    $(@__MODULE__).hasshuffle(::Val{N}, ::Type{T}, ::Val{INB}) where {N,T,INB}
+    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ::Val{INB}) where {N,T,INB}
+    $(@__MODULE__).hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{M}, ::Val{INB}) where {N,T,M,INB}
 
 Returns `true` if there is a hardware-accelerated method
 for vector indexing of a vector with element type `T` and capacity (at most) `N`.
 The index vector is assumed to have capacity at most `N`, too.
-The 2-argument version is equivalent to `hasshuffle(Val(max(N, NI)), T)`.
+The Boolean parameter `INB` indicates if all indices are within bounds (`INB = true`) or
+if negative indices are used to zero entries (`INB = false`).
+The 3-argument version is equivalent to `hasshuffle(Val(max(N, M)), T, Val(INB))`.
 
 The currently supported methods are
 [AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) (up to 128 bits),
 [AVX2](https://en.wikipedia.org/wiki/AVX2) (up to 256 bits)
-and [AVX-512](https://en.wikipedia.org/wiki/AVX-512), more precisely AVX-512_VBMI (up to 1024 bits).
+and [AVX-512](https://en.wikipedia.org/wiki/AVX-512), more precisely AVX-512_VBMI
+(implemented for any bit size, but limited by `hasshuffle` to at most $avx512_maxbits bits).
 
 See also [`$(@__MODULE__).shuffle`](@ref).
 """
 hasshuffle
 
-hasshuffle(v::AbstractFixedOrSmallVector{N,T}) where {N,T} = hasshuffle(Val(N), T)
-hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{NI}) where {N,T,NI} = hasshuffle(Val(max(N, NI)), T)
+hasshuffle(v::AbstractFixedOrSmallVector{N,T}, inbounds) where {N,T} = hasshuffle(Val(N), T, inbounds)
+hasshuffle(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedOrSmallVector{M}, inbounds) where {N,T,M} = hasshuffle(Val(max(N, M)), T, inbounds)
 
 """
-    $(@__MODULE__).shuffle(v::AbstractFixedVector{NT,T}, p::AbstractFixedVector{NU}) where {NT,T,NU} -> FixedVector{NU,T}
+    $(@__MODULE__).shuffle(v::AbstractFixedVector{NT,T}, p::AbstractFixedVector{M}, ::Val{INB}) where {NT,T,M,INB} -> FixedVector{M,T}
 
-Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`.
+Uses hardware acceleration to permute the elements of `v` and returns the new vector `w`, and `false` otherwise.
 The permutation `p` must be 0-based. In other words, `w[i] == v[p[i]+1]` for any index `i` of `p`.
-If `p[i]` is negative, then `w[i]` is set to zero.
-Bounds are not checked. Moreover, negative index values must be in the range `-NU:-1`.
+If `p[i]` is negative, then `w[i]` is set to `default(T)`.
+Bounds are not checked. Moreover, negative indices must be in the range `-M:-1`.
+The Boolean parameter `INB` indicates whether all indices are within bounds (`INB = true`) or
+if negative indices may occur (`INB = false`).
 
-See also [`$(@__MODULE__).hasshuffle`](@ref).
+See also [`$(@__MODULE__).hasshuffle`](@ref), [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).getindex0`](@ref).
 """
 shuffle

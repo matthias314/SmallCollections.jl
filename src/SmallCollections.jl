@@ -138,13 +138,13 @@ else
     const HAS_PEXT = false
     const HAS_COMPRESS = false
 
-    shufflewidth(::Val, ::Type) = 0
+    hasshuffle(::Val, ::Type, ::Val) = false
 end
 
 if VERSION > v"1.11-alpha"
     eval(Expr(:public, :default, :isfasttype, :FixedVectorStyle, :SmallVectorStyle,
         :MapStyle, :LazyStyle, :EagerStyle, :RigidStyle, :StrictStyle, :Inbounds, :padtail,
-        :AbstractFixedOrSmallVector, :AbstractFixedOrSmallOrPackedVector,
+        :AbstractFixedOrSmallVector, :AbstractFixedOrSmallOrPackedVector, :getindex0,
         :unsafe_delete, :unsafe_push,
         :bitsize, :unsafe_shl, :unsafe_lshr, :blsi, :blsr, :blsmsk, :pdep, :pext))
 end

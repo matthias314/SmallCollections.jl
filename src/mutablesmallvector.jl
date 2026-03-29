@@ -331,7 +331,7 @@ end
         checkbounds(v, i)
         @boundscheck length(v) < N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
-    if hasshuffle(v)
+    if hasshuffle(v, Val(false))
         @inbounds assignto!(v, duplicate(v, i))
     else
         GC.@preserve v unsafe_copyto!(pointer(v, i+1), pointer(v, i), (length(v)-(i-1)) % UInt)
@@ -343,7 +343,7 @@ end
 reverse!(v::MutableSmallVector) = @inbounds reverse!(v, 1)
 
 @propagate_inbounds function reverse!(v::MutableSmallVector, start::Integer)
-    if hasshuffle(v)
+    if hasshuffle(v, Val(true))
         unsafe_copyto!(v, reverse(v, start))
     else
         invoke(reverse!, Tuple{AbstractVector,Integer}, v, start)
@@ -363,7 +363,7 @@ unsafe_circshift(::AbstractSmallVector, ::Integer),
 unsafe_circshift!(::MutableSmallVector, ::Integer)
 
 @inline function unsafe_circshift!(v::MutableSmallVector{N,T}, k::Integer) where {N,T}
-    if hasshuffle(v)
+    if hasshuffle(v, Val(true))
         w = unsafe_circshift(v, k)
     elseif N <= 16 || !isbits(T)
         n1 = length(v)

@@ -15,6 +15,7 @@ SmallCollections.MapStyle
 SmallCollections.FixedVectorStyle
 SmallCollections.SmallVectorStyle
 SmallCollections.padtail
+SmallCollections.getindex0
 SmallCollections.unsafe_circshift
 ```
 

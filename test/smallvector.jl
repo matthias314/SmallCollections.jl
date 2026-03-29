@@ -186,8 +186,7 @@ end
 end
 
 @testset "SmallVector reverse" begin
-    for V in VS, N in (1, 2, 9, 16, 128), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
-        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
+    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
         @test_inferred reverse(v) reverse(u) SmallVector(v)
@@ -212,8 +211,7 @@ end
 end
 
 @testset "SmallVector push/pop" begin
-    for V in VS, N in (1, 2, 9, 16, 128), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
-        N == 128 && !(T in (Int8, UInt8, Bool)) && continue
+    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
         x = rand(T)
@@ -412,6 +410,40 @@ end
             v2 = copy(v)
             v3 = @test_inferred circshift!(v2, k) circshift(u, k) v2
             @test v3 === v2
+        end
+    end
+end
+
+@testset "SmallVector shuffle 256" begin
+    T = Int8
+    U = UInt8
+    for N in [128, 127, 256, 255], n in N-2:N
+        v = SmallVector{N}(rand(T, n))
+        vv = collect(v)
+        for k in [-n, -n+1, -n+2, -2, -1, 0, 1, 2, n-2, n-1, n]
+            @test circshift(v, k) == circshift(vv, k)
+            @test circshift!(MutableSmallVector(v), k) == circshift(vv, k)
+        end
+        for k in [1, 2, 3, n-1, n, n+1]
+            @test reverse(v, k) == reverse(vv, k)
+            @test reverse!(MutableSmallVector(v), k) == reverse(vv, k)
+        end
+        @test first(popfirst(v)) == deleteat!(copy(vv), 1)
+        @test (w = MutableSmallVector(v); popfirst!(w); w) == deleteat!(copy(vv), 1)
+        for k in [1, 2, 3, n-2, n-1, n]
+            n < N || continue
+            @test duplicate(v, k) == [vv[1:k]; vv[k:n]]
+            @test first(popat(v, k)) == deleteat!(copy(vv), k)
+            @test duplicate!(MutableSmallVector(v), k) == [vv[1:k]; vv[k:n]]
+            @test deleteat!(MutableSmallVector(v), k) == deleteat!(copy(vv), k)
+        end
+        for k in [1, 2, 3, n-2, n-1, n], l in [k-1, k, n-1, n]
+            @test v[k:l] == vv[k:l]
+        end
+        n < typemax(U) || continue
+        for M in [128, 127, 256, 255], m in [0, 1, 2, M-2, M-1, M]
+            ii = SmallVector{M,U}(rand(0:n-1, m))
+            @test v[ii .+ U(1)] == vv[ii .+ 1]
         end
     end
 end
