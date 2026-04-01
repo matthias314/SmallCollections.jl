@@ -1,4 +1,4 @@
-using SmallCollections: default, bitsize
+using SmallCollections: default, bitsize, getindex0
 
 using Base.FastMath: eq_fast
 using LinearAlgebra: LinearAlgebra, dot
@@ -156,17 +156,23 @@ end
         m > 0 || continue
 
         M = 7
-        jj = rand(UInt8(1):UInt8(m), M)
-        ii = FixedVector{M}(jj)
-        @test_inferred v[ii] u[ii] FixedVector{M,T}
-        ii = SmallVector{M+1}(jj)
-        @test_inferred v[ii] u[ii] SmallVector{M+1,T}
-        ii = PackedVector{UInt128,12,Int16}(jj)
-        @test_inferred v[ii] u[ii] u
-        ii = 2:min(m, 5)
-        @test_inferred v[ii] u[ii] SmallVector{N,T}
-        ii = 1:2:min(m, 7)
-        @test_inferred v[ii] u[ii] SmallVector{N,T}
+        for jj in [rand(UInt8(1):UInt8(m), M), Int16[]]
+            ii = SmallVector{M+1}(jj)
+            @test_inferred v[ii] u[ii] SmallVector{M+1,T}
+            ii0 = SmallVector{M}(jj .- UInt8(1))
+            @test_inferred getindex0(v, ii0) u[ii] SmallVector{M,T}
+            ii = PackedVector{UInt128,12,Int16}(jj)
+            @test_inferred v[ii] u[ii] u
+            ii = 2:min(m, 5)
+            @test_inferred v[ii] u[ii] SmallVector{N,T}
+            ii = 1:2:min(m, 7)
+            @test_inferred v[ii] u[ii] SmallVector{N,T}
+            isempty(jj) && continue
+            ii = FixedVector{M}(jj)
+            @test_inferred v[ii] u[ii] FixedVector{M,T}
+            ii0 = FixedVector{M}(jj .- UInt8(1))
+            @test_inferred getindex0(v, ii0) u[ii] FixedVector{M,T}
+        end
     end
 end
 

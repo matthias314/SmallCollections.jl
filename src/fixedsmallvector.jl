@@ -332,6 +332,11 @@ end
         ii::AbstractFixedVector{M,S}
     ) where {N, T, M, S <: Integer} -> FixedVector{M,T}
 
+    $(@__MODULE__).getindex0(
+        v::Union{AbstractFixedVector{N,T}, AbstractSmallVector{N,T}},
+        ii::AbstractSmallVector{M,S}
+    ) where {N, T, M, S <: Integer} -> SmallVector{M,T}
+
 This function for vector indexing is analogous to `getindex` with the difference
 that the index vector `ii` is assumed to be `0`-based. This is particularly useful
 for indexing a vector `v` with capacity `N = 256` efficiently via a vector `ii` with
@@ -358,6 +363,8 @@ julia> getindex0(v, ii) == v[ii .+ 1]
 true
 ```
 """
+getindex0
+
 @inline function getindex0(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedVector{M,S}) where {N, T, M, S <: Integer}
     @boundscheck begin
         x, y = extrema(ii)
@@ -375,6 +382,15 @@ true
     else
         map(i -> @inbounds(v[i+1]), ii)
     end
+end
+
+@inline function getindex0(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractSmallVector{M,S}) where {N, T, M, S <: Integer}
+    @boundscheck isempty(ii) || begin
+        x, y = extrema(fixedvector(ii))
+        checkbounds(v, x+1:y+1)
+    end
+    @inbounds w = getindex0(v, fixedvector(ii))
+    SmallVector(padtail(w, length(ii)), length(ii))
 end
 
 @inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::AbstractFixedVector{M,S}) where {N, T, M, S <: BitInteger}
