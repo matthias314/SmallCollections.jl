@@ -66,40 +66,40 @@ See also [`$(@__MODULE__).default`](@ref), [`$(@__MODULE__).isfasttype`](@ref).
 
 # Examples
 ```jldoctest
-julia> using SmallCollections: MapStyle
+julia> using $(@__MODULE__): MapStyle
 
 julia> MapStyle(iszero, Int)   # not RigidStyle: iszero(0) is true, not false
-SmallCollections.EagerStyle()
+$(@__MODULE__).EagerStyle()
 
 julia> MapStyle(+, Int, Int)
-SmallCollections.RigidStyle()
+$(@__MODULE__).RigidStyle()
 
 julia> MapStyle(*, Int, Float64)   # not StrictStyle: 0 * Inf is NaN, not 0.0
-SmallCollections.RigidStyle()
+$(@__MODULE__).RigidStyle()
 
 julia> MapStyle(*, Int, Int)
-SmallCollections.StrictStyle()
+$(@__MODULE__).StrictStyle()
 
 julia> MapStyle(-, Int)
-SmallCollections.StrictStyle()
+$(@__MODULE__).StrictStyle()
 
 julia> MapStyle(x -> -x, Int)   # not StrictStyle: anonymous function not recognized
-SmallCollections.LazyStyle()
+$(@__MODULE__).LazyStyle()
 
 julia> MapStyle(-, Int128)   # Int128 is not a fast type, so better be lazy
-SmallCollections.LazyStyle()
+$(@__MODULE__).LazyStyle()
 
 julia> MapStyle(isfinite∘inv, Float64)   # function composition is recognized
-SmallCollections.EagerStyle()
+$(@__MODULE__).EagerStyle()
 
 julia> MapStyle(!isodd, Int)  # function composition again
-SmallCollections.EagerStyle()
+$(@__MODULE__).EagerStyle()
 
 julia> MapStyle(!iszero, Int)   # separately defined to override EagerStyle
-SmallCollections.StrictStyle()
+$(@__MODULE__).StrictStyle()
 
 julia> MapStyle(>=(1), Int)   # >=(1) is Base.Fix2(>=, 1), which is recognized
-SmallCollections.EagerStyle()
+$(@__MODULE__).EagerStyle()
 ```
 """
 abstract type MapStyle end,

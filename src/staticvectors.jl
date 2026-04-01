@@ -66,6 +66,8 @@ end
 Replace the elements of `v` after the `i`-th position by `x` and return the new vector.
 Providing an out-of-bounds index `i` does not produce an error.
 
+See also [`$(@__MODULE__).default`](@ref).
+
 # Example
 ```jldoctest
 julia> v = FixedVector{4,Int}(1:4);
