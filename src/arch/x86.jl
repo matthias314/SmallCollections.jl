@@ -21,6 +21,11 @@ if cpufeature(:BMI2)
     pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
         ccall((llvm_pext,), llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
 
+    function Random.nth(s::SmallBitSet{U}, n::Integer) where U <: Union{UInt8,UInt16,UInt32,UInt}
+        b = pdep(unsafe_shl(one(U), n-1), bits(s))
+        return trailing_zeros(b) + 1
+    end
+
     const HAS_PEXT = true
 else
     const HAS_PEXT = false
