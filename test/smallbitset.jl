@@ -178,3 +178,15 @@ end
     v = rand(SmallBitSet{UInt16}, 50)
     @test sort(v) == sort(v; lt = colex_lt)  # does UIntMappable work?
 end
+
+VERSION > v"1.13-" && @testset "SmallBitSet nth" begin
+    for U in [UInt8, UInt16, UInt32, UInt]
+        s = rand(SmallBitSet{U})
+        v = collect(s)
+        for i in 1:length(s)
+            @test_inferred Iterators.nth(s, i) v[i]
+        end
+        @test_throws BoundsError Iterators.nth(s, 0)
+        @test_throws BoundsError Iterators.nth(s, length(s)+1)
+    end
+end

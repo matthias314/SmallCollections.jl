@@ -1,40 +1,5 @@
 using CpuId: cpufeature
 
-if cpufeature(:BMI1)
-    const llvm_bextr = "llvm.x86.bmi.bextr.$(bitsize(UInt))"
-
-    bextr(x::U, y::Unsigned) where U <: Union{UInt8,UInt16,UInt32,UInt} =
-        ccall((llvm_bextr,), llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
-
-    const HAS_BEXTR = true
-else
-    const HAS_BEXTR = false
-end
-
-if cpufeature(:BMI2)
-    const llvm_pdep = "llvm.x86.bmi.pdep.$(bitsize(UInt))"
-    const llvm_pext = "llvm.x86.bmi.pext.$(bitsize(UInt))"
-
-    pdep(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
-        ccall((llvm_pdep,), llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
-
-    pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} =
-        ccall((llvm_pext,), llvmcall, UInt, (UInt, UInt), x % UInt, y % UInt) % U
-
-    function Random.nth(s::SmallBitSet{U}, n::Integer) where U <: Union{UInt8,UInt16,UInt32,UInt}
-        b = pdep(unsafe_shl(one(U), n-1), bits(s))
-        return trailing_zeros(b) + 1
-    end
-
-    const HAS_PEXT = true
-else
-    const HAS_PEXT = false
-end
-
-using CpuId: CpuFeature, __ECX
-const AVX512VBMI2 = CpuFeature(0x0000_0007, 0x00, __ECX, 6)
-const HAS_COMPRESS = cpufeature(:AVX512VL) || cpufeature(AVX512VBMI2)
-
 @inline @generated function shuffle(::Val{:avx}, v::AbstractFixedVector{N,T}, p::AbstractFixedVector{N,U}, @nospecialize(_)) where {N, T, U}
     @assert N*sizeof(T) == N*sizeof(U) == 16
     HT = hwtype(T)
