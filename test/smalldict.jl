@@ -45,6 +45,16 @@ val_types = [Bool, Int64, Char, TestStruct2]
     end
 end
 
+VERSION > v"1.13-" && @testset "SmallDict nth" begin
+    e = Dict{Real,Integer}(1 => 2, 3.0 => Int8(4))
+    d = SmallDict{4,Real,Integer}(e)
+    for i in 1:length(d)
+        @test_inferred Iterators.nth(d, i) Iterators.nth(e, i)
+    end
+    @test_throws BoundsError Iterators.nth(d, 0)
+    @test_throws BoundsError Iterators.nth(d, length(d)+1)
+end
+
 @testset "SmallDict getindex/setindex" begin
     for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue

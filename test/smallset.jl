@@ -48,6 +48,18 @@ SS = (SmallSet, MutableSmallSet)
     end
 end
 
+VERSION > v"1.13-" && @testset "SmallSet nth" begin
+    t = Set([1, 2, 3])
+    for S in SS
+        s = S{4}(t)
+        for i in 1:length(s)
+            @test_inferred Iterators.nth(s, i) Iterators.nth(t, i)
+        end
+        @test_throws BoundsError Iterators.nth(s, 0)
+        @test_throws BoundsError Iterators.nth(s, length(s)+1)
+    end
+end
+
 @testset "SmallSet in" begin
     for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue

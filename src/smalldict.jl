@@ -189,8 +189,19 @@ copy(d::MutableSmallDict) = MutableSmallDict(d)
 
 length(d::AbstractSmallDict) = length(d.keys)
 
-function iterate(d::AbstractSmallDict{N,K,V}, i = 1) where {N,K,V}
-    i <= length(d) ? (@inbounds Pair{K,V}(d.keys[i], d.vals[i]), i+1) : nothing
+if VERSION > v"1.13-"
+    @inline function Iterators.nth(d::AbstractSmallDict{N,K,V}, i::Integer) where {N,K,V}
+        @boundscheck 1 <= i <= length(d) || boundserror(d, i)
+        @inbounds Pair{K,V}(d.keys[i], d.vals[i])
+    end
+
+    function iterate(d::AbstractSmallDict{N,K,V}, i = 1) where {N,K,V}
+        i <= length(d) ? (@inbounds Iterators.nth(d, i), i+1) : nothing
+    end
+else
+    function iterate(d::AbstractSmallDict{N,K,V}, i = 1) where {N,K,V}
+        i <= length(d) ? (@inbounds Pair{K,V}(d.keys[i], d.vals[i]), i+1) : nothing
+    end
 end
 
 @inline token(d::AbstractSmallDict, key) = findfirst(isequal(key), d.keys)

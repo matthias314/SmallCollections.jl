@@ -135,6 +135,13 @@ copy(s::MutableSmallSet) = MutableSmallSet(s)
 
 length(s::AbstractSmallSet) = length(s.d)
 
+if VERSION > v"1.13-"
+    @inline function Iterators.nth(s::AbstractSmallSet, i::Integer)
+        @boundscheck 1 <= i <= length(s) || boundserror(s, i)
+        @inbounds s.d.keys[i]
+    end
+end
+
 iterate(s::AbstractSmallSet, state...) = iterate(s.d.keys, state...)
 
 """
