@@ -115,8 +115,18 @@ ntuple(f, n) = Base.ntuple(f, n)
 @noinline keyerror(key) = throw(KeyError(key))
 @noinline dimensionmismatch(msg) = throw(DimensionMismatch(msg))
 @noinline overflowerror(msg) = throw(OverflowError(msg))
+@noinline boundserror(itr, n) = throw(BoundsError(itr, n))
 
 include("bits.jl")
+
+if Sys.ARCH in (:x86_64, :i686)
+    include("arch/x86_init.jl")
+else
+    const HAS_BEXTR = false
+    const HAS_PEXT = false
+    const HAS_COMPRESS = false
+end
+
 include("mapstyle.jl")
 
 include("smallbitset.jl")
@@ -134,10 +144,6 @@ include("smallset.jl")
 if Sys.ARCH in (:x86_64, :i686)
     include("arch/x86.jl")
 else
-    const HAS_BEXTR = false
-    const HAS_PEXT = false
-    const HAS_COMPRESS = false
-
     hasshuffle(::Val, ::Type, ::Val) = false
 end
 

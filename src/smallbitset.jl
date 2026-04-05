@@ -254,6 +254,14 @@ SmallBitSet{UInt8}([])
 """
 first_as_set(s::SmallBitSet) = _SmallBitSet(blsi(s.mask))
 
+if VERSION > v"1.13-" && HAS_PEXT
+    @inline function Iterators.nth(s::SmallBitSet{U}, n::Integer) where U <: Union{UInt8,UInt16,UInt32,UInt}
+        @boundscheck 1 <= n <= length(s) || boundserror(s, n)
+        b = pdep(unsafe_shl(one(U), n-1), bits(s))
+        return trailing_zeros(b) + 1
+    end
+end
+
 function minimum(s::SmallBitSet; init = missing)
     if !isempty(s)
         @inbounds first(s)
