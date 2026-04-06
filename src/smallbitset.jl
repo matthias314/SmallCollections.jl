@@ -10,7 +10,7 @@ import Base: show, ==, hash, copy, convert,
     empty, isempty, in, first, last, iterate,
     length, issubset, ⊊, maximum, minimum, extrema,
     union, intersect, setdiff, symdiff, filter,
-    count, any, all, replace
+    count, any, all, replace, rest, split_rest
 
 isinteger(x) = x isa Number && Base.isinteger(x)
 
@@ -221,6 +221,18 @@ length(s::SmallBitSet) = count_ones(bits(s))
 # from https://discourse.julialang.org/t/faster-way-to-find-all-bit-arrays-of-weight-n/113658/12
 iterate(s::SmallBitSet, m = bits(s)) =
     iszero(m) ? nothing : (trailing_zeros(m)+1, blsr(m))
+
+rest(s::SmallBitSet, state::Unsigned = s.mask) = _SmallBitSet(state)
+
+@inline function split_rest(s::SmallBitSet, n::Int, state::Unsigned = s.mask)
+    @boundscheck 0 <= n <= count_ones(state) || error("impossible number of elements requested")
+    mask = state
+    b = unsigned(typemin(signed(mask)))
+    for _ in 1:n
+        mask &= ~unsafe_lshr(b, leading_zeros(mask))
+    end
+    _SmallBitSet(mask), _SmallBitSet(state ⊻ mask)
+end
 
 @inline function first(s::SmallBitSet)
     @boundscheck isempty(s) && error("collection must be non-empty")

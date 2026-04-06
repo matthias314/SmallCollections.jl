@@ -190,3 +190,29 @@ VERSION > v"1.13-" && @testset "SmallBitSet nth" begin
         @test_throws BoundsError Iterators.nth(s, length(s)+1)
     end
 end
+
+@testset "SmallBitSet rest" begin
+    for U in unsigned_types
+        s = SmallBitSet{U}([2, 3, 5, 8])
+        @test_inferred Base.rest(s) s
+        t..., = s
+        @test t === s
+        x, t... = s
+        @test t === SmallBitSet{U}([3, 5, 8])
+        x, y, t... = s
+        @test t === SmallBitSet{U}([5, 8])
+        x, y, z, t... = s
+        @test t === SmallBitSet{U}([8])
+        x, y, z, w, t... = s
+        @test t === empty(t)
+        @test_inferred Base.split_rest(s, 2) (SmallBitSet{U}([2, 3]), SmallBitSet{U}([5, 8]))
+        @test_throws Exception Base.split_rest(s, -1)
+        @test_throws Exception Base.split_rest(s, length(s)+1)
+        x, t..., y = s
+        @test t === SmallBitSet{U}([3, 5])
+        x, t..., y, z = s
+        @test t === SmallBitSet{U}([3])
+        x, y, t..., z, w = s
+        @test t === empty(t)
+    end
+end
