@@ -224,12 +224,19 @@ iterate(s::SmallBitSet, m = bits(s)) =
 
 rest(s::SmallBitSet, state::Unsigned = s.mask) = _SmallBitSet(state)
 
-@inline function split_rest(s::SmallBitSet, n::Int, state::Unsigned = s.mask)
+@propagate_inbounds split_rest(s::SmallBitSet, n::Int) = split_rest(s, n, s.mask)
+
+@inline function split_rest(s::SmallBitSet, n::Int, state::Unsigned)
     @boundscheck 0 <= n <= count_ones(state) || error("impossible number of elements requested")
-    mask = state
-    b = unsigned(typemin(signed(mask)))
-    for _ in 1:n
-        mask &= ~unsafe_lshr(b, leading_zeros(mask))
+    if HAS_PEXT && bitsize(state) <= bitsize(UInt)
+        c = one(state) << ((count_ones(state)-n) % UInt) - one(state)
+        mask = pdep(c, state)
+    else
+        mask = state
+        b = unsigned(typemin(signed(mask)))
+        for _ in 1:n
+            mask &= ~unsafe_lshr(b, leading_zeros(mask))
+        end
     end
     _SmallBitSet(mask), _SmallBitSet(state ⊻ mask)
 end
