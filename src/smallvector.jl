@@ -702,7 +702,7 @@ See also [`duplicate`](@ref duplicate(::AbstractSmallVector, ::Integer)).
 @inline function insert(v::AbstractSmallVector{N}, i::Integer, x) where N
     n = length(v)
     @boundscheck begin
-        1 <= i <= n+1 || throw(BoundsError(v, i))
+        1 <= i <= n+1 || boundserror(v, i)
         n < N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
     @inbounds SmallVector(insert(v.b, i, x), n+1)

@@ -227,7 +227,7 @@ end
 @propagate_inbounds deleteat!(v::MutableSmallVector, i::Integer) = deleteat!(v, i, 1)
 
 @inline function deleteat!(v::MutableSmallVector{N,T}, i::Integer, n::Integer) where {N,T}
-    @boundscheck (1 <= i <= length(v)-n+1 && n >= 0) || throw(BoundsError(v, i))
+    @boundscheck (1 <= i <= length(v)-n+1 && n >= 0) || boundserror(v, i)
     b = sizeof(T)
     GC.@preserve v begin
         unsafe_copyto!(pointer(v, i), pointer(v, i+n), (length(v)-(i+n-1)) % UInt)
@@ -262,7 +262,7 @@ end
 end
 
 @inline function insert!(v::MutableSmallVector{N,T}, i::Integer, xs::Vararg{Any,M}) where {N,T,M}
-    @boundscheck 1 <= i <= length(v)+1 <= N-M+1 || throw(BoundsError(v, i))
+    @boundscheck 1 <= i <= length(v)+1 <= N-M+1 || boundserror(v, i)
     v.n += M % SmallLength
     unsafe_shl!(v, v.n, i, xs...)
 end
