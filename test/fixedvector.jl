@@ -116,6 +116,8 @@ end
 
         ii = 1:max(0, N-2)
         @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = Base.OneTo(ii)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
         ii = collect(ii)
         @test_inferred v[ii] u[ii] Vector{T}
 

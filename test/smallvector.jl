@@ -150,6 +150,8 @@ end
 
         ii = 1:max(0, m-2)
         @test_inferred v[ii] u[ii] SmallVector{N,T}
+        ii = Base.OneTo(ii)
+        @test_inferred v[ii] u[ii] SmallVector{N,T}
         ii = collect(ii)
         @test_inferred v[ii] u[ii] MutableSmallVector{N,T}  # type chosen in Base via `similar`
 

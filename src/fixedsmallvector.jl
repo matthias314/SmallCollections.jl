@@ -227,7 +227,7 @@ end
 @inline function getindex(v::AbstractFixedOrSmallVector{N,T}, ii::OrdinalRange{<:Integer}) where {N,T}
     @boundscheck checkbounds(v, ii)
     if ii isa OneTo
-        @inbounds resize(v, length(ii))
+        @inbounds resize(SmallVector(v), length(ii))
     elseif ii isa AbstractUnitRange && hasshuffle(v, Val(true))
         w = unsafe_circshift(fixedvector(v), 1-first(ii))
         SmallVector(padtail(w, length(ii)), length(ii))
