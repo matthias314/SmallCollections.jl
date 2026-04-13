@@ -200,11 +200,15 @@ SmallBitSet{U}() where U = _SmallBitSet(zero(U))
         (first(r), unsigned(step(r)), last(r)))
     @boundscheck r0 > r1 || (1 <= r0 && r1 <= bitsize(U)) ||
         error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
-    a = unsafe_shl(one(U), r1-r0) - one(U)
-    b = one(U) << s - one(U)  # with unsafe_shl, b could be zero
-    c = unsafe_shl(unsafe_div(a, b), s) + one(U)
+    c = if r isa AbstractUnitRange
+        one(U) << unsigned(r1-(r0-1)) - one(U)
+    else
+        a = unsafe_shl(one(U), r1-r0) - one(U)
+        b = one(U) << s - one(U)  # with unsafe_shl, b could be zero
+        unsafe_shl(unsafe_div(a, b), s) + one(U)
+    end
     d = unsafe_shl(c, r0-1)
-    _SmallBitSet(ifelse(r0 <= r1, d, zero(U)))
+    _SmallBitSet(ifelse(r isa AbstractUnitRange || r0 <= r1, d, zero(U)))
 end
 
 isempty(s::SmallBitSet) = iszero(bits(s))
