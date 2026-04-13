@@ -29,6 +29,15 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
         @test_inferred hash(s) hash(t)
         @test_inferred fasthash(s) fasthash(s3)
         @test_inferred Set(s) t
+
+        for r in [0:-1, 1:0, 1:1, 1:2, 1:m-1, 1:m, 2:0, 2:2, 2:m-1, 2:m, m-1:0, m-1:m-1, m-1:m, m:0, m:m, m+1:m, 1:m:1, m:2*m:m,
+                1:3:0, 1:3:1, 1:3:m-1, 1:3:m, 2:3:0, 2:3:2, 2:3:m-1, 2:3:m, m-1:3:0, m-1:3:m-1, m-1:3:m, m:3:0, m:3:m, m:3:m+1,
+                1:-1:3, 1:-2:1, 2:-1:m, 2:-2:2, 2:-1:1, m-1:-2:m, m-1:-1:2, m-1:-2:1, m:-1:m+1, m:-2:m, m:-1:m-1, m:-2:2, m:-1:1]
+            @test_inferred SmallBitSet{U}(r) SmallBitSet{U}(collect(r))
+            first(r) >= 0 && last(r) >= 0 && @test_inferred SmallBitSet{U}(StepRange{UInt32,Int16}(r)) SmallBitSet{U}(collect(r))
+        end
+        @test_throws Exception SmallBitSet{U}(0:1)
+        @test_throws Exception SmallBitSet{U}(1:2:m+1)
     end
 
     @test_inferred smallbitsettype(Val(2)) SmallBitSet{UInt8}
