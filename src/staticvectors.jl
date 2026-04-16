@@ -122,6 +122,27 @@ end
     end
 end
 
+# useful for forcing vectorization
+@inline @generated function fixedvector_muladd(v::FixedVector{N,T}, a::T, b::T) where {N,T}
+    LT = llvm_type(T)
+    ir = """
+        %a0 = insertelement <$N x $LT> poison, $LT %1, i8 0
+        %a  = shufflevector <$N x $LT> %a0, <$N x $LT> poison, <$N x i32> zeroinitializer
+        %u  = mul <$N x $LT> %a, %0
+        %b0 = insertelement <$N x $LT> poison, $LT %2, i8 0
+        %b  = shufflevector <$N x $LT> %b0, <$N x $LT> poison, <$N x i32> zeroinitializer
+        %w  = add <$N x $LT> %u, %b
+        ret <$N x $LT> %w
+    """
+    quote
+        t = Base.llvmcall($ir,
+            NTuple{N, VecElement{T}},
+            Tuple{NTuple{N, VecElement{T}}, T, T},
+            vec(v), a, b)
+        FixedVector{N,T}(unvec(t))
+    end
+end
+
 """
     fixedvector_range(::Val{N}, n::Integer, b::T) where {N,T}
     fixedvector_range(::Val{N}, n::Integer, b::T, m::Integer, a::T) where {N,T}

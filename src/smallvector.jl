@@ -331,14 +331,16 @@ end
     SmallVector{N,T}(t, length(v))
 end
 
-@inline function SmallVector{N,T}(v::AbstractUnitRange) where {N, T <: Integer}
-    T <: HWType || invoke(SmallVector{N,T}, Tuple{AbstractVector}, v)
-    i0, i1 = first(v), last(v)
-    @boundscheck isempty(v) || begin
-        T(i0), T(i1)  # check if we can convert
-        length(v) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
+@inline function SmallVector{N,T}(r::OrdinalRange) where {N, T <: Integer}
+    T <: HWType || return invoke(SmallVector{N,T}, Tuple{Any}, r)
+    n = unsafe_length(r)
+    @boundscheck n == 0 || begin
+        T(first(r)), T(last(r))  # check if we can convert
+        n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
-    SmallVector(fixedvector_range(Val(N), length(v), i0 % T), length(v))
+    u = FixedVector{N,SmallLength}(0:N-1) .% T
+    v = fixedvector_muladd(u, step(r) % T, first(r) % T)
+    SmallVector(padtail(v, n), n % SmallLength)
 end
 
 @propagate_inbounds function SmallVector{N,T}(s::SmallBitSet{U}) where {N, T <: Integer, U <: Unsigned}
@@ -358,7 +360,7 @@ end
     SmallVector{N,T}(b, n)
 end
 
-function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
+@propagate_inbounds function (::Type{V})(iter::I) where {N,V<:AbstractSmallVector{N},I}
     Base.IteratorEltype(I) isa Base.HasEltype || error("cannot determine element type")
     T = element_type(I)
     V{T}(iter)

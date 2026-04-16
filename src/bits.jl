@@ -204,3 +204,13 @@ end
 
 unsafe_int(x::Integer) = x % Int
 unsafe_int(x) = Int(x)
+
+function unsafe_length(r::OrdinalRange{T}) where T <: Union{AbstractBitInteger,Bool,Char}
+    r0, s, r1 = ifelse(signbit(step(r)),
+        (last(r), unsigned(-step(r)), first(r)),
+        (first(r), unsigned(step(r)), last(r)))
+    n = unsafe_div(unsigned(r1-r0), s) % Int + 1
+    ifelse(r0 <= r1, n, 0)
+end
+
+unsafe_length(r::OrdinalRange) = length(r)
