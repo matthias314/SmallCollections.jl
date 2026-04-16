@@ -72,6 +72,23 @@ const VS = (SmallVector, MutableSmallVector)
         w = rand(W{N,T})
         @test_inferred V(w) w V{N,T}
     end
+
+    for V in VS, N in (9, 16), T in [Int8, UInt8, Int16, UInt32, Int64, UInt256]
+        for r in [1:0, 1:1, 1:2, 1:N-1, 1:N, 2:0, 2:2, 2:N, 2:N+1, 2:4:1, 2:4:2, 2:4:2*N, 2*N:-3:1, 1000:999,
+            typemin(T):3:typemin(T)+N, typemax(T):-2:typemax(T)-N, Base.OneTo(0), Base.OneTo(1), Base.OneTo(N)]
+            T <: Unsigned && (first(r) < 0 || last(r) < 0) && continue
+            @test_inferred V{N,T}(r) r V{N,T}
+            try
+                StepRange{UInt,UInt}(r)
+            catch
+            else
+                @test_inferred V{N,T}(StepRange{UInt,UInt}(r)) r V{N,T}
+            end
+        end
+        @test_throws Exception V{N,T}(1:N+1)
+    end
+    @test_throws Exception V{11,Int16}(typemax(Int16):typemax(Int16)+1)
+    @test_throws Exception V{11,UInt}(1:-2:-1)
 end
 
 @testset "SmallVector indices" begin
