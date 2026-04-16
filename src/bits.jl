@@ -145,21 +145,19 @@ This function is only available on `x86_64` and `i686` machines and uses the cor
 """
 pext(x::Unsigned, y::Union{UInt8,UInt16,UInt32,UInt})
 
-function unsafe_div(x::T, y::T) where T <: Union{UInt8,UInt16,UInt32}
-    Base.llvmcall("""
-            %a = udiv i32 %0, %1
-            ret i32 %a
-        """, UInt32, Tuple{UInt32, UInt32}, x % UInt32, y % UInt32) % T
+@generated function unsafe_div(x::U, y::V) where {U <: Unsigned, V <: Unsigned}
+    W = promote_type(U, V)
+    if W <: AbstractBitInteger
+        LW = llvm_type(W)
+        ir = """
+            %a = udiv $LW %0, %1
+            ret $LW %a
+        """
+        :(Base.llvmcall($ir, $W, Tuple{$W, $W}, x % $W, y % $W) % U)
+    else
+        :(div(x, y))
+    end
 end
-
-function unsafe_div(x::UInt64, y::UInt64)
-    Base.llvmcall("""
-            %a = udiv i64 %0, %1
-            ret i64 %a
-        """, UInt64, Tuple{UInt64, UInt64}, x, y)
-end
-
-unsafe_div(x, y) = div(x, y)
 
 function unsafe_rem(x::BitInteger, y::Base.BitUnsigned32)
     Base.llvmcall("""
