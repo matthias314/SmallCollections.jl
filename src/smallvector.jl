@@ -345,7 +345,7 @@ end
 
 @propagate_inbounds function SmallVector{N,T}(s::SmallBitSet{U}) where {N, T <: Integer, U <: Unsigned}
     (T <: HWType && N <= typemax(T) && bitsize(U) <= N) || return invoke(SmallVector{N,T}, Tuple{Any}, s)
-    v = fixedvector_range(Val(N), N, T(1))
+    v = FixedVector{N,T}(1:N)
     @inbounds v[s]
 end
 
