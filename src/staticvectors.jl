@@ -122,23 +122,20 @@ end
     end
 end
 
-# useful for forcing vectorization
-@inline @generated function fixedvector_muladd(v::FixedVector{N,T}, a::T, b::T) where {N,T}
+@inline @generated function fixedvector_range(::Val{N}, x::T, s::T) where {N,T}
     LT = llvm_type(T)
+    t = join((string("$LT ", k) for k in 0:N-1), ", ")
     ir = """
-        %a0 = insertelement <$N x $LT> poison, $LT %1, i8 0
-        %a  = shufflevector <$N x $LT> %a0, <$N x $LT> poison, <$N x i32> zeroinitializer
-        %u  = mul <$N x $LT> %a, %0
-        %b0 = insertelement <$N x $LT> poison, $LT %2, i8 0
-        %b  = shufflevector <$N x $LT> %b0, <$N x $LT> poison, <$N x i32> zeroinitializer
-        %w  = add <$N x $LT> %u, %b
+        %s  = insertelement <$N x $LT> poison, $LT %1, i8 0
+        %sv = shufflevector <$N x $LT> %s, <$N x $LT> poison, <$N x i32> zeroinitializer
+        %u  = mul <$N x $LT> %sv, <$t>
+        %x  = insertelement <$N x $LT> poison, $LT %0, i8 0
+        %xv = shufflevector <$N x $LT> %x, <$N x $LT> poison, <$N x i32> zeroinitializer
+        %w  = add <$N x $LT> %u, %xv
         ret <$N x $LT> %w
     """
     quote
-        t = Base.llvmcall($ir,
-            NTuple{N, VecElement{T}},
-            Tuple{NTuple{N, VecElement{T}}, T, T},
-            vec(v), a, b)
+        t = Base.llvmcall($ir, NTuple{N, VecElement{T}}, Tuple{T, T}, x, s)
         FixedVector{N,T}(unvec(t))
     end
 end

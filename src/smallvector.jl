@@ -338,8 +338,7 @@ end
         T(first(r)), T(last(r))  # check if we can convert
         n <= N || error(LazyString("vector cannot have more than ", N, " elements"))
     end
-    u = FixedVector{N,SmallLength}(0:N-1) .% T
-    v = fixedvector_muladd(u, step(r) % T, first(r) % T)
+    v = fixedvector_range(Val(N), first(r) % T, step(r) % T)
     SmallVector(padtail(v, n), n % SmallLength)
 end
 
