@@ -228,9 +228,14 @@ end
     @boundscheck checkbounds(v, ii)
     if ii isa OneTo
         @inbounds resize(SmallVector(v), length(ii))
-    elseif ii isa AbstractUnitRange && hasshuffle(v, Val(true))
-        w = unsafe_circshift(fixedvector(v), 1-first(ii))
-        SmallVector(padtail(w, length(ii)), length(ii))
+    elseif hasshuffle(v, Val(true))
+        U = uinttype(T)
+        u = fixedvector_range(Val(N), (first(ii)-1) % U, step(ii) % U)
+        w = shuffle(fixedvector(v), u, Val(true))
+        SmallVector(padtail(w, unsafe_length(ii)), unsafe_length(ii))
+    elseif VERSION >= v"1.11" && ishwtype(T) && (HAS_COMPRESS || N <= 32)
+        U = uinttype(Val(N))
+        @inbounds v[SmallBitSet{U}(ii)]
     else
         @inbounds SmallVector{N,T}(v[i] for i in ii)
     end
