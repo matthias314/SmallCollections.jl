@@ -194,21 +194,26 @@ SmallBitSet{U}() where U = _SmallBitSet(zero(U))
 
 @propagate_inbounds SmallBitSet{U}(iter) where U = _push(zero(U), iter)
 
+@inline function SmallBitSet{U}(r::AbstractUnitRange{<:Integer}) where U
+    r0, r1 = first(r), last(r)
+    @boundscheck if r0 <= r1 && (r0 < 1 || r1 > bitsize(U))
+        error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
+    end
+    m = one(U) << unsigned(r1-(r0-1)) - one(U)
+    _SmallBitSet(unsafe_shl(m, r0-1))
+end
+
 @inline function SmallBitSet{U}(r::OrdinalRange{<:Integer}) where U
     r0, s, r1 = ifelse(signbit(step(r)),
         (last(r), unsigned(-step(r)), first(r)),
         (first(r), unsigned(step(r)), last(r)))
     @boundscheck r0 > r1 || (1 <= r0 && r1 <= bitsize(U)) ||
         error(LazyString(SmallBitSet{U}, " can only contain integers between 1 and ", bitsize(U)))
-    c = if r isa AbstractUnitRange
-        one(U) << unsigned(r1-(r0-1)) - one(U)
-    else
-        a = unsafe_shl(one(U), r1-r0) - one(U)
-        b = one(U) << s - one(U)  # with unsafe_shl, b could be zero
-        unsafe_shl(unsafe_div(a, b), s) + one(U)
-    end
+    a = unsafe_shl(one(U), r1-r0) - one(U)
+    b = one(U) << s - one(U)  # with unsafe_shl, b could be zero
+    c = unsafe_shl(unsafe_div(a, b), s) + one(U)
     d = unsafe_shl(c, r0-1)
-    _SmallBitSet(ifelse(r isa AbstractUnitRange || r0 <= r1, d, zero(U)))
+    _SmallBitSet(ifelse(r0 <= r1, d, zero(U)))
 end
 
 isempty(s::SmallBitSet) = iszero(bits(s))
