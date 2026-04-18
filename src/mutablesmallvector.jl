@@ -85,6 +85,16 @@ MutableSmallVector{N,T}(v::AbstractSmallVector{N}) where {N,T} = MutableSmallVec
     MutableSmallVector{N,T}(SmallVector{N,T}(v))
 end
 
+@propagate_inbounds function MutableSmallVector{N,T}(r::OrdinalRange) where {N, T <: Integer}
+    T <: HWType || return invoke(MutableSmallVector{N,T}, Tuple{Any}, r)
+    MutableSmallVector(SmallVector{N,T}(r))
+end
+
+@propagate_inbounds function MutableSmallVector{N,T}(s::SmallBitSet{U}) where {N, T <: Integer, U <: Unsigned}
+    (T <: HWType && N <= typemax(T) && bitsize(U) <= N) || return invoke(MutableSmallVector{N,T}, Tuple{Any}, s)
+    MutableSmallVector(SmallVector{N,T}(s))
+end
+
 @inline function MutableSmallVector{N,T}(itr) where {N,T}
     isbitstype(T) || return MutableSmallVector(SmallVector{N,T}(itr))
     @boundscheck !haslength(itr) || length(itr) <= N || error(LazyString("vector cannot have more than ", N, " elements"))
