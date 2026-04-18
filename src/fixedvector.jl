@@ -76,14 +76,23 @@ mutable struct MutableFixedVector{N,T} <: AbstractFixedVector{N,T}
 end
 
 @inline function FixedVector{N,T}(v::AbstractVector) where {N,T}
-    length(v) == N || error("argument is not of length ", N)
+    @boundscheck length(v) == N || error("argument is not of length ", N)
     t = ntuple(i -> convert(T, @inbounds v[i+firstindex(v)-1]), Val(N))
     FixedVector{N,T}(t)
 end
 
-@inline function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
+@propagate_inbounds function MutableFixedVector{N,T}(v::AbstractVector) where {N,T}
     w = FixedVector{N,T}(v)
     MutableFixedVector{N,T}(w.t)
+end
+
+@inline function FixedVector{N,T}(r::OrdinalRange) where {N, T <: Integer}
+    T <: HWType || return invoke(FixedVector{N,T}, Tuple{AbstractVector{T}}, r)
+    @boundscheck begin
+        T(first(r)), T(last(r))  # check if we can convert
+        length(r) == N || error("argument is not of length ", N)
+    end
+    fixedvector_range(Val(N), first(r) % T, step(r) % T)
 end
 
 function FixedVector{N,T}(itr::Generator) where {N,T}
