@@ -222,8 +222,8 @@ MapStyle(::Union{typeof.(
 
 MapStyle(::Type{Ref}, ::Type{T}) where T = iffasttypes(StrictStyle(), S, T)
 MapStyle(::Type{Ref{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
-MapStyle(::Type{OneTo}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
-MapStyle(::Type{OneTo{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
+MapStyle(::Type{<:AbstractOneTo}, ::Type{T}) where T = iffasttypes(StrictStyle(), T)
+MapStyle(::Type{<:AbstractOneTo{S}}, ::Type{T}) where {S,T} = iffasttypes(StrictStyle(), S, T)
 
 # definitions for constructors of new functions
 

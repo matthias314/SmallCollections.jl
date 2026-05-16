@@ -26,6 +26,12 @@ module SmallCollections
 using Base: @propagate_inbounds, @assume_effects, Fix1, Fix2, BitInteger, OneTo
 using Base: _InitialValue as Void
 
+if VERSION > v"1.13-"
+    using Base: AbstractOneTo
+else
+    const AbstractOneTo = OneTo
+end
+
 using Random: Random, AbstractRNG, SamplerType
 
 using BitIntegers: AbstractBitSigned, AbstractBitUnsigned,
