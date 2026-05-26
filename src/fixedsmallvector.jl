@@ -472,7 +472,7 @@ SmallBitSet{UInt16} with 4 elements:
     _SmallBitSet(bits(w[v]))
 end
 
-function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
+@inline function filter(f::F, v::AbstractFixedOrSmallVector; kw...) where F
     @inbounds v[support(f, v; kw...)]
 end
 
