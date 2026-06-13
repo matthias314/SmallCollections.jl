@@ -588,6 +588,8 @@ union(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask | t.mask)
 
 union(s::SmallBitSet, ts::SmallBitSet...) = foldl(union, ts; init = s)
 
+union(s::SmallBitSet, t) = foldl(push, t; init = s)
+
 intersect(s::SmallBitSet{U}, t::SmallBitSet) where U <: Unsigned = _SmallBitSet(s.mask & (t.mask % U))
 
 function intersect(s::SmallBitSet{U}, t) where U <: Unsigned
@@ -623,6 +625,19 @@ setdiff(s::SmallBitSet, ts...) = foldl(setdiff, ts; init = s)
 symdiff(s::SmallBitSet, t::SmallBitSet) = _SmallBitSet(s.mask ⊻ t.mask)
 
 symdiff(s::SmallBitSet, ts::SmallBitSet...) = foldl(symdiff, ts; init = s)
+
+function symdiff(s::SmallBitSet, t)
+    u=s
+    for n in t
+        if n in s
+            u = delete(u, n)
+        else
+            u = push(u, n)
+        end
+    end
+    u
+end
+
 
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet{U}}) where U <: Unsigned = _SmallBitSet(rand(rng, U))
 Random.rand(rng::AbstractRNG, ::SamplerType{SmallBitSet}) = rand(rng, SmallBitSet{UInt})
