@@ -124,6 +124,13 @@ On `x86_64` and `i686` machines, this function uses the corresponding instructio
 if possible. Without hardware support it is much slower.
 """
 function pdep(x::Unsigned, y::U) where U <: Unsigned
+    if HAS_PEXT && ispow2(bitsize(U))
+        V = uinttype(Val(bitsize(U) ÷ 2))
+        y_lo, y_hi = reinterpret(Tuple{V, V}, y)
+        x_lo = x % V
+        x_hi = (x >> count_ones(y_lo)) % V
+        return reinterpret(U, (pdep(x_lo, y_lo), pdep(x_hi, y_hi)))
+    end
     a = zero(U)
     while !iszero(y)
         b = blsi(y)

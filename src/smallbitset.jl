@@ -241,7 +241,7 @@ rest(s::SmallBitSet, state::Unsigned = s.mask) = _SmallBitSet(state)
 
 @inline function split_rest(s::SmallBitSet, n::Int, state::Unsigned)
     @boundscheck 0 <= n <= count_ones(state) || error("impossible number of elements requested")
-    if HAS_PEXT && bitsize(state) <= bitsize(UInt)
+    if HAS_PEXT
         c = one(state) << ((count_ones(state)-n) % UInt) - one(state)
         mask = pdep(c, state)
     else
@@ -287,7 +287,7 @@ SmallBitSet{UInt8}([])
 first_as_set(s::SmallBitSet) = _SmallBitSet(blsi(s.mask))
 
 if VERSION > v"1.13-" && HAS_PEXT
-    @inline function Iterators.nth(s::SmallBitSet{U}, n::Integer) where U <: Union{UInt8,UInt16,UInt32,UInt}
+    @inline function Iterators.nth(s::SmallBitSet{U}, n::Integer) where U <: Unsigned
         @boundscheck 1 <= n <= length(s) || boundserror(s, n)
         b = pdep(unsafe_shl(one(U), n-1), bits(s))
         return trailing_zeros(b) + 1
