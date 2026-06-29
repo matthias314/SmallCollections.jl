@@ -75,10 +75,10 @@ julia> Int8(2)*v
  -12
 ```
 """
-struct PackedVector{U<:Unsigned,M,T<:Union{BitInteger,Bool}} <: AbstractVector{T}
+struct PackedVector{U,M,T<:Union{BitInteger,Bool,EmulatedInteger}} <: AbstractVector{T}
     m::U
     n::Int
-    function PackedVector{U,M,T}(m::U, n::Int) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
+    function PackedVector{U,M,T}(m::U, n::Int) where {U <: Unsigned, M, T <: Union{BitInteger,Bool,EmulatedInteger}}
         bitsize(T) < M && error(LazyString("type ", T, " has fewer than ", M, " bits"))
         new{U,M,T}(m, n)
     end
@@ -108,14 +108,20 @@ end
     v
 end
 
-PackedVector{U,M}(v::AbstractVector{T}) where {U,M,T} = PackedVector{U,M,T}(v)
+@propagate_inbounds function PackedVector{N,T}(iter) where {N, T <: Union{BitInteger,Bool,EmulatedInteger}}
+    M = bitsize(T)
+    U = uinttype(Val(N*M))
+    PackedVector{U,M,T}(iter)
+end
 
-function PackedVector{U,M}(v::V) where {U, M, V <: Tuple}
+PackedVector{U,M}(v::AbstractVector{T}) where {U <:Unsigned, M, T} = PackedVector{U,M,T}(v)
+
+function PackedVector{U,M}(v::V) where {U <: Unsigned, M, V <: Tuple}
     T = promote_type(fieldtypes(V)...)
     PackedVector{U,M,T}(v)
 end
 
-@propagate_inbounds function PackedVector{U,M,S}(v::AbstractSmallVector{N,T}) where {U,M,S,N, T <: BitInteger}
+@propagate_inbounds function PackedVector{U,M,S}(v::AbstractSmallVector{N,T}) where {U,M,S,N, T <: Union{BitInteger, EmulatedInteger}}
     if bitsize(T) == M && (T <: Signed) == (S <: Signed)
         @boundscheck begin
             c = capacity(PackedVector{U,M,S})
@@ -127,7 +133,7 @@ end
     end
 end
 
-function PackedVector(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
+function PackedVector(v::AbstractSmallVector{N,T}) where {N, T <: Union{BitInteger, EmulatedInteger}}
     m = bits(v.b)
     M = bitsize(T)
     U = typeof(m)
@@ -289,6 +295,8 @@ end
     mask = one(T) << M - one(T)
     unsigned(x & mask) % U
 end
+
+@inline maskvalue(::Type{U}, M, x::T) where {U, T <: EmulatedSigned} = EmulatedBitIntegers.zext(U, x)
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
@@ -497,7 +505,7 @@ end
 
 pushfirst(v::PackedVector) = v
 
-@inline function pushfirst(v::PackedVector{U,M,T}, x) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
+@inline function pushfirst(v::PackedVector{U,M,T}, x) where {U <: Unsigned, M, T <: Union{BitInteger,Bool,EmulatedInteger}}
     x = convert(T, x)
     @boundscheck begin
         checklength(v)
