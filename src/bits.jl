@@ -10,6 +10,7 @@ See also `Base.sizeof`.
 bitsize(::T) where T = bitsize(T)
 bitsize(::Type{T}) where T = 8*sizeof(T)
 bitsize(::Type{Bool}) = 1
+bitsize(::Type{T}) where T <: EmulatedInteger = EmulatedBitIntegers.bits(T)
 
 llvm_type(::Type{Float16}) = "half"
 llvm_type(::Type{Float32}) = "float"
