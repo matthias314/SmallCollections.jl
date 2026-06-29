@@ -14,7 +14,7 @@ const PackedLength = Int16
 struct _PackedVector{U,M,T} end
 
 """
-    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool,EmulatedInteger}} <: AbstractVector{T}
 
     PackedVector{U,M,T}()
     PackedVector{U,M,T}(iter)
@@ -82,7 +82,7 @@ julia> Int8(2)*v
 struct PackedVector{U,M,T} <: AbstractVector{T}
     m::U
     n::PackedLength
-    function _PackedVector{U,M,T}(m::U, n::Integer) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}}
+    function _PackedVector{U,M,T}(m::U, n::Integer) where {U <: Unsigned, M, T <: Union{BitInteger,Bool,EmulatedInteger}}
         bitsize(T) < M && error(LazyString("type ", T, " has fewer than ", M, " bits"))
         bitsize(U) ÷ M <= typemax(PackedLength) || error(LazyString("capacity cannot exceed ", typemax(PackedLength)))
         new{U,M,T}(m, n % PackedLength)
@@ -113,14 +113,20 @@ end
     v
 end
 
-PackedVector{U,M}(v::AbstractVector{T}) where {U,M,T} = PackedVector{U,M,T}(v)
+@propagate_inbounds function PackedVector{N,T}(iter) where {N, T <: Union{BitInteger,Bool,EmulatedInteger}}
+    M = bitsize(T)
+    U = uinttype(Val(N*M))
+    PackedVector{U,M,T}(iter)
+end
 
-function PackedVector{U,M}(v::V) where {U, M, V <: Tuple}
+PackedVector{U,M}(v::AbstractVector{T}) where {U <:Unsigned, M, T} = PackedVector{U,M,T}(v)
+
+function PackedVector{U,M}(v::V) where {U <: Unsigned, M, V <: Tuple}
     T = promote_type(fieldtypes(V)...)
     PackedVector{U,M,T}(v)
 end
 
-@propagate_inbounds function PackedVector{U,M,S}(v::AbstractSmallVector{N,T}) where {U,M,S,N, T <: BitInteger}
+@propagate_inbounds function PackedVector{U,M,S}(v::AbstractSmallVector{N,T}) where {U,M,S,N, T <: Union{BitInteger, EmulatedInteger}}
     if bitsize(T) == M && (T <: Signed) == (S <: Signed)
         @boundscheck begin
             c = capacity(PackedVector{U,M,S})
@@ -132,7 +138,7 @@ end
     end
 end
 
-function PackedVector(v::AbstractSmallVector{N,T}) where {N, T <: BitInteger}
+function PackedVector(v::AbstractSmallVector{N,T}) where {N, T <: Union{BitInteger, EmulatedInteger}}
     m = bits(v.b)
     M = bitsize(T)
     U = typeof(m)
@@ -308,20 +314,22 @@ end
 @inline maskvalue(::Type{U}, M, x::Union{Unsigned,Bool}) where U = x % U
 
 @inline function maskvalue(::Type{U}, M, x::T) where {U, T <: Signed}
-    mask = one(T) << M - one(T)
-    unsigned(x & mask) % U
+    mask = ~zero(T) >>> (bitsize(T) - M)
+    unsigned(zext(x & mask)) % U
 end
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
-    lo, hi = if T <: Signed
-        - one(T) << (M-1), one(T) << (M-1) - one(T)
+    lohi = if T <: EmulatedInteger
+        missing  # range information already built-in
+    elseif T <: Signed
+        - one(T) << (M-1) : one(T) << (M-1) - one(T)
     else
-        zero(T), one(T) << M - one(T)
+        zero(T) : one(T) << M - one(T)
     end
-    RANGE = Val(lo:hi)
+    RANGE = Val(lohi)
     if HAS_BEXTR && bitsize(U) <= bitsize(UInt)
-        x = bextr(v.m, M*(i+UInt(255))) % T
+        x = unsafe_rem(bextr(v.m, M*(i+UInt(255))), T)
         if T == Bool
             return x
         elseif T <: Unsigned
@@ -331,7 +339,7 @@ end
             return llvm_range(x | -(x & signbit), RANGE)
         end
     end
-    x = unsafe_lshr(v.m, M*(i-1)) % T
+    x = unsafe_rem(unsafe_lshr(v.m, M*(i-1)), T)
     mask = one(T) << M - one(T)
     signbit = one(T) << (M-1)
     if T == Bool
@@ -743,7 +751,7 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
-@inline function +(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: BitInteger}
+@inline function +(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: Union{BitInteger, EmulatedInteger}}
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
     _PackedVector{U,1,T}(v.m ⊻ w.m, v.n)
 end
@@ -764,11 +772,11 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
--(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: BitInteger} = v + w
+-(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: Union{BitInteger, EmulatedInteger}} = v + w
 
-@inline function *(c::T, v::PackedVector{U,M,T}) where {U, M, T <: Union{BitInteger,Bool}}
+@inline function *(c::T, v::PackedVector{U,M,T}) where {U, M, T <: Union{BitInteger,Bool,EmulatedInteger}}
     @boundscheck checkvalue(M, c)
-    bitsize(T) == M && return bitcast_mul(c, v)
+    M >= 8 && ispow2(M) && bitsize(T) == M && return bitcast_mul(c, v)
     mask = one(U) << M - one(U)
     ones0 = all_ones(U, 2*M)
     ones1 = ones0 << M
@@ -780,9 +788,9 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
-*(c::T, v::PackedVector{U,1,T}) where {U, T <: Union{BitInteger,Bool}} = isodd(c) ? v : zero(v)
+*(c::T, v::PackedVector{U,1,T}) where {U, T <: Union{BitInteger,Bool,EmulatedInteger}} = isodd(c) ? v : zero(v)
 
-*(v::PackedVector{U,M,T}, c::T) where {U, M, T <: Union{BitInteger,Bool}} = c*v
+*(v::PackedVector{U,M,T}, c::T) where {U, M, T <: Union{BitInteger,Bool,EmulatedInteger}} = c*v
 
 """
     $(@__MODULE__).unsafe_add(v::V, w::V) where V <: PackedVector -> V

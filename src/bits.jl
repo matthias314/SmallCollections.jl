@@ -10,6 +10,7 @@ See also `Base.sizeof`.
 bitsize(::T) where T = bitsize(T)
 bitsize(::Type{T}) where T = 8*sizeof(T)
 bitsize(::Type{Bool}) = 1
+bitsize(::Type{T}) where T <: EmulatedInteger = EmulatedBitIntegers.bits(T)
 
 llvm_type(::Type{Float16}) = "half"
 llvm_type(::Type{Float32}) = "float"
@@ -42,6 +43,8 @@ if VERSION > v"1.13-"
 else
     llvm_range(x::AbstractBitInteger, @nospecialize ::Val) = x
 end
+
+llvm_range(x::EmulatedInteger, @nospecialize ::Val) = x
 
 """
     $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
@@ -258,3 +261,6 @@ function unsafe_length(r::OrdinalRange{T}) where T <: Union{AbstractBitInteger,B
 end
 
 unsafe_length(r::OrdinalRange) = length(r)
+
+unsafe_rem(x, ::Type{T}) where T = rem(x, T)
+unsafe_rem(x, ::Type{T}) where {S <: Unsigned, T <: EmulatedInteger{S}}  = reinterpret(T, x % S)
