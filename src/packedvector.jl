@@ -362,7 +362,7 @@ getindex(v::PackedVector, s::SmallBitSet)
 
 @inline function getindex(v::V, s::SmallBitSet{U}) where {W, M, V <: PackedVector{W, M}, U}
     @boundscheck checkbounds(v, s)
-    if HAS_PEXT && M == 1 && bitsize(U) < bitsize(UInt)
+    if HAS_PEXT && M == 1
         m = pext(v.m, bits(s))
         V(m % W, length(s))
     else

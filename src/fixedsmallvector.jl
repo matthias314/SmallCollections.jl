@@ -268,7 +268,7 @@ getindex(v::AbstractFixedOrSmallVector, s::SmallBitSet)
 
 @inline function getindex(v::AbstractFixedOrSmallVector{N,T}, s::SmallBitSet{U}) where {N,T,U}
     @boundscheck checkbounds(v, s)
-    if HAS_PEXT && T == Bool && bitsize(U) <= bitsize(UInt)
+    if HAS_PEXT && T == Bool && ispow2(bitsize(U))
         m = pext(bits(fixedvector(v)), bits(s))
         b = convert(FixedVector{N,Bool}, m)
         SmallVector(b, length(s))

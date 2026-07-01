@@ -142,15 +142,33 @@ function pdep(x::Unsigned, y::U) where U <: Unsigned
 end
 
 """
-    $(@__MODULE__).pext(x::Unsigned, y::U) where U <: Union{UInt8,UInt16,UInt32,UInt} -> U
+    $(@__MODULE__).pext(x::Unsigned, y::U) where U <: Unsigned -> U
 
 The bits in `x` corresponding to the `1`-bits in `y` are compressed to the lowest bits of the result;
 the higher bits are set to `0`.
 
-This function is only available on `x86_64` and `i686` machines and uses the corresponding instruction from the
-[BMI2](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI2) instruction set.
+On `x86_64` and `i686` machines, this function uses the corresponding instruction from the
+[BMI2](https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set#BMI2) instruction set
+if possible. Without hardware support it is much slower.
 """
-pext(x::Unsigned, y::Union{UInt8,UInt16,UInt32,UInt})
+function pext(x::Unsigned, y::U) where U <: Unsigned
+    if HAS_PEXT && ispow2(bitsize(U))
+        V = uinttype(Val(bitsize(U) ÷ 2))
+        x_lo, x_hi = reinterpret(Tuple{V, V}, x % U)
+        y_lo, y_hi = reinterpret(Tuple{V, V}, y)
+        a_lo, a_hi = pext(x_lo, y_lo), pext(x_hi, y_hi)
+        return a_lo | (a_hi % U) << count_ones(y_lo)
+    end
+    a = zero(y)
+    c = one(y)
+    while !iszero(y)
+        b = blsi(y)
+        y ⊻= b
+        a |= ifelse(iszero(b & x), zero(c), c)
+        c <<= 1
+    end
+    a
+end
 
 function unsafe_div(x::U, y::V) where {U <: Unsigned, V <: Unsigned}
     W = promote_type(U, V)
