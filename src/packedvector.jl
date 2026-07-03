@@ -16,7 +16,7 @@ export PackedVector, bits, capacity, support,
     PackedVector{U,M,T}(iter)
     PackedVector{U,M}(v::AbstractVector{T})
     PackedVector{U,M}(t::Tuple)
-    PackedVector(v::AbstractSmallVector{M,T})
+    PackedVector(v::AbstractSmallVector{N,T})
 
 This type of immutable vector stores the elements in a common bit mask of type `U`
 with `M` bits for each entry. The range of allowed values is `-2^(M-1):2^(M-1)-1`
