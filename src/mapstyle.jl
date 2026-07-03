@@ -126,6 +126,9 @@ MapStyle(::Union{typeof.(
 MapStyle(::Union{typeof.(
         (&,)
     )...}, types::Type...) = iffasttypes(StrictStyle(), types...)
+MapStyle(::Fix2{<:Union{typeof.(
+        (<<, >>, >>>)
+    )...}, S}, ::Type{T}) where {S <: Integer, T} = iffasttypes(StrictStyle(), S, T)
 
 MapStyle(::Union{typeof.(
         (!==, !=, <, >, ne_fast, lt_fast, gt_fast, cmp_fast, -, abs2, abs2_fast)
