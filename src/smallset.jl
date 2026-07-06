@@ -173,7 +173,7 @@ Base.copymutable(s::AbstractSmallSet) = MutableSmallSet(s)
 Base.emptymutable(s::AbstractSmallSet{N,T}, ::Type{U} = T) where {N,T,U} = MutableSmallSet{N,U}()
 
 """
-    push(s::AbstractSmallSet{N,T}, xs...) where {N,T} -> Tuple{SmallSet{N,T}, T}
+    push(s::AbstractSmallSet{N,T}, xs...) where {N,T} -> SmallSet{N,T}
 
 Return the set that is obtained from `s` by adding the elements given as arguments.
 
