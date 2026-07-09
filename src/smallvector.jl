@@ -638,7 +638,6 @@ See also `Base.push!`, `BangBang.push!!`.
 @propagate_inbounds push(v::AbstractSmallVector, xs...) = append(v, xs)
 
 @propagate_inbounds function push(v::AbstractSmallVector{N,T}, x) where {N,T}
-    isbitstype(T) && bitsize(T) < bitsize(Int) && return append(v, (x,))
     n = length(v)
     @boundscheck n < N || error(LazyString("vector cannot have more than ", N, " elements"))
     @inbounds SmallVector(setindex(v.b, x, n+1), n+1)
