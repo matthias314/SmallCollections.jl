@@ -274,7 +274,7 @@ end
 @inline function insert!(v::MutableSmallVector{N,T}, i::Integer, xs::Vararg{Any,M}) where {N,T,M}
     @boundscheck 1 <= i <= length(v)+1 <= N-M+1 || boundserror(v, i)
     v.n += M % SmallLength
-    unsafe_shl!(v, v.n, i, xs...)
+    unsafe_shl!(v, length(v), i, xs...)
 end
 
 if VERSION < v"1.11-"

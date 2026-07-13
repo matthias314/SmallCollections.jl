@@ -203,7 +203,7 @@ convert(::Type{V}, v::Union{AbstractVector,Tuple}) where V <: AbstractSmallVecto
 Tuple(v::AbstractSmallVector) = ntuple(i -> v[i], length(v))
 # this seems to be fast for length(v) <= 10
 
-size(v::AbstractSmallVector) = (v.n % Int,)
+size(v::AbstractSmallVector{N}) where N = (llvm_range(v.n % Int, Val(0:N)),)
 
 """
     capacity(::Type{<:AbstractSmallVector{N}}) where N -> N
@@ -620,7 +620,7 @@ function replace(v::AbstractSmallVector{N,T}, ps::Vararg{Pair,M}; kw...) where {
     if ishwtype(T) && isempty(kw)
         b = replace(v.b, ps...)
         if default(T) in map(first, ps)
-            b = padtail(b, v.n)
+            b = padtail(b, length(v))
         end
         SmallVector(b, v.n)
     else
@@ -1055,7 +1055,11 @@ support(::Any, ::AbstractSmallVector)
         support(map(f, v; style))
     else
         s = support(f, v.b)
-        style isa EagerStyle ? filter(<=(unsigned(v.n)), s) : s
+        @static if VERSION > v"1.13-"
+            style isa EagerStyle ? filter(<=(length(v)), s) : s
+        else
+            style isa EagerStyle ? filter(<=(unsigned(v.n)), s) : s
+        end
     end
 end
 
