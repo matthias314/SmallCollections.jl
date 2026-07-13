@@ -24,6 +24,25 @@ function llvm_type(N, ::Type{T}) where T
     end
 end
 
+if VERSION > v"1.13-"
+    @generated function llvm_range(x::T, ::Val{RANGE}) where {T <: AbstractBitInteger, RANGE}
+        lo::T, hi::T = extrema(RANGE::UnitRange)
+        hi += one(T)
+        hi == lo && return :(x)
+        L = llvm_type(T)
+        ir = """
+            define range($L $lo, $hi) $L @f($L %x) alwaysinline {
+                ret $L %x
+            }
+        """
+        quote
+            Base.llvmcall(($ir, "f"), T, Tuple{T}, x)
+        end
+    end
+else
+    llvm_range(x::AbstractBitInteger, @nospecialize ::Val) = x
+end
+
 """
     $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
 
