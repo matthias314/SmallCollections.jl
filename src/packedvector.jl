@@ -143,9 +143,7 @@ Return the bit mask used internally to store the elements of the vector `v`.
 """
 bits(v::PackedVector) = v.m
 
-length(v::PackedVector) = v.n
-
-size(v::PackedVector) = (length(v),)
+size(v::PackedVector) = (llvm_range(v.n, Val(0:capacity(v))),)
 
 """
     capacity(::Type{<:PackedVector}) -> Int
@@ -292,13 +290,21 @@ end
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
+    lo, hi = if T <: Signed
+        - one(T) << (M-1), one(T) << (M-1) - one(T)
+    else
+        zero(T), one(T) << M - one(T)
+    end
+    RANGE = Val(lo:hi)
     if HAS_BEXTR && bitsize(U) <= bitsize(UInt)
         x = bextr(v.m, M*(i+UInt(255))) % T
-        if T <: Union{Unsigned, Bool}
+        if T == Bool
             return x
+        elseif T <: Unsigned
+            return llvm_range(x, RANGE)
         else
             signbit = one(T) << (M-1)
-            return x | -(x & signbit)
+            return llvm_range(x | -(x & signbit), RANGE)
         end
     end
     x = unsafe_lshr(v.m, M*(i-1)) % T
@@ -307,9 +313,9 @@ end
     if T == Bool
         x
     elseif T <: Unsigned || iszero(x & signbit)
-        x & mask
+        llvm_range(x & mask, RANGE)
     else
-        x | ~mask
+        llvm_range(x | ~mask, RANGE)
     end
 end
 
@@ -470,7 +476,7 @@ See also `Base.push!`, `BangBang.push!!`.
         checklength(v)
         checkvalue(M, x)
     end
-    s = M*v.n
+    s = M*length(v)
     y = maskvalue(U, M, x)
     m = v.m | unsafe_shl(y, s)
     PackedVector{U,M,T}(m, v.n+1)
@@ -489,7 +495,7 @@ pop(::PackedVector)
 
 @inline function pop(v::PackedVector{U,M,T}) where {U,M,T}
     @boundscheck checkbounds(v, 1)
-    s = M*(v.n-1)
+    s = M*(length(v)-1)
     mask = unsafe_shl(one(U), s) - one(U)
     m = v.m & mask
     PackedVector{U,M,T}(m, v.n-1), @inbounds v[v.n]
@@ -545,7 +551,11 @@ append(v::PackedVector, ws...) = foldl(append, ws; init = v)
 
 @inline function append(v::PackedVector{U,M,T}, w::PackedVector{W,M,T}) where {U <: Unsigned, M, T <: Union{BitInteger,Bool}, W}
     @boundscheck checklength(v, w.n)
-    m = v.m | (w.m % U) << unsigned(M*v.n)
+    @static if VERSION > v"1.13-"
+        m = v.m | (w.m % U) << (M*length(v))
+    else
+        m = v.m | (w.m % U) << unsigned(M*v.n)
+    end
     PackedVector{U,M,T}(m, v.n+w.n)
 end
 
@@ -605,10 +615,10 @@ function reverse(v::PackedVector{U,1,T}) where {U,T}
 end
 
 function circshift(v::PackedVector{U,M,T}, k::Integer) where {U,M,T}
-    v.n <= 1 && return v
-    k = unsafe_mod(k, v.n % UInt16) % Int
-    mask = one(U) << ((M*v.n) % UInt) - one(U)
-    PackedVector{U,M,T}((unsafe_shl(v.m, M*k) | unsafe_lshr(v.m, M*v.n-M*k)) & mask, v.n)
+    length(v) <= 1 && return v
+    k = unsafe_mod(k, length(v) % UInt16) % Int
+    mask = one(U) << (M*length(v)) - one(U)
+    PackedVector{U,M,T}((unsafe_shl(v.m, M*k) | unsafe_lshr(v.m, M*length(v)-M*k)) & mask, v.n)
 end
 
 function filter(f::F, v::PackedVector) where F
