@@ -47,7 +47,7 @@ MapStyle(ab::AssertBool, types::Type...) = MapStyle(ab.f, types...)
 
 findall(v::AbstractFixedOrSmallVector; kw...) = findall(identity, v; kw...)
 
-@inline function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F <: Function, N}
+function findall(f::F, v::AbstractFixedOrSmallVector{N}; kw...) where {F <: Function, N}
     @inline
     @inbounds SmallVector{N,SmallLength}(support(AssertBool(f), v; kw...))
 end
@@ -59,6 +59,7 @@ findnext(v::AbstractFixedOrSmallVector{N,Bool}, k::Integer) where N = findnext(i
 findprev(v::AbstractFixedOrSmallVector{N,Bool}, k::Integer) where N = findprev(identity, v, k; style = StrictStyle())
 
 function findfirst(f::F, v::AbstractFixedOrSmallVector{N,T}; style = MapStyle(f, T)) where {F <: Function, N, T}
+    @inline
     findnext(f, v, 1; style)
 end
 
@@ -74,6 +75,7 @@ function findnext(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
 end
 
 function findlast(f::F, v::AbstractFixedOrSmallVector{N,T}; style = MapStyle(f, T)) where {F <: Function, N, T}
+    @inline
     findprev(f, v, length(v); style)
 end
 
