@@ -70,7 +70,7 @@ function findnext(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     else
         m = bits(filter(>=(k), @inline support(AssertBool(f), fixedvector(v))))
         i = trailing_zeros(m)+1
-        i <= length(v) ? i : nothing
+        i <= length(v) ? llvm_range(i, Val(1:N)) : nothing
     end
 end
 
@@ -86,7 +86,7 @@ function findprev(f::F, v::AbstractFixedOrSmallVector{N,T}, k::Integer; style = 
     else
         m = bits(filter(<=(k), @inline support(AssertBool(f), fixedvector(v))))
         i = bitsize(m)-leading_zeros(m)
-        0 != i <= length(v) ? i : nothing
+        0 != i <= length(v) ? llvm_range(i, Val(1:N)) : nothing
     end
 end
 
