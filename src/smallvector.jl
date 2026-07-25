@@ -1049,7 +1049,7 @@ SmallBitSet{UInt8} with 3 elements:
 """
 support(::Any, ::AbstractSmallVector)
 
-@inline function support(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
+function support(f::F, v::AbstractSmallVector{N,T}; style::MapStyle = MapStyle(f, T)) where {F,N,T}
     @inline
     if style isa LazyStyle
         support(map(f, v; style))
@@ -1096,7 +1096,7 @@ julia> v = SmallVector{8}('a':'e'); w = SmallVector{4}('x':'z'); map(*, v, w)
  "cz"
 ```
 """
-@inline function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
+function map(f::F, vs::Vararg{AbstractSmallVector,M}; style::MapStyle = MapStyle(f, map(eltype, vs)...)) where {F,M}
     @inline
     n, eq = minlength(vs)
     if style isa LazyStyle

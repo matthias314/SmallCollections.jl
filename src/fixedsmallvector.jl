@@ -31,8 +31,8 @@ end
 
 support(v::AbstractFixedOrSmallVector) = _SmallBitSet(bits(map(!iszero, v)))
 
-@inline _support(f, v::AbstractFixedVector; style) = (@inline; support(f, v))
-@inline _support(f, v::AbstractSmallVector; style) = (@inline; support(f, v; style))
+@inline _support(f, v::AbstractFixedVector; style) = support(f, v)
+@inline _support(f, v::AbstractSmallVector; style) = support(f, v; style)
 
 _map(f, v::AbstractFixedVector; style) = map(f, v)
 _map(f, v::AbstractSmallVector; style) = map(f, v; style)
@@ -154,7 +154,7 @@ end
 
 count(v::AbstractFixedOrSmallVector; kw...) = count(identity, v; kw...)
 
-@inline function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, style = MapStyle(f, T)) where {F,N,T,S}
+function count(f::F, v::AbstractFixedOrSmallVector{N,T}; dims = :, init::S = 0, style = MapStyle(f, T)) where {F,N,T,S}
     @inline
     if style isa LazyStyle || !(dims isa Colon)
         invoke(count, Tuple{Any, AbstractVector}, f, v; dims, init)
