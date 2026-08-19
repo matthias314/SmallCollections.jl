@@ -215,7 +215,7 @@ empty(v::PackedVector{U,M,T}, ::Type{S} = T) where {U,M,T,S} = PackedVector{U,M,
 
 iszero(v::PackedVector) = iszero(v.m)
 
-zero(v::V) where V <: PackedVector = zeros(V, v.n)
+zero(v::V) where V <: PackedVector = @inbounds zeros(V, v.n)
 
 """
     zeros(::Type{V}, n::Integer) where V <: PackedVector -> V
