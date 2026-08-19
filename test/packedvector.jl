@@ -317,13 +317,17 @@ end
 
 @testset "PackedVector add/mul" begin
     for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
-            T in (Int8, UInt8, Int16, UInt16, Int32, UInt32),
+            T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
             N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
         for n in 0:c
             u1 = packed_rand(N, T, n)
             v1 = PackedVector{U,N,T}(u1)
+            cc = packed_rand(N, T)
+            w = @test_inferred cc*v1 red_mod(N, cc*u1) v1
+            @test isvalid(w)
+            T == Bool & continue
             u2 = packed_rand(N, T, n)
             v2 = PackedVector{U,N,T}(u2)
             w = @test_inferred +v1 red_mod(N, +u1) v1
@@ -333,9 +337,6 @@ end
             w = @test_inferred v1+v2 red_mod(N, u1+u2) v1
             @test isvalid(w)
             w = @test_inferred v1-v2 red_mod(N, u1-u2) v1
-            @test isvalid(w)
-            cc = packed_rand(N, T)
-            w = @test_inferred cc*v1 red_mod(N, cc*u1) v1
             @test isvalid(w)
             for i in -1:length(u1)+1
                 x = packed_rand(N, T)
