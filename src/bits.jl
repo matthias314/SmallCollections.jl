@@ -44,6 +44,8 @@ else
     llvm_range(x::AbstractBitInteger, @nospecialize ::Val) = x
 end
 
+llvm_range(x::EmulatedInteger, @nospecialize ::Val) = x
+
 """
     $(@__MODULE__).top_set_bit(x::AbstractBitInteger) -> Int
 

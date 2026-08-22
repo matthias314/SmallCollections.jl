@@ -1,5 +1,12 @@
 using SmallCollections: bitsize
 
+using EmulatedBitIntegers: @emulate, EmulatedInteger
+
+@emulate Int3 UInt3
+
+# see EmulatedBitIntegers.jl#16
+BitIntegers.UInt256(x::EmulatedInteger) = UInt256(x[])
+
 function checkvalue(::Type{Bool}, N, x::T) where T
     @assert bitsize(T) >= N
     if bitsize(T) == N
@@ -22,7 +29,7 @@ end
 packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 
 @testset "PackedVector" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    for T in (Bool, Int3, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         if bitsize(T) < N
             @test_throws Exception PackedVector{U,N,T}()
             continue
@@ -81,7 +88,7 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 end
 
 @testset "PackedVector indices" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    for T in (Bool, Int3, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
@@ -119,7 +126,7 @@ end
 end
 
 @testset "PackedVector bool inds" begin
-    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+    for T in (Bool, Int3, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
         bitsize(T) < M && continue
         N = bitsize(U)÷M
         N == 0 && continue
@@ -147,7 +154,7 @@ end
 end
 
 @testset "PackedVector vec inds" begin
-    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+    for T in (Bool, Int3, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
         bitsize(T) < M && continue
         N = bitsize(U)÷M
         N == 0 && continue
@@ -182,7 +189,7 @@ end
 end
 
 @testset "PackedVector zeros" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    for T in (Bool, Int3, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
@@ -229,7 +236,7 @@ end
 end
 
 @testset "PackedVector push/pop" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128),
+    for T in (Bool, Int3, Int8, UInt16, Int64, UInt128),
             N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)),
             U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
@@ -344,7 +351,7 @@ end
 
 @testset "PackedVector add/mul" begin
     for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
-            T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
+            T in (Bool, Int3, Int8, UInt8, Int16, UInt16, Int32, UInt32),
             N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
@@ -352,7 +359,12 @@ end
             u1 = packed_rand(N, T, n)
             v1 = PackedVector{U,N,T}(u1)
             cc = packed_rand(N, T)
-            w = @test_inferred cc*v1 red_mod(N, cc*u1) v1
+            w = if T <: EmulatedInteger
+                # see EmulatedBitIntegers.jl#14
+                @test_inferred cc*v1 red_mod(N, [cc*x for x in u1]) v1
+            else
+                @test_inferred cc*v1 red_mod(N, cc*u1) v1
+            end
             @test isvalid(w)
             T == Bool & continue
             u2 = packed_rand(N, T, n)
@@ -380,14 +392,19 @@ end
 
 @testset "PackedVector sum/max" begin
     for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
-        T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
+        T in (Bool, Int3, Int8, UInt8, Int16, UInt16, Int32, UInt32),
         N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
         for n in 0:c
             u = packed_rand(N, T, n)
             v = PackedVector{U,N,T}(u)
-            @test_inferred sum(v) sum(u)
+            if T <: EmulatedInteger
+                # see EmulatedBitIntegers.jl#15
+                @test_inferred (sum(v) % T) sum(u)
+            else
+                @test_inferred sum(v) sum(u)
+            end
             for f in (maximum, minimum)
                 if isempty(u)
                     @test_throws Exception f(v)
@@ -444,7 +461,7 @@ end
 end
 
 @testset "PackedVector rand" begin
-    for U in (UInt8, UInt32, UInt128), T in (Bool, Int8, UInt32), M in 1:3:bitsize(T)
+    for U in (UInt8, UInt32, UInt128), T in (Bool, Int3, Int8, UInt32), M in 1:3:bitsize(T)
         c = bitsize(U)÷M
         c == 0 && continue
         v = @inferred rand(PackedVector{U,M,T})

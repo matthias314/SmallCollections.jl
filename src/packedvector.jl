@@ -14,7 +14,7 @@ const PackedLength = Int16
 struct _PackedVector{U,M,T} end
 
 """
-    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool}} <: AbstractVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool,EmulatedBitIntegers.EmulatedInteger}} <: AbstractVector{T}
 
     PackedVector{U,M,T}()
     PackedVector{U,M,T}(iter)
@@ -318,7 +318,7 @@ end
     unsigned(x & mask) % U
 end
 
-@inline maskvalue(::Type{U}, M, x::T) where {U, T <: EmulatedSigned} = EmulatedBitIntegers.zext(U, x)
+# @inline maskvalue(::Type{U}, M, x::T) where {U, T <: EmulatedSigned} = EmulatedBitIntegers.zext(U, x)
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
@@ -751,7 +751,7 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
-@inline function +(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: BitInteger}
+@inline function +(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: Union{BitInteger, EmulatedInteger}}
     @boundscheck length(v) == length(w) || error("vectors must have the same length")
     _PackedVector{U,1,T}(v.m ⊻ w.m, v.n)
 end
@@ -772,11 +772,11 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
--(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: BitInteger} = v + w
+-(v::PackedVector{U,1,T}, w::PackedVector{U,1,T}) where {U, T <: Union{BitInteger, EmulatedInteger}} = v + w
 
-@inline function *(c::T, v::PackedVector{U,M,T}) where {U, M, T <: Union{BitInteger,Bool}}
+@inline function *(c::T, v::PackedVector{U,M,T}) where {U, M, T <: Union{BitInteger,Bool,EmulatedInteger}}
     @boundscheck checkvalue(M, c)
-    bitsize(T) == M && return bitcast_mul(c, v)
+    M >= 8 && ispow2(M) && bitsize(T) == M && return bitcast_mul(c, v)
     mask = one(U) << M - one(U)
     ones0 = all_ones(U, 2*M)
     ones1 = ones0 << M
@@ -788,9 +788,9 @@ end
     _PackedVector{U,M,T}(m0 | m1, v.n)
 end
 
-*(c::T, v::PackedVector{U,1,T}) where {U, T <: Union{BitInteger,Bool}} = isodd(c) ? v : zero(v)
+*(c::T, v::PackedVector{U,1,T}) where {U, T <: Union{BitInteger,Bool,EmulatedInteger}} = isodd(c) ? v : zero(v)
 
-*(v::PackedVector{U,M,T}, c::T) where {U, M, T <: Union{BitInteger,Bool}} = c*v
+*(v::PackedVector{U,M,T}, c::T) where {U, M, T <: Union{BitInteger,Bool,EmulatedInteger}} = c*v
 
 """
     $(@__MODULE__).unsafe_add(v::V, w::V) where V <: PackedVector -> V
