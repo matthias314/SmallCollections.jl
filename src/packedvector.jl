@@ -314,8 +314,8 @@ end
 @inline maskvalue(::Type{U}, M, x::Union{Unsigned,Bool}) where U = x % U
 
 @inline function maskvalue(::Type{U}, M, x::T) where {U, T <: Signed}
-    mask = one(T) << M - one(T)
-    unsigned(x & mask) % U
+    mask = one(unsigned(T)) << M - one(unsigned(T))
+    (x & mask) % U
 end
 
 # @inline maskvalue(::Type{U}, M, x::T) where {U, T <: EmulatedSigned} = EmulatedBitIntegers.zext(U, x)
