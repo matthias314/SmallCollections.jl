@@ -37,7 +37,7 @@ using Random: Random, AbstractRNG, SamplerType
 using BitIntegers: AbstractBitSigned, AbstractBitUnsigned,
     UInt256, UInt512, UInt1024
 
-using EmulatedBitIntegers: EmulatedBitIntegers, EmulatedInteger, EmulatedSigned
+using EmulatedBitIntegers: EmulatedBitIntegers, EmulatedInteger, EmulatedSigned, zext
 
 using LinearAlgebra: dot
 

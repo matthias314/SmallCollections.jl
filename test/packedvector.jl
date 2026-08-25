@@ -2,7 +2,7 @@ using SmallCollections: bitsize
 
 using EmulatedBitIntegers: @emulate, EmulatedInteger
 
-@emulate Int1 UInt1 Int3 UInt3
+@emulate UInt1 Int3
 
 # see EmulatedBitIntegers.jl#16
 BitIntegers.UInt256(x::EmulatedInteger) = UInt256(x[])
@@ -74,7 +74,7 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
             v1 = PackedVector{UInt256,N,T}(u)
             @test_inferred fasthash(v) fasthash(v1) UInt
         end
-        let uu = map(x -> clamp(x, 0, BigInt(2)^(N-1)-1), u)
+        T <: EmulatedInteger || let uu = map(x -> clamp(x, 0, BigInt(2)^(N-1)-1), u)
             w1 = PackedVector{U,N,signed(T)}(uu)
             w2 = PackedVector{U,N,unsigned(T)}(uu)
             @test_inferred fasthash(w1) fasthash(w2) UInt

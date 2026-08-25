@@ -314,11 +314,9 @@ end
 @inline maskvalue(::Type{U}, M, x::Union{Unsigned,Bool}) where U = x % U
 
 @inline function maskvalue(::Type{U}, M, x::T) where {U, T <: Signed}
-    mask = one(unsigned(T)) << M - one(unsigned(T))
-    (x & mask) % U
+    mask = ~zero(T) >>> (bitsize(T) - M)
+    unsigned(zext(x & mask)) % U
 end
-
-# @inline maskvalue(::Type{U}, M, x::T) where {U, T <: EmulatedSigned} = EmulatedBitIntegers.zext(U, x)
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
