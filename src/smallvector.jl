@@ -385,23 +385,7 @@ using Base.Broadcast: materialize
 *(c::Number, v::AbstractSmallVector) = c .* v
 *(v::AbstractSmallVector, c::Number) = v .* c
 
-function sum(v::AbstractSmallVector{N,T}) where {N,T}
-    if T <: Base.BitSignedSmall
-        sum(Int, v.b)
-    elseif T <: Base.BitUnsignedSmall
-        sum(UInt, v.b)
-    elseif T <: Base.BitInteger
-        sum(v.b)
-    else
-        n = length(v)
-        n == 0 && return zero(T)
-        @inbounds s = v[1]
-        for i in 2:n
-            @inbounds s += v[i]
-        end
-        s
-    end
-end
+sum(v::AbstractSmallVector{<:Any,<:Integer}) = sum(v.b)
 
 """
     sum_fast(v::AbstractSmallVector{N,T}; [init]) where {N,T}
