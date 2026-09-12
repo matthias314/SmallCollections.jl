@@ -87,7 +87,7 @@ end
 end
 
 @inline function FixedVector{N,T}(r::OrdinalRange) where {N, T <: Integer}
-    T <: HWType || return invoke(FixedVector{N,T}, Tuple{AbstractVector{T}}, r)
+    T <: HWType || return invoke(FixedVector{N,T}, Tuple{AbstractVector{<:Integer}}, r)
     @boundscheck begin
         T(first(r)), T(last(r))  # check if we can convert
         length(r) == N || error("argument is not of length ", N)
