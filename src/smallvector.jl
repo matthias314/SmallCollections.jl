@@ -273,13 +273,15 @@ empty(::AbstractSmallVector, ::Type)
 empty(v::SmallVector{N,T}, ::Type{U} = T) where {N,T,U} = SmallVector{N,U}()
 
 """
-    resize(v::AbstractSmallVector{N,T}, n::Integer) -> SmallVector{N,T}
+    resize(v::AbstractSmallVector{N,T}, n::Integer) where {N,T} -> SmallVector{N,T}
 
 Return a vector of length `n` by making `v` longer or shorter. If the new vector
 is longer, then the new elements are initialized with `default(T)`.
 
 See also `Base.resize!`, [`$(@__MODULE__).default`](@ref).
 """
+resize(v::AbstractSmallVector, n::Integer)
+
 @inline function resize(v::AbstractSmallVector{N}, n::Integer) where N
     @boundscheck 0 <= n <= N || error(LazyString("length must be between 0 and ", N))
     SmallVector(padtail(v.b, n), n)

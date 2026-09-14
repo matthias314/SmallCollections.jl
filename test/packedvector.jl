@@ -201,6 +201,33 @@ end
     end
 end
 
+@testset "PackedVector resize" begin
+    function vector_resize(v::Vector{T}, n::Integer) where T
+        w = resize!(copy(v), n)
+        for i in length(v)+1:n
+            w[i] = zero(T)
+        end
+        w
+    end
+
+    for T in (Bool, UInt1, Int3, UInt16, Int64, UInt128),
+            N in (1, 2, 5, 8, bitsize(T)),
+            U in (UInt8, UInt32, UInt64, UInt128)
+        bitsize(T) < N && continue
+        c = bitsize(U)÷N
+        c == 0 && continue
+    for m in (0, 1, c-1, c)
+        u = packed_rand(N, T, m)
+        v = @inferred PackedVector{U,N,T}(u)
+        @test_throws Exception resize(v, -1)
+        for n in 0:3:c
+            @test_inferred resize(v, n) vector_resize(u, n) v
+        end
+        @test_throws Exception resize(v, c+1)
+    end
+    end
+end
+
 @testset "PackedVector push/pop" begin
     for T in (Bool, Int8, UInt16, Int64, UInt128),
             N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)),

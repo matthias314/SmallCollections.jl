@@ -15,7 +15,7 @@ bits(::AbstractSmallVector)
 fasthash(::AbstractSmallVector, ::UInt)
 unsafe_copyto!(::MutableSmallVector{N}, ::AbstractSmallVector{N}) where N
 unsafe_copyto!(::MutableSmallVector, ::Union{NTuple, AbstractFixedVector})
-resize
+resize(::AbstractSmallVector, ::Integer)
 empty(::AbstractSmallVector)
 getindex(::AbstractSmallVector, ::SmallBitSet)
 setindex(::AbstractSmallVector, ::Any, ::Integer)

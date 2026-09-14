@@ -9,6 +9,7 @@ PackedVector
 capacity(::Type{<:PackedVector})
 bits(::PackedVector)
 fasthash(::PackedVector, ::UInt)
+resize(::PackedVector, ::Integer)
 empty(::PackedVector)
 getindex(::PackedVector, ::SmallBitSet)
 setindex(::PackedVector, ::Any, ::Integer)

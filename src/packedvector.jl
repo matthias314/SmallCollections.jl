@@ -5,7 +5,7 @@
 import Base: ==, getindex, setindex, size, empty, iterate, rest, split_rest,
     iszero, zero, +, -, *, convert, circshift, filter, reverse, copy, zeros, ones
 
-export PackedVector, bits, capacity, support,
+export PackedVector, bits, capacity, resize, support,
     setindex, addindex, push, pop, pushfirst, popfirst,
     insert, duplicate, deleteat, popat, append, prepend
 
@@ -149,6 +149,23 @@ Return the bit mask used internally to store the elements of the vector `v`.
 bits(v::PackedVector) = v.m
 
 size(v::PackedVector) = (llvm_range(v.n % Int, Val(0:capacity(v))),)
+
+"""
+    resize(v::V, n::Integer) where V <: PackedVector -> V
+
+Return a vector of length `n` by making `v` longer or shorter. If the new vector
+is longer, then the new elements are initialized with zeros.
+
+See also `Base.resize!`.
+"""
+resize(v::PackedVector, n::Integer)
+
+@inline function resize(v::PackedVector{U,M,T}, n::Integer) where {U,M,T}
+    N = capacity(v)
+    @boundscheck 0 <= n <= N || error(LazyString("length must be between 0 and ", N))
+    mask = unsafe_lshr(~zero(U), bitsize(U) - n*M)
+    _PackedVector{U,M,T}(v.m & mask, n)
+end
 
 """
     capacity(::Type{<:PackedVector}) -> Int
