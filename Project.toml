@@ -14,6 +14,9 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 BangBang = "198e06fe-97b7-11e9-32a5-e1d131e6ad66"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
+[sources]
+EmulatedBitIntegers = {rev = "main", url = "https://github.com/JuliaData/EmulatedBitIntegers.jl"}
+
 [extensions]
 BangBangExt = "BangBang"
 StaticArraysExt = "StaticArrays"

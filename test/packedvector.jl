@@ -1,11 +1,8 @@
 using SmallCollections: bitsize
 
-using EmulatedBitIntegers: @emulate, EmulatedInteger
+using EmulatedBitIntegers: @emulate
 
-@emulate UInt1 Int3
-
-# see EmulatedBitIntegers.jl#16
-BitIntegers.UInt256(x::EmulatedInteger) = UInt256(x[])
+@emulate UInt1 Int3 Int5 UInt5
 
 function checkvalue(::Type{Bool}, N, x::T) where T
     @assert bitsize(T) >= N
@@ -29,7 +26,7 @@ end
 packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 
 @testset "PackedVector" begin
-    for T in (Bool, UInt1, Int3, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    for T in (Bool, UInt5, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         if bitsize(T) < N
             @test_throws Exception PackedVector{U,N,T}()
             continue
@@ -74,7 +71,7 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
             v1 = PackedVector{UInt256,N,T}(u)
             @test_inferred fasthash(v) fasthash(v1) UInt
         end
-        T <: EmulatedInteger || let uu = map(x -> clamp(x, 0, BigInt(2)^(N-1)-1), u)
+        let uu = map(x -> clamp(x, 0, BigInt(2)^(N-1)-1), u)
             w1 = PackedVector{U,N,signed(T)}(uu)
             w2 = PackedVector{U,N,unsigned(T)}(uu)
             @test_inferred fasthash(w1) fasthash(w2) UInt
@@ -359,12 +356,7 @@ end
             u1 = packed_rand(N, T, n)
             v1 = PackedVector{U,N,T}(u1)
             cc = packed_rand(N, T)
-            w = if T <: EmulatedInteger
-                # see EmulatedBitIntegers.jl#14
-                @test_inferred cc*v1 red_mod(N, [cc*x for x in u1]) v1
-            else
-                @test_inferred cc*v1 red_mod(N, cc*u1) v1
-            end
+            w = @test_inferred cc*v1 red_mod(N, cc*u1) v1
             @test isvalid(w)
             T == Bool & continue
             u2 = packed_rand(N, T, n)
@@ -399,12 +391,7 @@ end
         for n in 0:c
             u = packed_rand(N, T, n)
             v = PackedVector{U,N,T}(u)
-            if T <: EmulatedInteger
-                # see EmulatedBitIntegers.jl#15
-                @test_inferred (sum(v) % T) sum(u)
-            else
-                @test_inferred sum(v) sum(u)
-            end
+            @test_inferred sum(v) sum(u)
             for f in (maximum, minimum)
                 if isempty(u)
                     @test_throws Exception f(v)
