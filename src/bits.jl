@@ -261,3 +261,6 @@ function unsafe_length(r::OrdinalRange{T}) where T <: Union{AbstractBitInteger,B
 end
 
 unsafe_length(r::OrdinalRange) = length(r)
+
+unsafe_rem(x, ::Type{T}) where T = rem(x, T)
+unsafe_rem(x, ::Type{T}) where {S <: Unsigned, T <: EmulatedInteger{S}}  = reinterpret(T, x % S)

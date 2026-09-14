@@ -14,7 +14,7 @@ const PackedLength = Int16
 struct _PackedVector{U,M,T} end
 
 """
-    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool,EmulatedBitIntegers.EmulatedInteger}} <: AbstractVector{T}
+    PackedVector{U<:Unsigned,M,T<:Union{Base.BitInteger,Bool,EmulatedInteger}} <: AbstractVector{T}
 
     PackedVector{U,M,T}()
     PackedVector{U,M,T}(iter)
@@ -320,14 +320,16 @@ end
 
 @inline function getindex(v::PackedVector{U,M,T}, i::Int) where {U,M,T}
     @boundscheck checkbounds(v, i)
-    lo, hi = if T <: Signed
-        - one(T) << (M-1), one(T) << (M-1) - one(T)
+    lohi = if T <: EmulatedInteger
+        missing  # range information already built-in
+    elseif T <: Signed
+        - one(T) << (M-1) : one(T) << (M-1) - one(T)
     else
-        zero(T), one(T) << M - one(T)
+        zero(T) : one(T) << M - one(T)
     end
-    RANGE = Val(lo:hi)
+    RANGE = Val(lohi)
     if HAS_BEXTR && bitsize(U) <= bitsize(UInt)
-        x = bextr(v.m, M*(i+UInt(255))) % T
+        x = unsafe_rem(bextr(v.m, M*(i+UInt(255))), T)
         if T == Bool
             return x
         elseif T <: Unsigned
@@ -337,7 +339,7 @@ end
             return llvm_range(x | -(x & signbit), RANGE)
         end
     end
-    x = unsafe_lshr(v.m, M*(i-1)) % T
+    x = unsafe_rem(unsafe_lshr(v.m, M*(i-1)), T)
     mask = one(T) << M - one(T)
     signbit = one(T) << (M-1)
     if T == Bool
