@@ -23,6 +23,13 @@ function isless(v::V, w::V) where V <: Union{AbstractFixedOrSmallVector{8,UInt8}
     bv < bw || (bv == bw) & (length(v) < length(w))
 end
 
+function isless(v::V, w::V) where V <: Union{AbstractFixedOrSmallVector{8,Int8}, AbstractFixedOrSmallVector{16,Int8}}
+    mask = capacity(v) == 8 ? 0x8080808080808080 : 0x80808080808080808080808080808080
+    bv = bswap(bits(v)) ⊻ mask
+    bw = bswap(bits(w)) ⊻ mask
+    bv < bw || (bv == bw) & (length(v) < length(w))
+end
+
 for T in (:Integer, :AbstractChar, :AbstractString)
     @eval function <=(v::AbstractFixedOrSmallVector{<:Any, <:$T}, w::AbstractFixedOrSmallVector{<:Any, <:$T})
         !(w < v)

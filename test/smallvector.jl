@@ -405,12 +405,12 @@ end
 end
 
 @testset "SmallVector cmp" begin
-    base_isless(v, w) = invoke(isless, Tuple{AbstractVector{UInt8},AbstractVector{UInt8}}, v, w)
+    base_isless(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(isless, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
     base_le(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(<=, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
 
-    for N in [8, 16], _ in 1:250
-        v = SmallVector{N,UInt8}(rand((0, 255), rand(0:N)))
-        w = MutableSmallVector{N,UInt8}(rand((0, 255), rand(0:N)))
+    for T in [UInt8, Int8], N in [8, 16], _ in 1:250
+        v = SmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
+        w = MutableSmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
         @test_inferred isless(v, w) base_isless(v, w)
         @test_inferred isless(v, v) base_isless(v, v)
     end

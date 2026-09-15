@@ -196,12 +196,12 @@ end
 end
 
 @testset "FixedVector cmp" begin
-    base_isless(v, w) = invoke(isless, Tuple{AbstractVector{UInt8},AbstractVector{UInt8}}, v, w)
+    base_isless(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(isless, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
     base_le(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(<=, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
 
-    for N in [8, 16], _ in 1:250
-        v = FixedVector{N,UInt8}(rand((0, 255), N))
-        w = MutableFixedVector{N,UInt8}(rand((0, 255), N))
+    for T in [UInt8, Int8], N in [8, 16], _ in 1:250
+        v = FixedVector{N,T}(rand((typemin(T), typemax(T)), N))
+        w = MutableFixedVector{N,T}(rand((typemin(T), typemax(T)), N))
         @test_inferred isless(v, w) base_isless(v, w)
         @test_inferred isless(v, v) base_isless(v, v)
     end
