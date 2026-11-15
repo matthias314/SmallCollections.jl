@@ -4,7 +4,7 @@ using Base.FastMath: eq_fast
 using LinearAlgebra: dot
 
 @testset "FixedVector" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         @test_inferred capacity(v) N
@@ -48,7 +48,7 @@ using LinearAlgebra: dot
 end
 
 @testset "FixedVector indices" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         if isempty(u)
@@ -59,7 +59,7 @@ end
             @test_inferred last(v) last(u) T
         end
         x = rand(T)
-        for i in -1:length(u)+1
+        @testset for i in -1:length(u)+1
             if 1 <= i <= length(u)
                 @test_inferred v[i] u[i] T
                 w = @test_inferred setindex(v, x, i) setindex!(copy(u), x, i) FixedVector(v)
@@ -79,7 +79,7 @@ end
             end
         end
     end
-    for T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for T in test_types, V in (FixedVector, MutableFixedVector)
         N = 256
         u = rand(T, N)
         v = @inferred V{N,T}(u)
@@ -90,26 +90,26 @@ end
 end
 
 @testset "FixedVector bool inds" begin
-    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in (Bool, Int16), V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = V{N,T}(u)
 
         jj = rand(Bool, N-1)
         iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
         N > 1 && pushfirst!(iis, FixedVector{N-1}(jj))
-        for ii in iis
+        @testset for ii in iis
             @test_throws Exception v[ii]
         end
 
         jj = rand(Bool, N)
-        for ii in [FixedVector{N}(jj), SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
+        @testset for ii in [FixedVector{N}(jj), SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
             @test_inferred v[ii] u[jj] SmallVector{N,T}
         end
     end
 end
 
 @testset "FixedVector vec inds" begin
-    for N in (1, 2, 9, 16, 25, 64), T in (Bool, Int16, UInt64), V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16, 25, 64), T in (Bool, Int16, UInt64), V in (FixedVector, MutableFixedVector)
         N*sizeof(T) <= 256 || continue
         u = rand(T, N)
         v = V{N,T}(u)
@@ -141,17 +141,17 @@ end
 end
 
 @testset "FixedVector reverse" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         u = rand(T, N)
         v = @inferred V{N,T}(u)
         @test_inferred reverse(v) reverse(u) FixedVector(v)
-        for i in 0:N+2
+        @testset for i in 0:N+2
             if 1 <= i <= N+1
                 @test_inferred reverse(v, i) reverse(u, i) FixedVector(v)
             else
                 @test_throws Exception reverse(v, i)
             end
-            for j in i-2:N+1
+            @testset for j in i-2:N+1
                 if 1 <= i <= N+1 && i-1 <= j <= N
                     @test_inferred reverse(v, i, j) reverse(u, i, j) FixedVector(v)
                 else
@@ -163,8 +163,8 @@ end
 end
 
 @testset "FixedVector bits" begin
-    for N in [1, 2, 7, 8, 21, 64, 150], V in (FixedVector, MutableFixedVector)
-        for T in test_types
+    @testset for N in [1, 2, 7, 8, 21, 64, 150], V in (FixedVector, MutableFixedVector)
+        @testset for T in test_types
             v = V{N,T}(rand(T, N))
             if !SmallCollections.ishwtype(T)
                 @test_throws Exception bits(v)
@@ -176,7 +176,7 @@ end
             U = eval(Symbol(:UInt, b))
             @test m isa U
             W = eval(Symbol(:UInt, bitsize(T)))
-            for (i, x) in enumerate(v)
+            @testset for (i, x) in enumerate(v)
                 @test m % W == htol(reinterpret(W, x))
                 m >>= bitsize(T)
             end
@@ -187,7 +187,7 @@ end
         v = V{N,Bool}(rand(Bool, N))
         m = @inferred bits(v)
         @test m isa Unsigned && bitsize(m) == max(8, nextpow(2, N))
-        for (i, x) in enumerate(v)
+        @testset for (i, x) in enumerate(v)
             isodd(m) == x
             m >>= 1
         end
@@ -199,14 +199,16 @@ end
     base_isless(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(isless, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
     base_le(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(<=, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
 
-    for T in [UInt8, Int8], N in [8, 16], _ in 1:250
-        v = FixedVector{N,T}(rand((typemin(T), typemax(T)), N))
-        w = MutableFixedVector{N,T}(rand((typemin(T), typemax(T)), N))
-        @test_inferred isless(v, w) base_isless(v, w)
-        @test_inferred isless(v, v) base_isless(v, v)
+    @testset for T in [UInt8, Int8], N in [8, 16]
+        for _ in 1:250
+            v = FixedVector{N,T}(rand((typemin(T), typemax(T)), N))
+            w = MutableFixedVector{N,T}(rand((typemin(T), typemax(T)), N))
+            @test_inferred isless(v, w) base_isless(v, w)
+            @test_inferred isless(v, v) base_isless(v, v)
+        end
     end
 
-    for T in [UInt8, Int32, Char], N in [8, 13]
+    @testset for T in [UInt8, Int32, Char], N in [8, 13]
         v = rand(FixedVector{N,T})
         w = rand(FixedVector{N+2,T})
         @test_inferred v <= w base_le(v, w)
@@ -215,11 +217,11 @@ end
 end
 
 @testset "FixedVector circshift" begin
-    for N in [1, 4, 7, 16], V in (FixedVector, MutableFixedVector)
-        for T in test_types
+    @testset for N in [1, 4, 7, 16], V in (FixedVector, MutableFixedVector)
+        @testset for T in test_types
             u = rand(T, N)
             v = V{N,T}(u)
-            for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
+            @testset for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
                 @test_inferred circshift(v, k) circshift(u, k) FixedVector{N,T}
                 -N < k < N && @test_inferred circshift(v, Val(k)) circshift(u, k) FixedVector{N,T}
                 (V <: MutableFixedVector && isbitstype(T)) || continue
@@ -238,26 +240,26 @@ end
 @testset "FixedVector shuffle 256" begin
     T = Int8
     U = UInt8
-    for N in [128, 127, 256, 255]
+    @testset for N in [128, 127, 256, 255]
         v = rand(FixedVector{N,T})
         vv = collect(v)
-        for k in [-N, -N+1, -N+2, -2, -1, 0, 1, 2, N-2, N-1, N]
+        @testset for k in [-N, -N+1, -N+2, -2, -1, 0, 1, 2, N-2, N-1, N]
             @test circshift(v, k) == circshift(vv, k)
             @test circshift!(MutableFixedVector(v), k) == circshift(vv, k)
         end
-        for k in [1, 2, 3, N-1, N, N+1]
+        @testset for k in [1, 2, 3, N-1, N, N+1]
             @test reverse(v, k) == reverse(vv, k)
             @test reverse!(MutableFixedVector(v), k) == reverse(vv, k)
         end
         @test first(popfirst(v)) == push!(deleteat!(copy(vv), 1), default(T))
-        for k in [1, 2, 3, N-2, N-1, N]
+        @testset for k in [1, 2, 3, N-2, N-1, N]
             @test duplicate(v, k) == [vv[1:k]; vv[k:N-1]]
             @test first(popat(v, k)) == push!(deleteat!(copy(vv), k), default(T))
         end
-        for k in [1, 2, 3, N-2, N-1, N], l in [k-1, k, N-1, N]
+        @testset for k in [1, 2, 3, N-2, N-1, N], l in [k-1, k, N-1, N]
             @test v[k:l] == vv[k:l]
         end
-        for M in [128, 127, 256, 255]
+        @testset for M in [128, 127, 256, 255]
             ii = FixedVector{M,U}(rand(0:N-1, M))
             @test getindex0(v, ii) == vv[ii .+ 1]
             N < typemax(U) || continue
@@ -267,12 +269,12 @@ end
 end
 
 @testset "FixedVector sum/max" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         r = T <: Unsigned ? unitrange(T(1), T(9)) : unitrange(T(-9), T(9))
         u = rand(r, N)
         v = V{N}(u)
-        for f in (maximum, minimum)
+        @testset for f in (maximum, minimum)
             if isempty(u)
                 @test_throws Exception f(v)
                 @test_inferred f(v; init = zero(T)) f(u; init = zero(T))
@@ -306,7 +308,7 @@ end
         @test_inferred sum(v) sum(u)
         @test_inferred prod(-v) prod(-u)
     end
-    for T in (Float32, Float64), V in (FixedVector, MutableFixedVector), x in (Inf, -Inf, NaN)
+    @testset for T in (Float32, Float64), V in (FixedVector, MutableFixedVector), x in (Inf, -Inf, NaN)
         u = T[x, -1, 0, 1]
         v = V{4}(u)
         @test_inferred maximum(v) maximum(u)
@@ -318,7 +320,7 @@ end
             @test_inferred prod(v) prod(u)
         end
     end
-    for T in (Float32, Float64), V in (FixedVector, MutableFixedVector)
+    @testset for T in (Float32, Float64), V in (FixedVector, MutableFixedVector)
         u = T[NaN, -1, 0, 1]
         v = V{4}(u)
         @test_inferred isnan(maximum(v)) true
@@ -329,7 +331,7 @@ end
 end
 
 @testset "FixedVector overflow" begin
-    for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32)
+    @testset for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32)
         S = smallbitsettype(Val(N))
         vv = rand(T, N)
         vv[1] = rand((typemin(T), zero(T)))
@@ -394,13 +396,13 @@ end
     f(x) = Int32(2)*x
     f(x, y) = 2*x + y
     g(x) = iszero(x) ? 1 : 1.0
-    for N in (1, 2, 9, 16), T1 in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T1 in test_types, V in (FixedVector, MutableFixedVector)
         T1 <: Number || continue
         u1 = rand(T1, N)
         v1 = V{N}(u1)
         u3 = map(f, u1)
         w = @test_inferred map(f, v1) u3 FixedVector{N,eltype(u3)}
-        for T2 in test_types
+        @testset for T2 in test_types
             (T2 <: Number && dimension(T1) == dimension(T2)) || continue
             u2 = rand(T2, N+1)
             v2 = V{N+1}(u2)
@@ -417,13 +419,13 @@ end
 end
 
 @testset "FixedVector find" begin
-    for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         k = max(N ÷ 2, 1)
-        for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), N), zeros(T, N), ones(T, N))
+        @testset for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), N), zeros(T, N), ones(T, N))
             v = V{N,T}(u)
             @test_inferred support(iszero, v) Set(findall(iszero, u)) SmallBitSet
-            for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
+            @testset for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
                 i = @inferred Nothing findfirst(!iszero, v; style)
                 @test i == findfirst(!iszero, u)
                 i = @inferred Nothing findlast(!iszero, v; style)
@@ -459,11 +461,11 @@ end
 end
 
 @testset "FixedVector issorted" begin
-    for T in [Int8, Float32, BigInt, Char], u in [[1], [1,2,3], [1,2,2], [1,2,1], [3,2,1], [3,2,2], [1,1,1,1]]
+    @testset for T in [Int8, Float32, BigInt, Char], u in [[1], [1,2,3], [1,2,2], [1,2,1], [3,2,1], [3,2,2], [1,1,1,1]]
         v = FixedVector{length(u),T}(u)
         w = collect(T, u)
         bys = T == Char ? (identity, uppercase) : (identity, -, x -> 2.0*x)
-        for lt in (isless, >), by in bys, rev in (false, true), strict in (false, true)
+        @testset for lt in (isless, >), by in bys, rev in (false, true), strict in (false, true)
             if strict
                 @test_inferred issorted(v; lt, by, rev, strict) issorted(w; lt, by, rev) & allunique(w)
             else
@@ -474,7 +476,7 @@ end
 end
 
 @testset "FixedVector support" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         T <: Number || continue
         u = rand(unitrange(T(0), T(2)), N)
         v = V{N,T}(u)
@@ -483,7 +485,7 @@ end
 end
 
 @testset "FixedVector rand" begin
-    for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
+    @testset for N in (1, 2, 9, 16), T in test_types, V in (FixedVector, MutableFixedVector)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T}
     end

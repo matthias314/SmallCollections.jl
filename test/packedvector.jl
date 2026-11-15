@@ -22,14 +22,14 @@ end
 packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 
 @testset "PackedVector" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    @testset for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         if bitsize(T) < N
             @test_throws Exception PackedVector{U,N,T}()
             continue
         end
         c = bitsize(U)÷N
         c == 0 && continue
-    for m in (0, 1, round(Int, 0.7*c), c-1, c)
+    @testset for m in (0, 1, round(Int, 0.7*c), c-1, c)
         u = packed_rand(N, T, m)
         v = @inferred PackedVector{U,N,T}(u)
         @test v === @inferred copy(v)
@@ -81,11 +81,11 @@ packed_rand(N, T, n) = T[packed_rand(N, T) for _ in 1:n]
 end
 
 @testset "PackedVector indices" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    @testset for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
-    for m in (0, 1, round(Int, 0.7*c), c-1, c)
+    @testset for m in (0, 1, round(Int, 0.7*c), c-1, c)
         u = packed_rand(N, T, m)
         v = @inferred PackedVector{U,N,T}(u)
         if isempty(u)
@@ -96,7 +96,7 @@ end
             @test_inferred last(v) last(u) T
         end
         x = packed_rand(N, T)
-        for i in -1:length(u)+1
+        @testset for i in -1:length(u)+1
             if 1 <= i <= length(u)
                 @test_inferred v[i] u[i] T
                 w = @test_inferred setindex(v, x, i) setindex!(copy(u), x, i) v
@@ -106,7 +106,7 @@ end
                 @test_throws Exception setindex(v, x, i)
             end
         end
-        for i in 0:m, j in i-1:m+1
+        @testset for i in 0:m, j in i-1:m+1
             if checkbounds(Bool, u, i:j)
                 w = @test_inferred v[i:j] u[i:j] v
                 @test isvalid(w)
@@ -119,11 +119,11 @@ end
 end
 
 @testset "PackedVector bool inds" begin
-    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+    @testset for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
         bitsize(T) < M && continue
         N = bitsize(U)÷M
         N == 0 && continue
-    for m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = packed_rand(M, T, m)
         v = PackedVector{U,M,T}(u)
 
@@ -131,7 +131,7 @@ end
             jj = rand(Bool, m-1)
             iis = Any[SmallVector{N+2}(jj), PackedVector{UInt64,1,Bool}(jj)]
             m > 1 && pushfirst!(iis, FixedVector{m-1}(jj))
-            for ii in iis
+            @testset for ii in iis
                 @test_throws Exception v[ii]
             end
         end
@@ -139,7 +139,7 @@ end
         jj = rand(Bool, m)
         iis = Any[SmallVector{N+2}(jj), PackedVector{UInt64,1,Bool}(jj)]
         m > 0 && pushfirst!(iis, FixedVector{m}(jj))
-        for ii in iis
+        @testset for ii in iis
             @test_inferred v[ii] u[jj] v
         end
     end
@@ -147,11 +147,11 @@ end
 end
 
 @testset "PackedVector vec inds" begin
-    for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
+    @testset for T in (Bool, Int32), M in (1, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64)
         bitsize(T) < M && continue
         N = bitsize(U)÷M
         N == 0 && continue
-    for m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = packed_rand(M, T, m)
         v = PackedVector{U,M,T}(u)
 
@@ -182,11 +182,11 @@ end
 end
 
 @testset "PackedVector zeros" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
+    @testset for T in (Bool, Int8, UInt16, Int64, UInt128), N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)), U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
-    for m in (0, 1, round(Int, 0.7*c), c-1, c)
+    @testset for m in (0, 1, round(Int, 0.7*c), c-1, c)
         u = zeros(T, m)
         v = PackedVector{U,N,T}(u)
         @test_inferred iszero(v) true
@@ -204,23 +204,23 @@ end
 @testset "PackedVector resize" begin
     function vector_resize(v::Vector{T}, n::Integer) where T
         w = resize!(copy(v), n)
-        for i in length(v)+1:n
+        @testset for i in length(v)+1:n
             w[i] = zero(T)
         end
         w
     end
 
-    for T in (Bool, Int8, UInt16, Int64, UInt128),
+    @testset for T in (Bool, Int8, UInt16, Int64, UInt128),
             N in (1, 2, 5, 8, bitsize(T)),
             U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
-    for m in (0, 1, c-1, c)
+    @testset for m in (0, 1, c-1, c)
         u = packed_rand(N, T, m)
         v = @inferred PackedVector{U,N,T}(u)
         @test_throws Exception resize(v, -1)
-        for n in 0:3:c
+        @testset for n in 0:3:c
             @test_inferred resize(v, n) vector_resize(u, n) v
         end
         @test_throws Exception resize(v, c+1)
@@ -229,13 +229,13 @@ end
 end
 
 @testset "PackedVector push/pop" begin
-    for T in (Bool, Int8, UInt16, Int64, UInt128),
+    @testset for T in (Bool, Int8, UInt16, Int64, UInt128),
             N in (1, 2, 5, 8, max(1, bitsize(T)÷2-1), bitsize(T)),
             U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
         c = bitsize(U)÷N
         c == 0 && continue
-    for m in (0, 1, round(Int, 0.7*c), c-1, c)
+    @testset for m in (0, 1, round(Int, 0.7*c), c-1, c)
         u = packed_rand(N, T, m)
         v = @inferred PackedVector{U,N,T}(u)
         x = packed_rand(N, T)
@@ -268,7 +268,7 @@ end
             w, _ = @test_inferred popfirst(v) (deleteat!(copy(u), 1), first(u)) (v, first(v))
             @test isvalid(w)
         end
-        for i in (-1, 0, 1, 2, length(u), length(u)+1)
+        @testset for i in (-1, 0, 1, 2, length(u), length(u)+1)
             if 1 <= i <= length(u)+1 && length(u) < c
                 w = @test_inferred insert(v, i, x) insert!(copy(u), i, x) v
                 @test isvalid(w)
@@ -321,15 +321,15 @@ end
 end
 
 @testset "PackedVector circshift" begin
-    for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
+    @testset for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
             T in (Int8, UInt8, Int16, UInt16, Int32, UInt32),
             N in 1:3:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
-        for n in 0:4:c
+        @testset for n in 0:4:c
             w = packed_rand(N, T, n)
             v = PackedVector{U,N,T}(w)
-            for k in (-2*c, -2*c+1, -3, -1, 0, 1, 7, c+5, 2*c+7)
+            @testset for k in (-2*c, -2*c+1, -3, -1, 0, 1, 7, c+5, 2*c+7)
                 @test_inferred circshift(v, k) circshift(w, k) v
                 @test isvalid(circshift(v, k))
             end
@@ -343,12 +343,12 @@ function red_mod(N, v::AbstractVector{T}) where T <: Integer
 end
 
 @testset "PackedVector add/mul" begin
-    for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
+    @testset for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
             T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
             N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
-        for n in 0:c
+        @testset for n in 0:c
             u1 = packed_rand(N, T, n)
             v1 = PackedVector{U,N,T}(u1)
             cc = packed_rand(N, T)
@@ -365,7 +365,7 @@ end
             @test isvalid(w)
             w = @test_inferred v1-v2 red_mod(N, u1-u2) v1
             @test isvalid(w)
-            for i in -1:length(u1)+1
+            @testset for i in -1:length(u1)+1
                 x = packed_rand(N, T)
                 if checkbounds(Bool, u1, i) && checkvalue(Bool, N, u1[i]+x)
                     w = @test_inferred addindex(v1, x, i) setindex!(copy(u1), u1[i]+x, i) v1
@@ -379,16 +379,16 @@ end
 end
 
 @testset "PackedVector sum/max" begin
-    for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
+    @testset for U in (UInt8, UInt16, UInt32, UInt64, UInt128),
         T in (Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32),
         N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
-        for n in 0:c
+        @testset for n in 0:c
             u = packed_rand(N, T, n)
             v = PackedVector{U,N,T}(u)
             @test_inferred sum(v) sum(u)
-            for f in (maximum, minimum)
+            @testset for f in (maximum, minimum)
                 if isempty(u)
                     @test_throws Exception f(v)
                     @test_inferred f(v; init = zero(T)) f(u; init = zero(T))
@@ -432,10 +432,10 @@ end
 end
 
 @testset "PackedVector support" begin
-    for U in (UInt8, UInt32, UInt128), T in (Int8, UInt32), N in 1:bitsize(T)
+    @testset for U in (UInt8, UInt32, UInt128), T in (Int8, UInt32), N in 1:bitsize(T)
         c = bitsize(U)÷N
         c == 0 && continue
-        for m in 0:min(c, bitsize(UInt))
+        @testset for m in 0:min(c, bitsize(UInt))
             u = T <: Unsigned ? rand(T(0):T(1), m) : rand(T(-1):T(0), m)
             v = @inferred PackedVector{U,N,T}(u)
             @test_inferred support(v) Set{Int}(i for i in 1:m if u[i] != 0) SmallBitSet
@@ -444,7 +444,7 @@ end
 end
 
 @testset "PackedVector rand" begin
-    for U in (UInt8, UInt32, UInt128), T in (Bool, Int8, UInt32), M in 1:3:bitsize(T)
+    @testset for U in (UInt8, UInt32, UInt128), T in (Bool, Int8, UInt32), M in 1:3:bitsize(T)
         c = bitsize(U)÷M
         c == 0 && continue
         v = @inferred rand(PackedVector{U,M,T})

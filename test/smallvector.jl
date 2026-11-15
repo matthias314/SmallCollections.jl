@@ -6,7 +6,7 @@ using LinearAlgebra: LinearAlgebra, dot
 const VS = (SmallVector, MutableSmallVector)
 
 @testset "SmallVector" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = @inferred V{N,T}(u)
         if ismutabletype(V)
@@ -68,13 +68,13 @@ const VS = (SmallVector, MutableSmallVector)
         @test_inferred empty(v, Char) V{N,Char}()
     end
 
-    for V in VS, W in (FixedVector, MutableFixedVector), N in (9, 16), T in test_types
+    @testset for V in VS, W in (FixedVector, MutableFixedVector), N in (9, 16), T in test_types
         w = rand(W{N,T})
         @test_inferred V(w) w V{N,T}
     end
 
-    for V in VS, N in (9, 16), T in [Int8, UInt8, Int16, UInt32, Int64, UInt256]
-        for r in [1:0, 1:1, 1:2, 1:N-1, 1:N, 2:0, 2:2, 2:N, 2:N+1, 2:4:1, 2:4:2, 2:4:2*N, 2*N:-3:1, 1000:999,
+    @testset for V in VS, N in (9, 16), T in [Int8, UInt8, Int16, UInt32, Int64, UInt256]
+        @testset for r in [1:0, 1:1, 1:2, 1:N-1, 1:N, 2:0, 2:2, 2:N, 2:N+1, 2:4:1, 2:4:2, 2:4:2*N, 2*N:-3:1, 1000:999,
             typemin(T):3:typemin(T)+N, typemax(T):-2:typemax(T)-N, Base.OneTo(0), Base.OneTo(1), Base.OneTo(N)]
             T <: Unsigned && (first(r) < 0 || last(r) < 0) && continue
             @test_inferred V{N,T}(r) r V{N,T}
@@ -92,7 +92,7 @@ const VS = (SmallVector, MutableSmallVector)
 end
 
 @testset "SmallVector indices" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
         if isempty(u)
@@ -103,7 +103,7 @@ end
             @test_inferred last(v) last(u) T
         end
         x = rand(T)
-        for i in -1:length(u)+1
+        @testset for i in -1:length(u)+1
             if 1 <= i <= length(u)
                 @test_inferred v[i] u[i] T
                 w = @test_inferred setindex(v, x, i) setindex!(copy(u), x, i) SmallVector(v)
@@ -125,7 +125,7 @@ end
                 end
             end
         end
-        for i in 0:m, j in i-1:m+1
+        @testset for i in 0:m, j in i-1:m+1
             if checkbounds(Bool, u, i:j)
                 w = @test_inferred v[i:j] u[i:j] SmallVector(v)
                 @test isvalid(w)
@@ -137,7 +137,7 @@ end
 end
 
 @testset "SmallVector bool inds" begin
-    for N in (1, 2, 9, 16), T in (Bool, Int16), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+    @testset for N in (1, 2, 9, 16), T in (Bool, Int16), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
         u = rand(T, m)
         v = V{N,T}(u)
 
@@ -145,7 +145,7 @@ end
             jj = rand(Bool, m-1)
             iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
             m > 1 && pushfirst!(iis, FixedVector{m-1}(jj))
-            for ii in iis
+            @testset for ii in iis
                 @test_throws Exception v[ii]
             end
         end
@@ -153,14 +153,14 @@ end
         jj = rand(Bool, m)
         iis = Any[SmallVector{N+2}(jj), PackedVector{UInt32,1,Bool}(jj)]
         m > 0 && pushfirst!(iis, FixedVector{m}(jj))
-        for ii in iis
+        @testset for ii in iis
             @test_inferred v[ii] u[jj] SmallVector{N,T}
         end
     end
 end
 
 @testset "SmallVector vec inds" begin
-    for N in (1, 2, 8, 11, 32, 72, 128), T in (Int8, Char), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
+    @testset for N in (1, 2, 8, 11, 32, 72, 128), T in (Int8, Char), V in (SmallVector, MutableSmallVector), m in Set((0, 1, N÷2, N))
         N*sizeof(T) <= 256 || continue
         u = rand(T, m)
         v = V{N,T}(u)
@@ -175,7 +175,7 @@ end
         m > 0 || continue
 
         M = 7
-        for jj in [rand(UInt8(1):UInt8(m), M), Int16[]]
+        @testset for jj in [rand(UInt8(1):UInt8(m), M), Int16[]]
             ii = SmallVector{M+1}(jj)
             @test_inferred v[ii] u[ii] SmallVector{M+1,T}
             ii0 = SmallVector{M}(jj .- UInt8(1))
@@ -196,7 +196,7 @@ end
 end
 
 @testset "SmallVector zeros" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
         u = zeros(T, m)
         v = V{N,T}(u)
@@ -211,17 +211,17 @@ end
 end
 
 @testset "SmallVector reverse" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
         @test_inferred reverse(v) reverse(u) SmallVector(v)
-        for i in 0:m+2
+        @testset for i in 0:m+2
             if 1 <= i <= m+1
                 @test_inferred reverse(v, i) reverse(u, i) SmallVector(v)
             else
                 @test_throws Exception reverse(v, i)
             end
-            for j in i-2:m+1
+            @testset for j in i-2:m+1
                 if 1 <= i <= m+1 && i-1 <= j <= m
                     @test_inferred reverse(v, i, j) reverse(u, i, j) SmallVector(v)
                 else
@@ -236,7 +236,7 @@ end
 end
 
 @testset "SmallVector push/pop" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         u = rand(T, m)
         v = V{N,T}(u)
         x = rand(T)
@@ -269,7 +269,7 @@ end
             w, _ = @test_inferred popfirst(v) (deleteat!(copy(u), 1), first(u)) (SmallVector(v), first(v))
             @test isvalid(w)
         end
-        for i in (-1, 0, 1, 2, length(u), length(u)+1)
+        @testset for i in (-1, 0, 1, 2, length(u), length(u)+1)
             if 1 <= i <= length(u)+1 && length(u) < N
                 w = @test_inferred insert(v, i, x) insert!(copy(u), i, x) SmallVector(v)
                 @test isvalid(w)
@@ -321,7 +321,7 @@ end
 end
 
 @testset "SmallVector push!/pop!" begin
-    for V in (MutableSmallVector,), N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in (MutableSmallVector,), N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         isbitstype(T) || continue
         u = rand(T, m)
         v = V{N,T}(u)
@@ -353,7 +353,7 @@ end
             @test_inferred pop!(copy(v)) pop!(copy(u)) T
             @test_inferred popfirst!(copy(v)) popfirst!(copy(u)) T
         end
-        for i in (-1, 0, 1, 2, length(u), length(u)+1)
+        @testset for i in (-1, 0, 1, 2, length(u), length(u)+1)
             if 1 <= i <= length(u)+1 && length(u) < N
                 w = @test_inferred insert!(copy(v), i, x) insert!(copy(u), i, x) v
                 @test isvalid(w)
@@ -408,14 +408,16 @@ end
     base_isless(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(isless, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
     base_le(v::AbstractVector{T}, w::AbstractVector{T}) where T = invoke(<=, Tuple{AbstractVector{T},AbstractVector{T}}, v, w)
 
-    for T in [UInt8, Int8], N in [8, 16], _ in 1:250
-        v = SmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
-        w = MutableSmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
-        @test_inferred isless(v, w) base_isless(v, w)
-        @test_inferred isless(v, v) base_isless(v, v)
+    @testset for T in [UInt8, Int8], N in [8, 16]
+        for _ in 1:250
+            v = SmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
+            w = MutableSmallVector{N,T}(rand((typemin(T), typemax(T)), rand(0:N)))
+            @test_inferred isless(v, w) base_isless(v, w)
+            @test_inferred isless(v, v) base_isless(v, v)
+        end
     end
 
-    for T in [UInt8, Int32, Char], N in [8, 13]
+    @testset for T in [UInt8, Int32, Char], N in [8, 13]
         v = rand(SmallVector{N,T})
         w = rand(SmallVector{N+2,T})
         @test_inferred v <= w base_le(v, w)
@@ -424,11 +426,11 @@ end
 end
 
 @testset "SmallVector circshift" begin
-    for V in VS, N in [1, 2, 9, 16, 128], T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in [1, 2, 9, 16, 128], T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         N == 128 && !(T in (Int8, UInt8, Bool)) && continue
         u = rand(T, m)
         v = V{N,T}(u)
-        for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
+        @testset for k in (-2*N, -2*N+1, -3, -1, 0, 1, 7, N+5, 2*N+7)
             @test_inferred circshift(v, k) circshift(u, k) SmallVector(v)
             @test isvalid(circshift(v, k))
             V <: MutableSmallVector || continue
@@ -442,31 +444,31 @@ end
 @testset "SmallVector shuffle 256" begin
     T = Int8
     U = UInt8
-    for N in [128, 127, 256, 255], n in N-2:N
+    @testset for N in [128, 127, 256, 255], n in N-2:N
         v = SmallVector{N}(rand(T, n))
         vv = collect(v)
-        for k in [-n, -n+1, -n+2, -2, -1, 0, 1, 2, n-2, n-1, n]
+        @testset for k in [-n, -n+1, -n+2, -2, -1, 0, 1, 2, n-2, n-1, n]
             @test circshift(v, k) == circshift(vv, k)
             @test circshift!(MutableSmallVector(v), k) == circshift(vv, k)
         end
-        for k in [1, 2, 3, n-1, n, n+1]
+        @testset for k in [1, 2, 3, n-1, n, n+1]
             @test reverse(v, k) == reverse(vv, k)
             @test reverse!(MutableSmallVector(v), k) == reverse(vv, k)
         end
         @test first(popfirst(v)) == deleteat!(copy(vv), 1)
         @test (w = MutableSmallVector(v); popfirst!(w); w) == deleteat!(copy(vv), 1)
-        for k in [1, 2, 3, n-2, n-1, n]
+        @testset for k in [1, 2, 3, n-2, n-1, n]
             n < N || continue
             @test duplicate(v, k) == [vv[1:k]; vv[k:n]]
             @test first(popat(v, k)) == deleteat!(copy(vv), k)
             @test duplicate!(MutableSmallVector(v), k) == [vv[1:k]; vv[k:n]]
             @test deleteat!(MutableSmallVector(v), k) == deleteat!(copy(vv), k)
         end
-        for k in [1, 2, 3, n-2, n-1, n], l in [k-1, k, n-1, n]
+        @testset for k in [1, 2, 3, n-2, n-1, n], l in [k-1, k, n-1, n]
             @test v[k:l] == vv[k:l]
         end
         n < typemax(U) || continue
-        for M in [128, 127, 256, 255], m in [0, 1, 2, M-2, M-1, M]
+        @testset for M in [128, 127, 256, 255], m in [0, 1, 2, M-2, M-1, M]
             ii = SmallVector{M,U}(rand(0:n-1, m))
             @test v[ii .+ U(1)] == vv[ii .+ 1]
         end
@@ -476,7 +478,7 @@ end
 using Base.FastMath: mul_fast
 
 @testset "SmallVector add/mul" begin
-    for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (1, round(Int, 0.7*N), N-1, N)
         T1 <: Number || continue
         if T1 <: Unsigned
             u1 = rand(unitrange(T1(1), T1(9)), m)
@@ -488,7 +490,7 @@ using Base.FastMath: mul_fast
         @test isvalid(w)
         w = @test_inferred -v1 -u1 SmallVector(v1)
         @test isvalid(w)
-        for T2 in test_types
+        @testset for T2 in test_types
             T2 <: Number || continue
             if numerictype(T2) <: Unsigned
                 u2 = rand(unitrange(T2(1), T2(9)), m)
@@ -513,7 +515,7 @@ using Base.FastMath: mul_fast
             @test_inferred v1*c c*v1
             dimension(T1) == dimension(T2) || continue
             T = promote_type(T1, T2)
-            for op in (+, -)
+            @testset for op in (+, -)
                 w = @test_inferred op(v1, v2) op(u1, u2) SmallVector{N,T}
                 @test isvalid(w)
                 v3 = V{N+4}(u2)
@@ -528,9 +530,9 @@ using Base.FastMath: mul_fast
     N = 8
     T = Float64
     u = T[-Inf, -1, 0, 1, Inf, NaN]
-    for V in VS
+    @testset for V in VS
         v = V{8,Float64}(u)
-        for c in (Inf, -Inf, NaN)
+        @testset for c in (Inf, -Inf, NaN)
             w = @test_inferred c*v c*u SmallVector{N,T}
             @test isvalid(w)
         end
@@ -538,12 +540,12 @@ using Base.FastMath: mul_fast
 end
 
 @testset "SmallVector sum/max" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
         r = T <: Unsigned ? unitrange(T(1), T(9)) : unitrange(T(-9), T(9))
         u = rand(r, m)
         v = V{N}(u)
-        for f in (maximum, minimum)
+        @testset for f in (maximum, minimum)
             if isempty(u)
                 @test_throws Exception f(v)
                 @test_inferred f(v; init = zero(T)) f(u; init = zero(T))
@@ -591,7 +593,7 @@ end
         @test_inferred sum(v) sum(u)
         @test_inferred prod(-v) prod(-u)
     end
-    for V in VS, N in (5, 16), T in (Float32, Float64), x in (Inf, -Inf, NaN)
+    @testset for V in VS, N in (5, 16), T in (Float32, Float64), x in (Inf, -Inf, NaN)
         u = T[x, -1, 0, 1]
         v = V{N}(u)
         @test_inferred maximum(v) maximum(u)
@@ -603,7 +605,7 @@ end
             @test_inferred prod(v) prod(u)
         end
     end
-    for V in VS, N in (5, 16), T in (Float32, Float64)
+    @testset for V in VS, N in (5, 16), T in (Float32, Float64)
         u = T[NaN, -1, 0, 1]
         v = V{N}(u)
         @test_inferred isnan(maximum(v)) true
@@ -614,7 +616,7 @@ end
 end
 
 @testset "SmallVector overflow" begin
-    for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32), m in [0, 1, N-1, N]
+    @testset for N in (1, 8, 13, 16, 25, 32), T in (Int8, UInt16, Int32), m in [0, 1, N-1, N]
         S = smallbitsettype(Val(N))
         vv = rand(T, m)
         if m > 0
@@ -694,14 +696,14 @@ end
     f(x) = Int32(2)*x
     f(x, y) = 2*x + y
     g(x) = iszero(x) ? 1 : 1.0
-    for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (0, 1, round(Int, 0.7*N), N-1)
+    @testset for V in VS, N in (1, 2, 9, 16), T1 in test_types, m in (0, 1, round(Int, 0.7*N), N-1)
         T1 <: Number || continue
         u1 = rand(T1, m)
         v1 = V{N}(u1)
         u3 = map(f, u1)
         w = @test_inferred map(f, v1) u3 SmallVector{N,eltype(u3)}
         @test isvalid(w)
-        for T2 in test_types
+        @testset for T2 in test_types
             (T2 <: Number && dimension(T1) == dimension(T2)) || continue
             u2 = rand(T2, m+1)
             v2 = V{N+2}(u2)
@@ -710,7 +712,7 @@ end
             @test isvalid(w)
         end
     end
-    for V in VS,  m in (0, 1, 3)
+    @testset for V in VS,  m in (0, 1, 3)
         v = V{8}(1:m)
         u = collect(v)
         u5 = map(g, u)
@@ -721,12 +723,12 @@ end
 end
 
 @testset "SmallVector find" begin
-    for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (SmallVector, MutableSmallVector), m in (0, 1, N-1, N)
+    @testset for N in (1, 2, 9, 16), T in [Bool, test_types...], V in (SmallVector, MutableSmallVector), m in (0, 1, N-1, N)
         T <: Number || continue
         k = max(m ÷ 2, 1)
-        for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), m), zeros(T, m), ones(T, m))
+        @testset for u in (rand(T(0):oneunit(T):(T == Bool ? true : T(2)), m), zeros(T, m), ones(T, m))
             v = V{N,T}(u)
-            for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
+            @testset for style in (LazyStyle(), EagerStyle(), RigidStyle(), StrictStyle())
                 @test_inferred support(!iszero, v; style) Set(findall(!iszero, u)) SmallBitSet
                 i = @inferred Nothing findfirst(!iszero, v; style)
                 @test i == findfirst(!iszero, u)
@@ -777,12 +779,12 @@ end
 end
 
 @testset "SmallVector issorted" begin
-    for T in [Int8, Float32, BigInt, Char], u in [Int[], [1], [1,2,3], [1,2,2], [1,2,1], [3,2,1], [3,2,2], [1,1,1,1]],
+    @testset for T in [Int8, Float32, BigInt, Char], u in [Int[], [1], [1,2,3], [1,2,2], [1,2,1], [3,2,1], [3,2,2], [1,1,1,1]],
             N in max(length(u), 1):length(u)+2
         v = SmallVector{N,T}(u)
         w = collect(T, u)
         bys = T == Char ? (identity, uppercase) : (identity, -, x -> 2.0*x)
-        for lt in (isless, >), by in bys, rev in (false, true), strict in (false, true)
+        @testset for lt in (isless, >), by in bys, rev in (false, true), strict in (false, true)
             if strict
                 @test_inferred issorted(v; lt, by, rev, strict) issorted(w; lt, by, rev) & allunique(w)
             else
@@ -793,7 +795,7 @@ end
 end
 
 @testset "SmallVector rest" begin
-    for V in VS
+    @testset for V in VS
         v = V{8}(1:2)
         W = typeof(SmallVector(v))
         w..., = v
@@ -829,7 +831,7 @@ end
 end
 
 @testset "SmallVector support" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         T <: Number || continue
         u = rand(unitrange(T(0), T(2)), m)
         v = V{N,T}(u)
@@ -838,7 +840,7 @@ end
 end
 
 @testset "SmallVector rand" begin
-    for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
+    @testset for V in VS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, round(Int, 0.7*N), N-1, N)
         v = @inferred rand(V{N,T})
         @test v isa V{N,T} && isvalid(v)
     end
@@ -846,7 +848,7 @@ end
 
 @testset "broadcast" begin
     N = 8
-    for V in VS, T in (Int, Float64), m in (0, 1, 3, 8)
+    @testset for V in VS, T in (Int, Float64), m in (0, 1, 3, 8)
         u = collect(T, 1:m)
         v = V{N}(u)
         c = T(2)
@@ -881,7 +883,7 @@ end
         @test isvalid(w)
     end
 
-    for T in (Int16, Float32)
+    @testset for T in (Int16, Float32)
         if T <: Integer
             u1 = T[2, -1, 4, -3, 7]
             u2 = T[-3, 9, 4, -1, -5, 6]
@@ -891,12 +893,12 @@ end
         end
         v1 = SmallVector{8,T}(u1)
         v2 = SmallVector{8,T}(u2)
-        for f in (+, -, *, /, ==, !=, <, >, <=, >=, ===, isequal)
+        @testset for f in (+, -, *, /, ==, !=, <, >, <=, >=, ===, isequal)
             ww = map(f, u1, u2)
             w = @test_inferred map(f, v1, v2) ww SmallVector{8,eltype(ww)}
             @test isvalid(w)
         end
-        for f in (round, floor, ceil, trunc, abs, abs2, sign, sqrt, signbit)
+        @testset for f in (round, floor, ceil, trunc, abs, abs2, sign, sqrt, signbit)
             if f === sqrt
                 uu = map(abs, u1)
                 vv = map(abs, v1)
@@ -910,17 +912,17 @@ end
             end
         end
         T <: Integer || continue
-        for f in (&, |, xor, nand, nor)
+        @testset for f in (&, |, xor, nand, nor)
             w = @test_inferred map(f, v1, v2) map(f, u1, u2) SmallVector{8,T}
             @test isvalid(w)
         end
-        for f in (~,)
+        @testset for f in (~,)
             w = @test_inferred map(f, v1) map(f, u1) SmallVector{8,T}
             @test isvalid(w)
         end
     end
 
-    for V in VS
+    @testset for V in VS
         u = [7, 8]
         v = V{3}(u)
         a = [1 2; 3 4]

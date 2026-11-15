@@ -1,7 +1,7 @@
 SS = (SmallSet, MutableSmallSet)
 
 @testset "SmallSet" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N-1, N)
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N-1, N)
         S == SmallSet || isbitstype(T) || continue
         v = T[rand(T) for _ in 1:m]
         n = length(unique(v))
@@ -50,9 +50,9 @@ end
 
 VERSION > v"1.13-" && @testset "SmallSet nth" begin
     t = Set([1, 2, 3])
-    for S in SS
+    @testset for S in SS
         s = S{4}(t)
-        for i in 1:length(s)
+        @testset for i in 1:length(s)
             @test_inferred Iterators.nth(s, i) Iterators.nth(t, i)
         end
         @test_throws BoundsError Iterators.nth(s, 0)
@@ -61,12 +61,12 @@ VERSION > v"1.13-" && @testset "SmallSet nth" begin
 end
 
 @testset "SmallSet in" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
         v = T[rand(T) for _ in 1:m]
         s = S{N,T}(v)
-        for x in v
+        @testset for x in v
             @test_inferred x in s true
         end
         y = rand_notin(T, s)
@@ -80,7 +80,7 @@ end
 end
 
 @testset "SmallSet empty" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
         v = T[rand(T) for _ in 1:m]
@@ -95,7 +95,7 @@ end
 end
 
 @testset "SmallSet push/pop" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
         s = S{N,T}(rand_unique(T, m))
@@ -139,7 +139,7 @@ end
 end
 
 @testset "SmallSet push!/pop!" begin
-    for N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+    @testset for N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
         s = MutableSmallSet{N,T}(rand_unique(T, m))
@@ -192,7 +192,7 @@ end
 end
 
 @testset "SmallSet filter" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types, m in (0, 1, N÷2, N)
         S == SmallSet || isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= m && continue
         s = S{N,T}(rand_unique(T, m))
@@ -220,7 +220,7 @@ end
 end
 
 @testset "SmallSet union etc" begin
-    for S in SS, T in test_types
+    @testset for S in SS, T in test_types
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= 5 && continue
         N = 8
@@ -236,7 +236,7 @@ end
 
 @testset "SmallSet union! etc" begin
     N = 8
-    for T in test_types, S in [SmallSet{N,T}, MutableSmallSet{N,T}, Set{T}]
+    @testset for T in test_types, S in [SmallSet{N,T}, MutableSmallSet{N,T}, Set{T}]
         isbitstype(T) || continue
         T == TestEnum && length(instances(T)) <= 5 && continue
         v, w, x, y, z = rand_unique(T, 5)
@@ -258,7 +258,7 @@ end
 end
 
 @testset "SmallSet rand" begin
-    for S in SS, N in (1, 2, 9, 16), T in test_types
+    @testset for S in SS, N in (1, 2, 9, 16), T in test_types
         S <: MutableSmallSet && !isbitstype(T) && continue
         s = @inferred rand(S{N,T})
         @test s isa S{N,T} && isvalid(s)

@@ -4,7 +4,7 @@ key_types = [Int8, typeof(UInt32(1)u"m"), Float64, String, TestEnum]
 val_types = [Bool, Int64, Char, TestStruct2]
 
 @testset "SmallDict" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         d = @inferred D{N,K,V}()
         @test d isa D{N,K,V} && isempty(d)
@@ -48,7 +48,7 @@ end
 VERSION > v"1.13-" && @testset "SmallDict nth" begin
     e = Dict{Real,Integer}(1 => 2, 3.0 => Int8(4))
     d = SmallDict{4,Real,Integer}(e)
-    for i in 1:length(d)
+    @testset for i in 1:length(d)
         @test_inferred Iterators.nth(d, i) Iterators.nth(e, i)
     end
     @test_throws BoundsError Iterators.nth(d, 0)
@@ -56,7 +56,7 @@ VERSION > v"1.13-" && @testset "SmallDict nth" begin
 end
 
 @testset "SmallDict getindex/setindex" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         K == TestEnum && length(instances(K)) <= m && continue
         K == Bool && m >= 2 && continue
@@ -79,7 +79,7 @@ end
 end
 
 @testset "SmallDict in/get/getkey" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         K == TestEnum && length(instances(K)) <= m && continue
         (K == Bool || V == Bool) && m >= 2 && continue
@@ -88,7 +88,7 @@ end
         @test_inferred Base.hasfastin(d) Base.hasfastin(d.keys)
         k0 = rand_notin(K, keys(d))
         v0 = rand_notin(V, values(d))
-        for (k, v) in d
+        @testset for (k, v) in d
             @test_inferred (k => v) in d true
             @test_inferred (k => v0) in d false
             @test_inferred (k0 => v) in d false
@@ -122,7 +122,7 @@ end
 end
 
 @testset "SmallDict empty" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         d = D{N,K,V}(rand(K) => rand(V) for _ in 1:m)
         @test_inferred empty(d) D{N,K,V}()
@@ -135,7 +135,7 @@ end
 end
 
 @testset "SmallDict push!/pop!" begin
-    for D in (MutableSmallDict,), N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in (MutableSmallDict,), N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         (isbitstype(K) && isbitstype(V)) || continue
         K == TestEnum && length(instances(K)) <= m && continue
         (K == Bool || V == Bool) && m >= 2 && continue
@@ -175,7 +175,7 @@ end
 end
 
 @testset "SmallDict push/pop" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         K == TestEnum && length(instances(K)) <= m && continue
         (K == Bool || V == Bool) && m >= 2 && continue
@@ -212,7 +212,7 @@ end
 
 @testset "SmallDict findmin/popmin" begin
     N = 16
-    for D in DS, K in (Int8, UInt16), V in (UInt8, Int32), m in (0, 1, N-2)
+    @testset for D in DS, K in (Int8, UInt16), V in (UInt8, Int32), m in (0, 1, N-2)
         d = D{N,K,V}(rand(K) => rand(V) for _ in 1:m)
         w = collect(d)
         if m == 0
@@ -252,7 +252,7 @@ end
 end
 
 @testset "SmallDict filter" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         (isbitstype(K) && isbitstype(V)) || continue
         V == Bool && m >= 2 && continue
         kvs = [rand(K) => rand(V) for _ in 1:m]
@@ -283,7 +283,7 @@ end
 @testset "SmallDict mergewith" begin
     op(x, y) = y
     op(x::Number, y::Number) = x*y
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types, m in (0, 1, N-1, N)
         D == SmallDict || (isbitstype(K) && isbitstype(V)) || continue
         K == TestEnum && length(instances(K)) <= m && continue
         (K == Bool || V == Bool) && m >= 2 && continue
@@ -304,7 +304,7 @@ end
 end
 
 @testset "SmallDict rand" begin
-    for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types
+    @testset for D in DS, N in (1, 2, 9, 16), K in key_types, V in val_types
         D <: MutableSmallDict && !isbitstype(Tuple{K,V}) && continue
         d = @inferred rand(D{N,K,V})
         @test d isa D{N,K,V} && isvalid(d)

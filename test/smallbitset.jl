@@ -4,7 +4,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 
 @testset "SmallBitSet" begin
     @test_inferred SmallBitSet([1,2,3]) SmallBitSet{UInt64}([1,2,3])
-    for U in unsigned_types
+    @testset for U in unsigned_types
         s = SmallBitSet{U}()
         @test_inferred isempty(s) true
         @test_inferred empty(s) SmallBitSet{U}()
@@ -30,7 +30,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
         @test_inferred fasthash(s) fasthash(s3)
         @test_inferred Set(s) t
 
-        for r in [0:-1, 1:0, 1:1, 1:2, 1:m-1, 1:m, 2:0, 2:2, 2:m-1, 2:m, m-1:0, m-1:m-1, m-1:m, m:0, m:m, m+1:m, 1:m:1, m:2*m:m,
+        @testset for r in [0:-1, 1:0, 1:1, 1:2, 1:m-1, 1:m, 2:0, 2:2, 2:m-1, 2:m, m-1:0, m-1:m-1, m-1:m, m:0, m:m, m+1:m, 1:m:1, m:2*m:m,
                 1:3:0, 1:3:1, 1:3:m-1, 1:3:m, 2:3:0, 2:3:2, 2:3:m-1, 2:3:m, m-1:3:0, m-1:3:m-1, m-1:3:m, m:3:0, m:3:m, m:3:m+1,
                 1:-1:3, 1:-2:1, 2:-1:m, 2:-2:2, 2:-1:1, m-1:-2:m, m-1:-1:2, m-1:-2:1, m:-1:m+1, m:-2:m, m:-1:m-1, m:-2:2, m:-1:1]
             @test_inferred SmallBitSet{U}(r) SmallBitSet{U}(collect(r))
@@ -46,7 +46,7 @@ unsigned_types = (UInt8, UInt64, UInt256, UInt440)
 end
 
 @testset "SmallBitSet first/min etc" begin
-    for U in unsigned_types
+    @testset for U in unsigned_types
         m = bitsize(U)
         t = Set{Int}(rand(1:m, rand(1:m)))
         s = @inferred SmallBitSet{U}(t)
@@ -68,11 +68,11 @@ end
 end
 
 @testset "SmallBitSet in/subset" begin
-    for U in unsigned_types
+    @testset for U in unsigned_types
         m = bitsize(U)
         t = Set{Int}(rand(1:m, rand(0:m)))
         s = @inferred SmallBitSet{U}(t)
-        for i in 1:m
+        @testset for i in 1:m
             @test_inferred i in s i in t
             @test_inferred Int16(i) in s i in t
             @test_inferred Float64(i) in s i in t
@@ -91,7 +91,7 @@ end
 end
 
 @testset "SmallBitSet push/pop etc" begin
-    for U in unsigned_types
+    @testset for U in unsigned_types
         m = bitsize(U)
         t = Set{Int}(rand(1:m, rand(0:m)))
         s = @inferred SmallBitSet{U}(t)
@@ -119,7 +119,7 @@ end
 end
 
 @testset "SmallBitSet union etc" begin
-    for U1 in unsigned_types, U2 in unsigned_types
+    @testset for U1 in unsigned_types, U2 in unsigned_types
         m1 = bitsize(U1)
         m2 = bitsize(U2)
         U = promote_type(U1, U2)
@@ -137,7 +137,7 @@ end
 end
 
 @testset "SmallBitSet invreplace" begin
-    for U in [UInt8, UInt32, UInt128]  # UInt256 leads to a freeze
+    @testset for U in [UInt8, UInt32, UInt128]  # UInt256 leads to a freeze
         N = bitsize(U)
         S = SmallBitSet{uinttype(Val(N))}
         s = rand(SmallBitSet{U})
@@ -149,7 +149,7 @@ end
 end
 
 @testset "SmallBitSet rand" begin
-    for U in unsigned_types
+    @testset for U in unsigned_types
         s = @inferred rand(SmallBitSet{U})
         @test s isa SmallBitSet{U}
     end
@@ -158,9 +158,9 @@ end
 end
 
 @testset "SmallBitSet checkbounds" begin
-    for V in [FixedVector{16,Int16}, MutableSmallVector{22,Int8}, PackedVector{UInt32,5,Int8}]
+    @testset for V in [FixedVector{16,Int16}, MutableSmallVector{22,Int8}, PackedVector{UInt32,5,Int8}]
         v = rand(V)
-        for s in [SmallBitSet(), SmallBitSet{UInt32}(1:3:length(v)), SmallBitSet{UInt128}((1, length(v)+1))]
+        @testset for s in [SmallBitSet(), SmallBitSet{UInt32}(1:3:length(v)), SmallBitSet{UInt128}((1, length(v)+1))]
             @test_inferred checkbounds(Bool, v, s) checkbounds(Bool, v, collect(s))
         end
     end
@@ -173,7 +173,7 @@ end
     colex_lt(s, t) = reverse!(collect(s)) < reverse!(collect(t))
     graded_lex_lt(s, t) = length(s) < length(t) || (length(s) == length(t) && lex_lt(s, t))
     graded_colex_lt(s, t) = length(s) < length(t) || (length(s) == length(t) && colex_lt(s, t))
-    for a in UInt(0):UInt(63), b in UInt(0):UInt(63)
+    @testset for a in UInt(0):UInt(63), b in UInt(0):UInt(63)
         s = convert(SmallBitSet{UInt8}, a)
         t = convert(SmallBitSet{UInt32}, b)
         @test_inferred lt(Lex, s, t) lex_lt(s, t)
@@ -189,10 +189,10 @@ end
 end
 
 VERSION > v"1.13-" && @testset "SmallBitSet nth" begin
-    for U in [UInt8, UInt16, UInt32, UInt]
+    @testset for U in [UInt8, UInt16, UInt32, UInt]
         s = rand(SmallBitSet{U})
         v = collect(s)
-        for i in 1:length(s)
+        @testset for i in 1:length(s)
             @test_inferred Iterators.nth(s, i) v[i]
         end
         @test_throws BoundsError Iterators.nth(s, 0)
@@ -201,7 +201,7 @@ VERSION > v"1.13-" && @testset "SmallBitSet nth" begin
 end
 
 @testset "SmallBitSet rest" begin
-    for U in unsigned_types
+    @testset for U in unsigned_types
         s = SmallBitSet{U}([2, 3, 5, 8])
         @test_inferred Base.rest(s) s
         t..., = s
