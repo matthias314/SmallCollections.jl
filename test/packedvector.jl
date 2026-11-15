@@ -210,7 +210,7 @@ end
         w
     end
 
-    for T in (Bool, UInt1, Int3, UInt16, Int64, UInt128),
+    for T in (Bool, Int8, UInt16, Int64, UInt128),
             N in (1, 2, 5, 8, bitsize(T)),
             U in (UInt8, UInt32, UInt64, UInt128)
         bitsize(T) < N && continue
